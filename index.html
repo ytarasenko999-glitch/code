@@ -9,6 +9,7 @@
 <meta property="og:title" content="CODE — розрахуй свій код">
 <meta property="og:description" content="Матриця долі, сумісність, роки, енергія дня і Таро-трактувальник.">
 <meta property="og:type" content="website">
+<script>window.addEventListener('load',function(){setTimeout(function(){var h=document.getElementById('home'),r=document.getElementById('result');if(h&&!h.innerHTML.trim()&&r&&r.hidden!==false&&!document.querySelector('.st-title')){var d=document.createElement('div');d.setAttribute('style','position:fixed;inset:0;z-index:999;display:grid;place-items:center;padding:24px;background:#05050C;color:#EEF0FF;font:16px/1.6 -apple-system,Segoe UI,sans-serif;text-align:center');d.innerHTML='<div><p style="font:12px monospace;letter-spacing:.08em;opacity:.6">[ CODE ]</p><h1 style="font-weight:300;margin:0 0 10px">Щось пішло не так</h1><p style="opacity:.75;max-width:40ch;margin:0 auto 22px">Сторінка не завантажилась повністю. Перевірте інтернет і спробуйте ще раз.</p><button onclick="location.reload()" style="height:48px;padding:0 26px;border:0;border-radius:999px;background:linear-gradient(120deg,#8C7DFF,#B47CFF);color:#fff;font-weight:600;cursor:pointer">Оновити сторінку</button><p style="margin-top:22px;font-size:13px;opacity:.6">Не допомагає? code.matrix.support@gmail.com</p></div>';document.body.appendChild(d)}},2500)})</script>
 <title>Матриця долі</title>
 <script>try{var t=JSON.parse(localStorage.getItem("code-theme")||"null");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1733,6 +1734,7 @@ html.mdl-on .cs-pop{z-index:130}
 </style>
 </head>
 <body>
+<noscript><p style="padding:40px;text-align:center;font-family:sans-serif">Для роботи CODE увімкніть JavaScript у браузері.</p></noscript>
 
 
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -6247,6 +6249,8 @@ document.addEventListener('click',async e=>{
     const a=$('#auAgree'); if(a&&!a.checked){ const er=$('#auErr'); if(er){ er.classList.remove('info'); er.textContent=T('aNeedAgree'); er.hidden=false; } a.closest('.agree').classList.add('need'); return; }
     if(g.dataset.sso!=='Google'){ const er=$('#auErr'); if(er){ er.textContent='Вхід через Apple з’явиться згодом. Поки що скористайтеся Google або email.'; er.hidden=false; er.classList.add('info'); } return; }
     await ready; if(!sb) return;
+    const er=$('#auErr'), say=m=>{ if(er){ er.textContent=m; er.hidden=false; er.classList.add('info'); } };
+    try{ const r=await fetch(CFG.url+'/auth/v1/settings',{headers:{apikey:CFG.key}}); const j=await r.json(); if(!j||!j.external||!j.external.google){ say('Вхід через Google ще налаштовується. Поки що увійдіть через email — це хвилина.'); return; } }catch(_){ say(AUTH_ERR.network); return; }
     await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}}); }
 },true);
 
