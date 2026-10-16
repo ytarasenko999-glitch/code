@@ -6315,12 +6315,15 @@ function newPasswordDialog(){
 
 /* Google sign-in via Google Identity Services: the consent screen shows the app name "CODE" and our domain instead of the Supabase address */
 const GCID='908657032514-nfibgmccqqkb1nn098pps2senl60qdr1.apps.googleusercontent.com';
+const GIS_ORIGINS=['https://code-matrix-test.vercel.app'];
 let gisP=null;
 const loadGIS=()=>gisP||(gisP=new Promise(res=>{ if(window.google&&google.accounts&&google.accounts.id) return res(true); const s=document.createElement('script'); s.src='https://accounts.google.com/gsi/client'; s.async=true; s.onload=()=>res(true); s.onerror=()=>res(false); document.head.appendChild(s); }));
 const sha256hex=async t=>{ const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''); };
 const isDark=()=>{ const t=document.documentElement.getAttribute('data-theme'); return t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches; };
 async function mountGoogle(host){
   if(!host||host.dataset.gis) return; host.dataset.gis='1';
+  /* Google only accepts origins registered for the client; on any other address (e.g. a Vercel preview link) keep the redirect sign-in */
+  if(!GIS_ORIGINS.includes(location.origin)) return;
   const w=Math.max(220,Math.min(400,Math.round(host.getBoundingClientRect().width)||340));
   if(!(await loadGIS())||!window.crypto||!crypto.subtle){ delete host.dataset.gis; return; }
   const raw=(crypto.randomUUID?crypto.randomUUID():String(Math.random()))+Date.now(), hashed=await sha256hex(raw);
