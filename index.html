@@ -6331,12 +6331,15 @@ async function mountGoogle(host){
     const {error}=await sb.auth.signInWithIdToken({provider:'google',token:r.credential,nonce:raw});
     if(error){ say('Не вдалося увійти через Google. Спробуйте ще раз або увійдіть через email.'); console.warn(error); }
   }});
-  const box=document.createElement('div'); box.className='gis-box';
-  host.insertAdjacentElement('afterend',box); host.hidden=true;
+  /* keep our own styled pill visible; Google's button sits invisibly on top of it and receives the click */
+  const box=document.createElement('div'); box.className='gis-box'; box.setAttribute('aria-hidden','true');
+  const wrap=document.createElement('div'); wrap.className='gis-wrap'; host.replaceWith(wrap); wrap.append(host,box);
+  host.tabIndex=-1;
   const loc={uk:'uk',en:'en',de:'de',fr:'fr',es:'es',it:'it'}[window.LANG]||'uk';
-  google.accounts.id.renderButton(box,{type:'standard',theme:isDark()?'filled_black':'outline',size:'large',shape:'pill',text:'continue_with',logo_alignment:'center',width:w,locale:loc});
+  google.accounts.id.renderButton(box,{type:'standard',theme:'outline',size:'large',shape:'pill',text:'continue_with',logo_alignment:'center',width:w,locale:loc});
+  wrap.classList.add('gis-on');
 }
-const gst=document.createElement('style'); gst.textContent='.gis-box{display:flex;justify-content:center;min-height:44px;color-scheme:normal}.gis-box iframe{margin:0 auto!important}';
+const gst=document.createElement('style'); gst.textContent='.gis-wrap{position:relative;display:grid}.gis-wrap .sso-b{width:100%}.gis-box{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;opacity:0;pointer-events:none;color-scheme:normal}.gis-on .gis-box{opacity:.001;pointer-events:auto}.gis-box>div,.gis-box iframe{transform:scale(1.02,1.25);transform-origin:center}.gis-on:hover .sso-b{border-color:var(--accent);background:var(--accent-soft);transform:translateY(-1px)}.gis-on:active .sso-b{transform:translateY(0)}';
 document.head.appendChild(gst);
 new MutationObserver(()=>{ const h=document.querySelector('.sso [data-sso="Google"]:not([data-gis])'); if(h) mountGoogle(h); }).observe(document.body,{childList:true,subtree:true});
 { const h0=document.querySelector('.sso [data-sso="Google"]'); if(h0) mountGoogle(h0); }
