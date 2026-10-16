@@ -283,7 +283,7 @@ ul.bl li::before{content:"";position:absolute;left:3px;top:.62em;width:5px;heigh
 .td-date small{color:var(--muted);font-size:13px}
 .iconbtn{width:40px;height:40px;border-radius:50%;border:0;background:var(--surface-2);font-size:22px;line-height:1;cursor:pointer}
 .iconbtn:hover{background:var(--accent-soft)}
-.today-btn{flex:0 0 auto}
+.today-btn{flex:0 0 auto}.td-back{display:flex;justify-content:center;margin:-4px 0 18px}.td-back .btn.today-btn{flex:0 0 auto;width:auto;padding:0 24px}.td-h .td-date strong{white-space:nowrap}@media(max-width:640px){.td-h .td-date strong{font-size:clamp(20px,6.2vw,30px)}}
 .td-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .dcard{display:flex;gap:12px;align-items:center;text-align:left;padding:14px;border-radius:18px;border:1px solid var(--hair);background:transparent;cursor:pointer;min-width:0}
 .dcard:hover{background:var(--surface-2)}.dcard.on{border-color:var(--accent);background:var(--accent-soft)}
@@ -3311,8 +3311,8 @@ function todayPanel(){
       <button class="iconbtn" data-dshift="-1" aria-label="${_t("Попередній день")}">‹</button>
       <div class="td-date"><strong>${fmtD(dt)}</strong><small>${isT?_t("Сьогодні · "):''}${WD[dt.getDay()]}</small></div>
       <button class="iconbtn" data-dshift="1" aria-label="${_t("Наступний день")}">›</button>
-      ${isT?'':_t("<button class=\"btn ghost sm today-btn\" data-dshift=\"0\">Сьогодні</button>")}
     </div>
+    ${isT?'':'<div class="td-back">'+_t("<button class=\"btn ghost sm today-btn\" data-dshift=\"0\">Сьогодні</button>")+'</div>'}
     <div class="td-cards">
       <button class="dcard${sel==='me'?' on':''}" data-dsel="me"><span class="dnum" style="--c:var(--accent)">${I.pd}</span><span><small>${_t("Ваша енергія дня")}</small><strong>${ARC[I.pd].n}</strong><em>${cap(DAY[I.pd].split(':')[0])}</em></span></button>
       <button class="dcard${sel==='all'?' on':''}" data-dsel="all"><span class="dnum" style="--c:var(--p-blue)">${I.T.E}</span><span><small>${_t("Енергія дати для всіх")}</small><strong>${ARC[I.T.E].n}</strong><em>${cap(DAY[I.T.E].split(':')[0])}</em></span></button>
