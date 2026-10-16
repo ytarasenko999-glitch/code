@@ -593,6 +593,8 @@ ol.qs li{counter-increment:q;position:relative;padding:14px 16px 14px 52px;borde
 ol.qs+.qs-go{margin-top:12px}
 .qs-go{display:inline-flex;align-items:center;gap:8px;padding:6px 2px;border:0;background:none;color:var(--accent);font:inherit;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;opacity:.85;transition:opacity .2s,gap .2s}
 .qs-go:hover{opacity:1;gap:11px}
+.qs-go{display:flex;width:fit-content;max-width:100%;text-align:left;line-height:1.5}.qs-go+.more-link{margin-top:22px}
+.more-link{display:flex!important;width:fit-content;max-width:100%;margin-left:0!important;margin-right:auto!important;align-self:flex-start;text-align:left}
 .qs-go svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.2}
 .qs-go i{font-style:normal;font-family:var(--font);font-size:13px;letter-spacing:0}
 ol.qs li::before{content:counter(q);position:absolute;left:14px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);font-family:var(--font-mono);font-size:11px}
