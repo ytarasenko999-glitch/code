@@ -227,7 +227,8 @@ form.q{display:flex;flex-wrap:wrap;gap:8px;flex:1;min-width:0;align-items:center
 
 /* highlight, ring labels, blocks, chakra map */
 .agel{fill:var(--muted);font-size:9.5px;font-family:var(--font);opacity:.85;pointer-events:none;font-variant-numeric:tabular-nums}
-.halo{fill:var(--accent);opacity:.16;animation:breathe 2.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center;pointer-events:none}
+.halo{fill:var(--accent);opacity:.16;animation:breatheO 2.8s ease-in-out infinite;pointer-events:none}
+@keyframes breatheO{0%,100%{opacity:.12}50%{opacity:.26}}
 .hl-line{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;opacity:.35;pointer-events:none}
 @keyframes breathe{0%,100%{opacity:.12;transform:scale(.94)}50%{opacity:.26;transform:scale(1.04)}}
 svg .pt{transition:opacity .35s}
@@ -3282,7 +3283,9 @@ function updateSel(){
     let h='';
     const d=STATE.det;
     if(d&&d.type==='prog'){const p=getProg(d.k); if(p.ids){const pts=p.ids.map(i=>coord(i).map(n=>n.toFixed(1)).join(',')).join(' ');h+=`<polyline class="hl-line" points="${pts}"/>`;}}
-    s.forEach(id=>{const [x,y]=coord(id);h+=`<circle class="halo" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${ptR(id)+9}"/>`;});
+    /* halo centred on the arcana: radius from the ring actually drawn, breathing via SVG <animate> (Safari ignores transform-box for CSS scale and drifted the halo sideways) */
+    s.forEach(id=>{const [x,y]=coord(id), ring=svg.querySelector(`.pt[data-id="${id}"] circle.ring`), r0=(ring?parseFloat(ring.getAttribute('r')):ptR(id))+9, a=(r0*.94).toFixed(1), b=(r0*1.04).toFixed(1);
+      h+=`<circle class="halo" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r0.toFixed(1)}"><animate attributeName="r" values="${a};${b};${a}" dur="2.8s" repeatCount="indefinite"/></circle>`;});
     hl.innerHTML=h;
     svg.classList.toggle('has-sel',s.size>0);
   }
