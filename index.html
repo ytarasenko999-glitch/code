@@ -769,6 +769,43 @@ h1,h2,h3,.acc-t strong,.det-title h3,.sec-h h2,.td-date strong,.res-head h2,.foo
 .pdf-page .pglow2{position:absolute;left:-260px;bottom:-220px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,var(--pg-glow2),transparent 65%)}
 .pdf-page .pblk{box-shadow:none}
 .pdf-page.light .pblk{border-color:var(--pg-line2)}
+/* phone-format PDF: narrow tall pages, one column, larger matrix and type */
+.pdf-host.mob{width:430px}
+.pdf-page.mob{width:430px;height:860px;padding:26px 20px 20px}
+.pdf-page.mob .pglow{right:-200px;top:-200px;width:460px;height:460px}
+.pdf-page.mob .pglow2{left:-220px;bottom:-200px;width:440px;height:440px}
+.pdf-page.mob .ph,.pdf-page.mob .pf{font-size:9.5px}
+.pdf-page.mob .ph span+span{max-width:60%;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pdf-page.mob .pb{padding-block:18px;gap:14px}
+.pdf-page.mob h1{font-size:38px;line-height:.98}
+.pdf-page.mob h2{font-size:30px}
+.pdf-page.mob h3{font-size:21px}
+.pdf-page.mob h4{font-size:10.5px;margin:14px 0 6px}
+.pdf-page.mob p{font-size:14.5px;line-height:1.6;margin-bottom:9px}
+.pdf-page.mob .plead{font-size:16px;line-height:1.5}
+.pdf-page.mob .pk,.pdf-page.mob .pmeta{font-size:10.5px}
+.pdf-page.mob .pimg{width:390px;height:390px;margin:4px 0}
+.pdf-page.mob .pcodes{flex-direction:column;gap:6px}
+.pdf-page.mob .pcodes span{font-size:10px;padding:9px 14px}
+.pdf-page.mob .pcodes b{font-size:14px}
+.pdf-page.mob .ptoc{margin-top:0;padding:14px 16px}
+.pdf-page.mob .ptoc-g{grid-template-columns:1fr}
+.pdf-page.mob .ptl,.pdf-page.mob .ptl b{font-size:14px}
+.pdf-page.mob .ptl{padding:8px 0}
+.pdf-page.mob .pblk{padding:16px 16px;border-radius:16px}
+.pdf-page.mob .pn{width:46px;height:46px;font-size:19px}
+.pdf-page.mob .pcode{font-size:15px;padding:8px 13px}
+.pdf-page.mob li{font-size:14.5px;line-height:1.55;margin-bottom:6px;padding-left:16px}
+.pdf-page.mob li:before{top:8px;width:6px;height:6px}
+.pdf-page.mob .two{flex-direction:column;gap:4px}
+.pdf-page.mob .pz div{flex-direction:column;gap:2px;font-size:14.5px;padding:10px 0}
+.pdf-page.mob .pz i{display:none}
+.pdf-page.mob .pz b{color:var(--pg-fg);opacity:.75}
+.pdf-page.mob .ptab th{font-size:9.5px;padding:8px 4px}
+.pdf-page.mob .ptab td{font-size:17px;padding:10px 4px}
+.pdf-page.mob .ptab td b{font-size:13.5px}
+.pdf-page.mob .ptab td small{font-size:11px}
+.pdf-page.mob .pword{font-size:110px}
 .pdf-page .pblk.cont{border-top-left-radius:18px;border-top-right-radius:18px}
 .pdf-page .pword{color:var(--pg-fg)}
 
@@ -3072,7 +3109,7 @@ function svgMatrix(P, sel, mini, noRing, desk){
     const fs=(inn?(MOB?1.06:1):KF)*(id==='E'?26:id==='X'?14:id.length===1?18:/1$/.test(id)?14:['MON','LOV'].includes(id)?12.5:13);
     const v=P?P[id]:'';
     const lab=P?`${POS[id][0]}: ${v} ${ARC[v].n}`:'';
-    L.push(`<g class="pt${col?' col':''}${sel.has(id)?' sel':''}" style="--c:${col||'var(--fg)'}" ${mini?'':`data-id="${id}" tabindex="0" role="button" aria-label="${lab}"${P&&col&&typeof GD!=='undefined'&&GD[id]&&GD[id].ch?` data-tip="${GD[id].ch.split(' · ')[0]} · ${GD[id].t} — ${GD[id].s}"`:''}`}>${mini?'':`<circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="${Math.max(rad+5,17)}"/>`}<circle class="ring${id==='E'?' core':''}" cx="${f1(x)}" cy="${f1(y)}" r="${rad}" style="stroke:${col||'var(--line)'}" stroke-width="${col?1.6:1}"/>${P?`<text x="${f1(x)}" y="${f1(y+fs*.36)}" text-anchor="middle" font-size="${fs}" >${v}</text>`:''}</g>`);
+    L.push(`<g class="pt${col?' col':''}${sel.has(id)?' sel':''}" style="--c:${col||'var(--fg)'}" ${mini?'':`data-id="${id}" tabindex="0" role="button" aria-label="${lab}"${P&&col&&typeof GD!=='undefined'&&GD[id]&&GD[id].ch?` data-tip="${GD[id].ch.split(' · ')[0]} · ${GD[id].t} — ${GD[id].s}"`:''}`}>${mini?'':`<circle class="hit" fill="transparent" stroke="none" cx="${f1(x)}" cy="${f1(y)}" r="${Math.max(rad+5,17)}"/>`}<circle class="ring${id==='E'?' core':''}" cx="${f1(x)}" cy="${f1(y)}" r="${rad}" style="stroke:${col||'var(--line)'}" stroke-width="${col?1.6:1}"/>${P?`<text x="${f1(x)}" y="${f1(y+fs*.36)}" text-anchor="middle" font-size="${fs}" >${v}</text>`:''}</g>`);
   }
   return `<svg viewBox="${MOB&&!ZM?`${CX-272} ${CY-272} 544 544`:`0 0 ${S} ${S}`}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${_t("Схема матриці долі")}">${L.join('')}</svg>`;
 }
@@ -4002,15 +4039,17 @@ async function downloadCode(btn){
   finally{ ch.close(); btn.disabled=false; }
 }
 /* lays blocks out page after page; a block that does not fit is split between pages instead of jumping whole */
+const PDF_MOB=()=>matchMedia('(max-width: 820px)').matches||matchMedia('(pointer: coarse) and (max-width: 1100px)').matches;
 async function renderPdf(dl,theme,setStatus){
   PDFPAL=theme==='light'?PAL_L:PAL_D;
+  const MOBP=PDF_MOB(), PW=MOBP?430:794, WPT=MOBP?322.5:595.28, HPT=MOBP?645:841.89;
   let host;
   try{
     setStatus(T('pdBuild'));
     const png=await matrixPng();
-    host=document.createElement('div'); host.className='pdf-host'; document.body.appendChild(host);
+    host=document.createElement('div'); host.className='pdf-host'+(MOBP?' mob':''); document.body.appendChild(host);
     const pages=[];
-    const newPage=()=>{const p=document.createElement('div');p.className='pdf-page'+(theme==='light'?' light':'');p.innerHTML=`<div class="pglow"></div><div class="pglow2"></div><div class="ph"><span data-go="cover">CODE</span><span data-go="cover">${_f("{0} · зміст ↑",[isPair()?_t("Матриця сумісності"):_t("Матриця долі")])}</span></div><div class="pb"></div><div class="pf"></div>`;host.appendChild(p);pages.push(p);return p.querySelector('.pb');};
+    const newPage=()=>{const p=document.createElement('div');p.className='pdf-page'+(theme==='light'?' light':'')+(MOBP?' mob':'');p.innerHTML=`<div class="pglow"></div><div class="pglow2"></div><div class="ph"><span data-go="cover">CODE</span><span data-go="cover">${_f("{0} · зміст ↑",[isPair()?_t("Матриця сумісності"):_t("Матриця долі")])}</span></div><div class="pb"></div><div class="pf"></div>`;host.appendChild(p);pages.push(p);return p.querySelector('.pb');};
     let body=newPage();
     const fits=()=>body.scrollHeight<=body.clientHeight+1;
     const LIST=el=>el.matches&&el.matches('ul,.pz');
@@ -4043,26 +4082,29 @@ async function renderPdf(dl,theme,setStatus){
       }
       if(body.children.length>1){ body.removeChild(el); const prev=body; body=newPage(); const lc=prev.lastElementChild; if(lc&&lc.classList.contains('psec')&&prev.children.length>1) body.appendChild(lc); body.appendChild(el); }
     }
-    for(const b of pdfBlocks(png)){
+    let BL=pdfBlocks(png);
+    /* phone pages are short: the table of contents gets its own block after the cover */
+    if(MOBP) BL=BL.flatMap(b=>{ const k=b.indexOf('<div class="ptoc">'); return k>0?[b.slice(0,k)+'</div>','<div class="pc">'+b.slice(k)]:[b]; });
+    for(const b of BL){
       if(b==='__break'){ if(body.children.length) body=newPage(); continue; }
       const w=document.createElement('div'); w.innerHTML=b; await place(w.firstElementChild);
     }
     const AP={cover:0}; pages.forEach((p,i)=>p.querySelectorAll('[data-anchor]').forEach(a=>{ if(!(a.dataset.anchor in AP)) AP[a.dataset.anchor]=i; }));
     host.querySelectorAll('.ptl[data-go]').forEach(l=>{ const n=AP[l.dataset.go]; l.querySelector('b').textContent=n!=null?String(n+1).padStart(2,'0'):''; });
-    const KK=595.28/794;
+    const KK=WPT/PW;
     const LINKS=pages.map(p=>{ const pr=p.getBoundingClientRect(); return [...p.querySelectorAll('[data-go]')].map(l=>{ const r=l.getBoundingClientRect(); return {x:(r.left-pr.left)*KK,y:(r.top-pr.top)*KK,w:r.width*KK,h:r.height*KK,to:AP[l.dataset.go]}; }).filter(o=>o.to!=null&&o.w>0); });
     pages.forEach((p,i)=>{p.querySelector('.pf').innerHTML=`<span>${_f("{0} · метод Наталії Ладіні",[isPair()?_t("сумісність"):_t("особиста матриця")])}</span><span>${String(i+1).padStart(2,'0')} / ${String(pages.length).padStart(2,'0')}</span>`;});
-    const {jsPDF}=window.jspdf, doc=new jsPDF({unit:'pt',format:'a4',compress:true});
+    const {jsPDF}=window.jspdf, doc=new jsPDF({unit:'pt',format:MOBP?[WPT,HPT]:'a4',compress:true});
     for(let i=0;i<pages.length;i++){
       setStatus(`${T('pdPage')} ${i+1} / ${pages.length}`);
-      const cv=await window.html2canvas(pages[i],{scale:2,backgroundColor:PDFPAL['--bg'],logging:false,useCORS:true});
+      const cv=await window.html2canvas(pages[i],{scale:MOBP?3:2,backgroundColor:PDFPAL['--bg'],logging:false,useCORS:true});
       if(i) doc.addPage();
-      doc.addImage(cv.toDataURL('image/jpeg',0.9),'JPEG',0,0,595.28,841.89,undefined,'FAST');
+      doc.addImage(cv.toDataURL('image/jpeg',0.88),'JPEG',0,0,WPT,HPT,undefined,'FAST');
       for(const o of LINKS[i]) if(o.to!==i||i>0) try{ doc.link(o.x-2,o.y-2,o.w+4,o.h+4,{pageNumber:o.to+1}); }catch(_){}
     }
     try{ if(doc.outline){ doc.outline.add(null,_t("Обкладинка і зміст"),{pageNumber:1}); (pdfBlocks.toc||[]).forEach(e=>{ if(AP[e.a]!=null) doc.outline.add(null,e.t,{pageNumber:AP[e.a]+1}); }); } }catch(_){}
     setStatus(T('pdSave'));
-    const fname=(isPair()?`${_f("CODE-сумісність-{0}-{1}",[STATE.a.n||'1',STATE.b.n||'2'])}`:`CODE-${STATE.name||_t("матриця")}-${STATE.d}.${STATE.m}.${STATE.y}`).replace(/[\\/:*?"<>|]+/g,'')+(theme==='light'?'-light':'')+'.pdf';
+    const fname=(isPair()?`${_f("CODE-сумісність-{0}-{1}",[STATE.a.n||'1',STATE.b.n||'2'])}`:`CODE-${STATE.name||_t("матриця")}-${STATE.d}.${STATE.m}.${STATE.y}`).replace(/[\\/:*?"<>|]+/g,'')+(theme==='light'?'-light':'')+(MOBP?'-mobile':'')+'.pdf';
     await dl.save({filename:fname,data:doc.output('blob')});
   } finally { if(host) host.remove(); PDFPAL=PAL_D; }
 }
