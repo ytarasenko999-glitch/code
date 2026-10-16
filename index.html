@@ -1789,6 +1789,13 @@ body.tfx.mc .top .topnav>*{pointer-events:auto}
 a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.crow,svg{touch-action:manipulation}
 .pt .hit{fill:transparent;stroke:none;pointer-events:all}
 @media (hover:none){.pt:hover circle,.pt.yr:hover circle{transform:none}}
+
+/* language + theme switches always share one row in the menu */
+.drawer{width:min(400px,94vw)!important}
+.dl-row{flex-wrap:nowrap!important;gap:8px;justify-content:space-between}
+.dl-row .langs{flex-wrap:nowrap!important;gap:4px!important;min-width:0}
+.dl-row .lang-b{min-width:0!important;flex:0 0 auto;width:clamp(28px,8.4vw,36px);height:32px;padding:0!important}
+.dl-row .theme-sw{flex:0 0 auto;margin-left:auto}
 </style>
 </head>
 <body>
