@@ -6282,6 +6282,8 @@ st.textContent='.fpw{display:block;margin:-4px 0 12px auto;background:none;borde
 document.head.appendChild(st);
 
 document.addEventListener('click',async e=>{
+  const dm=e.target.closest&&e.target.closest('[data-more="doc:privacy"],[data-more="doc:terms"]');
+  if(dm){ e.preventDefault(); e.stopImmediatePropagation(); window.open(dm.dataset.more==='doc:privacy'?'/privacy.html':'/terms.html','_blank','noopener'); return; }
   const f=e.target.closest&&e.target.closest('#auForgot');
   if(f){ e.preventDefault(); const em=($('#auEmail')||{}).value||'', er=$('#auErr');
     const show=(m,info)=>{ if(er){ er.textContent=m; er.hidden=false; er.classList.toggle('info',!!info); } };
