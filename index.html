@@ -6312,6 +6312,34 @@ function newPasswordDialog(){
     d.remove(); toast('Пароль змінено. Ви в акаунті.'); });
 }
 
+
+/* Google sign-in via Google Identity Services: the consent screen shows the app name "CODE" and our domain instead of the Supabase address */
+const GCID='908657032514-nfibgmccqqkb1nn098pps2senl60qdr1.apps.googleusercontent.com';
+let gisP=null;
+const loadGIS=()=>gisP||(gisP=new Promise(res=>{ if(window.google&&google.accounts&&google.accounts.id) return res(true); const s=document.createElement('script'); s.src='https://accounts.google.com/gsi/client'; s.async=true; s.onload=()=>res(true); s.onerror=()=>res(false); document.head.appendChild(s); }));
+const sha256hex=async t=>{ const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''); };
+const isDark=()=>{ const t=document.documentElement.getAttribute('data-theme'); return t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches; };
+async function mountGoogle(host){
+  if(!host||host.dataset.gis) return; host.dataset.gis='1';
+  const w=Math.max(220,Math.min(400,Math.round(host.getBoundingClientRect().width)||340));
+  if(!(await loadGIS())||!window.crypto||!crypto.subtle){ delete host.dataset.gis; return; }
+  const raw=(crypto.randomUUID?crypto.randomUUID():String(Math.random()))+Date.now(), hashed=await sha256hex(raw);
+  google.accounts.id.initialize({client_id:GCID,nonce:hashed,ux_mode:'popup',itp_support:true,callback:async r=>{
+    const er=$('#auErr'), say=(m,info)=>{ if(er){ er.textContent=m; er.hidden=false; er.classList.toggle('info',!!info); } };
+    const a=$('#auAgree'); if(a&&!a.checked){ say(T('aNeedAgree')); a.closest('.agree').classList.add('need'); return; }
+    await ready; if(!sb){ say(AUTH_ERR.network); return; }
+    const {error}=await sb.auth.signInWithIdToken({provider:'google',token:r.credential,nonce:raw});
+    if(error){ say('Не вдалося увійти через Google. Спробуйте ще раз або увійдіть через email.'); console.warn(error); }
+  }});
+  const box=document.createElement('div'); box.className='gis-box';
+  host.insertAdjacentElement('afterend',box); host.hidden=true;
+  const loc={uk:'uk',en:'en',de:'de',fr:'fr',es:'es',it:'it'}[window.LANG]||'uk';
+  google.accounts.id.renderButton(box,{type:'standard',theme:isDark()?'filled_black':'outline',size:'large',shape:'pill',text:'continue_with',logo_alignment:'center',width:w,locale:loc});
+}
+const gst=document.createElement('style'); gst.textContent='.gis-box{display:flex;justify-content:center;min-height:44px;color-scheme:normal}.gis-box iframe{margin:0 auto!important}';
+document.head.appendChild(gst);
+new MutationObserver(()=>{ const h=document.querySelector('.sso [data-sso="Google"]:not([data-gis])'); if(h) mountGoogle(h); }).observe(document.body,{childList:true,subtree:true});
+{ const h0=document.querySelector('.sso [data-sso="Google"]'); if(h0) mountGoogle(h0); }
 /* start: restore the session (also after Google sign-in or an email link) */
 USER=null; setAcctIcon();
 ready.then(async()=>{
