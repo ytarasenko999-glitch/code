@@ -1731,6 +1731,15 @@ html.mdl-on .cs-pop{z-index:130}
 @keyframes iriShift{to{background-position:300% 0}}
 @media (prefers-reduced-motion:reduce){.tp-card:has(.tc.mj)::after,.arc-art.mj::after,.tp-card:has(.tc.mj):hover,.arc-art.mj:hover{animation:none}}
 .sso{grid-template-columns:1fr!important}
+/* typed date on phones */
+.f-date{display:none}
+@media (max-width:640px){
+  form.q .f-day,form.q .f-month,form.q .f-year{display:none!important}
+  form.q .f-date{display:flex!important;flex:1 1 100%!important;grid-column:1/-1}
+  #q .f-date{order:3}
+  .f-date input{font-variant-numeric:tabular-nums;letter-spacing:.04em}
+  .f-date input.bad{border-color:var(--p-red)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--p-red) 18%,transparent)!important}
+}
 </style>
 </head>
 <body>
@@ -3731,7 +3740,31 @@ $('#q').addEventListener('submit',e=>{
   try{localStorage.setItem('dm-last',JSON.stringify({name,d,m,y,g}))}catch(_){}
   window.scrollTo({top:0,behavior:'smooth'});
 });
-function fill(o){$('#name').value=o.name||'';yearSel.value=o.y;monSel.value=o.m;fillDays();daySel.value=o.d;document.getElementById(o.g==='m'?'gm':'gf').checked=true;window.csSync&&window.csSync();}
+function fill(o){$('#name').value=o.name||'';yearSel.value=o.y;monSel.value=o.m;fillDays();daySel.value=o.d;document.getElementById(o.g==='m'?'gm':'gf').checked=true;window.csSync&&window.csSync();window.dateSync&&window.dateSync();}
+/* phones: one typed date field (ДД.ММ.РРРР) in place of the three dropdowns; it drives the hidden selects */
+(()=>{
+  const sets=[['day','month','year'],['d1','m1','y1'],['d2','m2','y2']], fields=[];
+  const fmt=v=>{ const d=v.replace(/\D/g,'').slice(0,8); return d.length>4?d.slice(0,2)+'.'+d.slice(2,4)+'.'+d.slice(4):d.length>2?d.slice(0,2)+'.'+d.slice(2):d; };
+  sets.forEach(([di,mi,yi])=>{
+    const ds=$('#'+di), ms=$('#'+mi), ys=$('#'+yi); if(!ds||!ms||!ys) return;
+    const fd=ds.closest('.field'); if(!fd) return;
+    const w=document.createElement('div'); w.className='field f-date';
+    const id='dt_'+di; w.innerHTML=`<label for="${id}">${_t("Дата народження")}</label><input id="${id}" type="text" inputmode="numeric" autocomplete="bday" placeholder="${_t("ДД.ММ.РРРР")}" maxlength="10">`;
+    fd.parentNode.insertBefore(w,fd);
+    const inp=w.querySelector('input');
+    const toSel=()=>{ const m=inp.value.match(/^(\d{2})\.(\d{2})\.(\d{4})$/); inp.classList.remove('bad');
+      if(!m){ if(inp.value.length===10) inp.classList.add('bad'); ds.value=''; return; }
+      const d=+m[1], mo=+m[2], y=+m[3];
+      if(mo<1||mo>12||![...ys.options].some(o=>+o.value===y)||d<1||d>new Date(y,mo,0).getDate()){ inp.classList.add('bad'); ds.value=''; return; }
+      ys.value=y; ys.dispatchEvent(new Event('change',{bubbles:true})); ms.value=mo; ms.dispatchEvent(new Event('change',{bubbles:true})); ds.value=d; ds.dispatchEvent(new Event('change',{bubbles:true}));
+      window.csSync&&window.csSync(); };
+    inp.addEventListener('input',e=>{ const del=e.inputType&&e.inputType.startsWith('delete'); const v=del?inp.value.replace(/[^\d.]/g,''):fmt(inp.value); if(v!==inp.value){ inp.value=v; try{inp.setSelectionRange(v.length,v.length)}catch(_){} } toSel(); });
+    inp.addEventListener('blur',()=>{ inp.value=fmt(inp.value); toSel(); });
+    fields.push({inp,ds,ms,ys});
+  });
+  window.dateSync=()=>fields.forEach(({inp,ds,ms,ys})=>{ if(document.activeElement===inp) return; inp.classList.remove('bad'); inp.value=ds.value&&ms.value&&ys.value?`${String(ds.value).padStart(2,'0')}.${String(ms.value).padStart(2,'0')}.${ys.value}`:''; });
+  window.dateSync();
+})();
 const nameInp=$('#name');
 const capName=v=>v.replace(/(^|[\s-])([^\s-]*)/g,(m,sep,w)=>sep+(w?w.charAt(0).toLocaleUpperCase('uk')+w.slice(1).toLocaleLowerCase('uk'):''));
 nameInp.addEventListener('input',()=>{const p=nameInp.selectionStart,v=capName(nameInp.value);if(v!==nameInp.value){nameInp.value=v;try{nameInp.setSelectionRange(p,p)}catch(_){}}});
@@ -4174,7 +4207,15 @@ function startWaves(cv){
   const draw=t=>{
     if(!cv.isConnected){ cancelAnimationFrame(raf); removeEventListener('resize',size); return; }
     if(!W||!H||Math.abs(cv.getBoundingClientRect().width-W)>1){ size(); if(!W||!H){ raf=requestAnimationFrame(draw); return; } }
-    const P=PAL[theme()]||PAL.dark, tt=Math.max(0,t-t0), soft=W<640?.7:1; cx.clearRect(0,0,W,H); cx.globalCompositeOperation=P.mode; cx.lineCap='round';
+    const P=PAL[theme()]||PAL.dark, dk=theme()==='dark', tt=Math.max(0,t-t0), soft=W<640?.7:1; cx.clearRect(0,0,W,H); cx.globalCompositeOperation=P.mode; cx.lineCap='round';
+    if(W<640){ /* phones: one soft orb drifting side to side, slowly changing hue */
+      const sw=Math.sin(tt*.00042), x=W/2+W*.30*sw, y=H*.5+H*.08*Math.sin(tt*.0009), R=Math.min(H*.62,W*.42);
+      const f=(tt*.00012)%5, i0=Math.floor(f), u=f-i0, A=P.cols[i0].split(',').map(Number), B=P.cols[(i0+1)%5].split(',').map(Number), c=A.map((v,k)=>Math.round(v+(B[k]-v)*u)).join(','), c2=P.cols[(i0+3)%5];
+      const g=cx.createRadialGradient(x,y,0,x,y,R); g.addColorStop(0,`rgba(${c},${dk?.55:.42})`); g.addColorStop(.45,`rgba(${c},${dk?.22:.16})`); g.addColorStop(1,`rgba(${c},0)`);
+      cx.globalCompositeOperation='source-over'; cx.fillStyle=g; cx.beginPath(); cx.arc(x,y,R,0,7); cx.fill();
+      const x2=x-W*.12*sw, g2=cx.createRadialGradient(x2,y,0,x2,y,R*.55); g2.addColorStop(0,`rgba(${c2},${dk?.22:.14})`); g2.addColorStop(1,`rgba(${c2},0)`);
+      cx.fillStyle=g2; cx.beginPath(); cx.arc(x2,y,R*.55,0,7); cx.fill();
+      if(!still) raf=requestAnimationFrame(draw); return; }
     const mid=H*.5, amp=H*.34;
     for(let i=0;i<N;i++){ const s=S[i];
       const path=new Path2D(); for(let x=-20;x<=W+20;x+=8){
@@ -6144,6 +6185,8 @@ const TRX={"Триплет + дно колоди":["Triplet + bottom of the deck
 "Символізм":["Symbolism","Symbolik","Symbolisme","Simbolismo","Simbolismo"],
 "Що мені підказує карта":["What is the card telling me —","Was sagt mir die Karte","Que me dit la carte","Qué me dice la carta","Cosa mi dice la carta"],
 "Увійти через Google":["Continue with Google","Mit Google anmelden","Continuer avec Google","Continuar con Google","Continua con Google"],
+"Дата народження":["Date of birth","Geburtsdatum","Date de naissance","Fecha de nacimiento","Data di nascita"],
+"ДД.ММ.РРРР":["DD.MM.YYYY","TT.MM.JJJJ","JJ.MM.AAAA","DD.MM.AAAA","GG.MM.AAAA"],
 "Видалити всі":["Delete all","Alle löschen","Tout supprimer","Eliminar todas","Elimina tutte"],
 "Зробити розклад":["Make a reading","Karten legen","Faire un tirage","Hacer una tirada","Fai una stesa"],
 "Розклад видалено.":["Reading deleted.","Legung gelöscht.","Tirage supprimé.","Tirada eliminada.","Stesa eliminata."],
