@@ -6338,6 +6338,9 @@ async function mountGoogle(host){
   const loc={uk:'uk',en:'en',de:'de',fr:'fr',es:'es',it:'it'}[window.LANG]||'uk';
   google.accounts.id.renderButton(box,{type:'standard',theme:'outline',size:'large',shape:'pill',text:'continue_with',logo_alignment:'center',width:w,locale:loc});
   wrap.classList.add('gis-on');
+  /* Google's iframe carries a title that the browser shows as a hover tooltip — drop it */
+  const untitle=()=>box.querySelectorAll('[title]').forEach(n=>n.removeAttribute('title'));
+  untitle(); new MutationObserver(untitle).observe(box,{subtree:true,childList:true,attributes:true,attributeFilter:['title']});
 }
 const gst=document.createElement('style'); gst.textContent='.gis-wrap{position:relative;display:grid}.gis-wrap .sso-b{width:100%}.gis-box{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;opacity:0;pointer-events:none;color-scheme:normal}.gis-on .gis-box{opacity:.001;pointer-events:auto}.gis-box>div,.gis-box iframe{transform:scale(1.02,1.25);transform-origin:center}.gis-on:hover .sso-b{border-color:var(--accent);background:var(--accent-soft);transform:translateY(-1px)}.gis-on:active .sso-b{transform:translateY(0)}';
 document.head.appendChild(gst);
