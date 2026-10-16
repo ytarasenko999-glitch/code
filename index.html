@@ -1742,6 +1742,15 @@ html.mdl-on .cs-pop{z-index:130}
   .f-date input{font-variant-numeric:tabular-nums;letter-spacing:.04em}
   .f-date input.bad{border-color:var(--p-red)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--p-red) 18%,transparent)!important}
 }
+
+/* mobile tap fixes: the collapsed fixed header (272px tall, mostly transparent) used to swallow taps on the content under it */
+body.tfx.mc .top{pointer-events:none}
+body.tfx.mc .top .topnav{pointer-events:none}
+body.tfx.mc .top .topnav>*{pointer-events:auto}
+*{-webkit-tap-highlight-color:transparent}
+a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.crow,svg{touch-action:manipulation}
+.pt .hit{fill:transparent;stroke:none;pointer-events:all}
+@media (hover:none){.pt:hover circle,.pt.yr:hover circle{transform:none}}
 </style>
 </head>
 <body>
@@ -3063,7 +3072,7 @@ function svgMatrix(P, sel, mini, noRing, desk){
     const fs=(inn?(MOB?1.06:1):KF)*(id==='E'?26:id==='X'?14:id.length===1?18:/1$/.test(id)?14:['MON','LOV'].includes(id)?12.5:13);
     const v=P?P[id]:'';
     const lab=P?`${POS[id][0]}: ${v} ${ARC[v].n}`:'';
-    L.push(`<g class="pt${col?' col':''}${sel.has(id)?' sel':''}" style="--c:${col||'var(--fg)'}" ${mini?'':`data-id="${id}" tabindex="0" role="button" aria-label="${lab}"${P&&col&&typeof GD!=='undefined'&&GD[id]&&GD[id].ch?` data-tip="${GD[id].ch.split(' · ')[0]} · ${GD[id].t} — ${GD[id].s}"`:''}`}><circle class="ring${id==='E'?' core':''}" cx="${f1(x)}" cy="${f1(y)}" r="${rad}" style="stroke:${col||'var(--line)'}" stroke-width="${col?1.6:1}"/>${P?`<text x="${f1(x)}" y="${f1(y+fs*.36)}" text-anchor="middle" font-size="${fs}" >${v}</text>`:''}</g>`);
+    L.push(`<g class="pt${col?' col':''}${sel.has(id)?' sel':''}" style="--c:${col||'var(--fg)'}" ${mini?'':`data-id="${id}" tabindex="0" role="button" aria-label="${lab}"${P&&col&&typeof GD!=='undefined'&&GD[id]&&GD[id].ch?` data-tip="${GD[id].ch.split(' · ')[0]} · ${GD[id].t} — ${GD[id].s}"`:''}`}>${mini?'':`<circle class="hit" cx="${f1(x)}" cy="${f1(y)}" r="${Math.max(rad+5,17)}"/>`}<circle class="ring${id==='E'?' core':''}" cx="${f1(x)}" cy="${f1(y)}" r="${rad}" style="stroke:${col||'var(--line)'}" stroke-width="${col?1.6:1}"/>${P?`<text x="${f1(x)}" y="${f1(y+fs*.36)}" text-anchor="middle" font-size="${fs}" >${v}</text>`:''}</g>`);
   }
   return `<svg viewBox="${MOB&&!ZM?`${CX-272} ${CY-272} 544 544`:`0 0 ${S} ${S}`}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${_t("Схема матриці долі")}">${L.join('')}</svg>`;
 }
@@ -5528,12 +5537,13 @@ renderHome();
   };
   const hide=()=>{ cur=null; tip.classList.remove('in'); tip.hidden=true; };
   const target=e=>e.target&&e.target.closest?e.target.closest('[data-tip],[title]'):null;
-  document.addEventListener('mouseover',e=>{ if(Date.now()-tTouch<2200) return; const el=target(e); if(el&&el!==cur) show(el); else if(!el&&cur) hide(); });
+  const noHover=matchMedia('(hover: none)');
+  document.addEventListener('mouseover',e=>{ if(noHover.matches||Date.now()-tTouch<2200) return; const el=target(e); if(el&&el!==cur) show(el); else if(!el&&cur) hide(); });
   document.addEventListener('focusin',e=>{ const el=target(e); if(el&&el.matches(':focus-visible')) show(el); });
   document.addEventListener('focusout',hide);
   addEventListener('scroll',()=>{ if(!cur) return; if(Date.now()-tTouch>1200) hide(); else if(cur.isConnected) place(cur); },true);
   document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&cur) hide(); });
-  document.addEventListener('pointerdown',e=>{ if(e.pointerType!=='touch') return; const el=target(e); if(!el) return; tTouch=Date.now(); show(el); clearTimeout(tTimer); tTimer=setTimeout(()=>{ if(Date.now()-tTouch>=1900) hide(); },2000); },true);
+  document.addEventListener('pointerdown',e=>{ if(e.pointerType!=='touch') return; tTouch=Date.now(); if(cur) hide(); return; const el=target(e); if(!el) return; show(el); clearTimeout(tTimer); tTimer=setTimeout(()=>{ if(Date.now()-tTouch>=1900) hide(); },2000); },true);
   document.addEventListener('click',()=>{ if(cur&&Date.now()-tTouch>700) hide(); },true);
 })();
 /* ---------- page scroll indicator on top (native page scrollbar hidden) ---------- */
