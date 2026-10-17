@@ -1,0 +1,3 @@
+{
+  "functions": { "api/tarot.js": { "maxDuration": 60 } }
+}

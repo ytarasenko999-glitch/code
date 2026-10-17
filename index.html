@@ -6411,6 +6411,48 @@ const gst=document.createElement('style'); gst.textContent='.gis-wrap{position:r
 document.head.appendChild(gst);
 new MutationObserver(()=>{ const h=document.querySelector('.sso [data-sso="Google"]:not([data-gis])'); if(h) mountGoogle(h); }).observe(document.body,{childList:true,subtree:true});
 { const h0=document.querySelector('.sso [data-sso="Google"]'); if(h0) mountGoogle(h0); }
+
+/* AI tarot reader on the hosted site: same interface as window.claude.use('sample'), served by /api/tarot */
+const aiToken=async()=>{ await ready; if(!sb) return null; const {data}=await sb.auth.getSession(); return data&&data.session?data.session.access_token:null; };
+const aiErr=(code,text)=>Object.assign(new Error(code),{code,text});
+async function aiCall(payload,signal){
+  const tok=await aiToken(); if(!tok) throw aiErr('login');
+  let r; try{ r=await fetch('/api/tarot',{method:'POST',signal,headers:{'content-type':'application/json',authorization:'Bearer '+tok},body:JSON.stringify(payload)}); }
+  catch(e){ throw aiErr(e&&e.name==='AbortError'?'cancelled':'network'); }
+  if(!r.ok){ let j={}; try{ j=await r.json(); }catch(_){} throw aiErr(j.code||'upstream'); }
+  return r;
+}
+const aiSample=async(turns,opts={})=>{
+  const r=await aiCall({turns},opts.signal);
+  const rd=r.body.getReader(), dec=new TextDecoder(); let buf='', text='', stop='';
+  try{
+    for(;;){ const {done,value}=await rd.read(); if(done) break; buf+=dec.decode(value,{stream:true});
+      let i; while((i=buf.indexOf('\n'))>=0){ const line=buf.slice(0,i).trim(); buf=buf.slice(i+1);
+        if(!line.startsWith('data:')) continue; let ev; try{ ev=JSON.parse(line.slice(5)); }catch(_){ continue; }
+        if(ev.type==='content_block_delta'&&ev.delta&&ev.delta.type==='text_delta'){ text+=ev.delta.text; opts.onText&&opts.onText({text}); }
+        else if(ev.type==='message_delta'&&ev.delta&&ev.delta.stop_reason) stop=ev.delta.stop_reason;
+        else if(ev.type==='error') throw aiErr(ev.error&&/overload/i.test(ev.error.type||'')?'rate_limited':'upstream',text); } }
+  }catch(e){ if(e&&e.code) throw e; throw aiErr(opts.signal&&opts.signal.aborted?'cancelled':'network',text); }
+  if(stop==='refusal'&&!text) throw aiErr('refused');
+  return {text};
+};
+const shrink=file=>new Promise((res,rej)=>{ const im=new Image(), u=URL.createObjectURL(file); im.onload=()=>{ const k=Math.min(1,1600/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); c.getContext('2d').drawImage(im,0,0,c.width,c.height); URL.revokeObjectURL(u); res({type:'image/jpeg',data:c.toDataURL('image/jpeg',.85).split(',')[1]}); }; im.onerror=()=>{ URL.revokeObjectURL(u); rej(aiErr('image_rejected')); }; im.src=u; });
+aiSample.json=async(prompt,opts={})=>{
+  const images=[]; for(const f of (opts.images||[]).slice(0,2)) images.push(await shrink(f));
+  const r=await aiCall({mode:'json',prompt,images},opts.signal); const j=await r.json();
+  const t=String(j.text||'').replace(/^```(?:json)?\s*|\s*```$/g,'').trim();
+  try{ return JSON.parse(t); }catch(_){ const m=t.match(/\{[\s\S]*\}/); if(m) return JSON.parse(m[0]); throw aiErr('upstream'); }
+};
+aiSample.limits=async()=>({images:true});
+if(!(window.claude&&window.claude.use)) TP_SAMPLE=aiSample;
+const _tpErr=window.tpErr;
+window.tpErr=function(c){
+  if(c==='login') return 'Щоб отримати трактування, увійдіть або зареєструйтеся — це безкоштовно і займає хвилину.';
+  if(c==='daily_limit') return 'Ви використали денний ліміт трактувань. Повертайтеся завтра — ліміт оновлюється щодня.';
+  if(c==='not_configured'||c==='no_credit') return 'Трактувальник тимчасово недоступний. Ми вже знаємо і виправляємо.';
+  if(c==='network') return 'Немає зв’язку з сервером. Перевірте інтернет і спробуйте ще раз.';
+  return _tpErr?_tpErr(c):'Не вдалося отримати відповідь. Спробуйте ще раз.';
+};
 /* start: restore the session (also after Google sign-in or an email link) */
 USER=null; setAcctIcon();
 ready.then(async()=>{
