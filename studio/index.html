@@ -97,6 +97,11 @@ td small{display:block;color:var(--muted);font-size:12px}
 .adm-p{padding:20px 22px;margin-bottom:14px}.adm-t{margin:0 0 14px;color:var(--muted);font-size:13.5px;line-height:1.55;max-width:70ch}
 .adm-f{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.adm-f .field{flex:1 1 260px}.adm-f .btn{height:42px}
 .btn.bad{border-color:var(--bad);color:var(--bad)}
+.bal-warn{padding:14px 18px;margin-bottom:14px;font-size:13.5px;line-height:1.55}.bal-warn.bad{border-color:var(--bad);color:var(--bad)}.bal-warn a,.bal-n a{color:var(--accent)}
+.bal-n{margin:12px 0 0;font-size:12.5px;color:var(--muted);line-height:1.55}.bal-n.bad{color:var(--bad)}
+.kpi.bad b{color:var(--bad)}
+.bal-v .card{margin-bottom:14px}
+.kpis5{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:14px}
 .num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .neg{color:var(--bad)}
 
@@ -148,6 +153,7 @@ td small{display:block;color:var(--muted);font-size:12px}
     <button class="navb" data-v="subs">Підписки<em id="cS"></em></button>
     <button class="navb" data-v="pays">Оплати<em id="cP"></em></button>
     <button class="navb" data-v="ai">ШІ-запити</button>
+    <button class="navb" data-v="bal">Баланс ШІ<em id="cB"></em></button>
     <button class="navb" data-v="log">Журнал дій</button>
     <button class="navb" data-v="admins">Адміністратори<em id="cA"></em></button>
     <div class="sp"></div>
@@ -167,7 +173,7 @@ const fmtD=d=>d?new Date(d).toLocaleDateString('uk-UA',{day:'2-digit',month:'2-d
 const fmtDT=d=>d?new Date(d).toLocaleString('uk-UA',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
 const uah=n=>`${Math.round(n).toLocaleString('uk-UA')} грн`;
 const isoDay=d=>{const x=new Date(d);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');};
-let D={users:[],subs:{},pays:[],ai:[],log:[],admins:[]}, VIEW='overview', ME=null, SUBF='active', Q='';
+let D={users:[],subs:{},pays:[],ai:[],log:[],admins:[],topups:[],spend:[]}, VIEW='overview', ME=null, SUBF='active', Q='';
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('in');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('in'),2600);};
 
 /* ---------- auth gate ---------- */
@@ -209,17 +215,21 @@ async function boot(){
 /* ---------- data ---------- */
 async function load(){
   const since=new Date(Date.now()-60*864e5).toISOString();
-  const [u,s,p,a,l,ad0]=await Promise.all([
+  const [u,s,p,a,l,ad0,tp]=await Promise.all([
     SB.from('user_data').select('id,email,profile,created_at,updated_at,favs,tarot').order('created_at',{ascending:false}).limit(5000),
     SB.from('subscriptions').select('*').limit(5000),
     SB.from('payments').select('*').order('created_at',{ascending:false}).limit(2000),
     SB.from('ai_usage').select('user_id,kind,source,created_at').gte('created_at',since).order('created_at',{ascending:false}).limit(20000),
     SB.from('admin_log').select('*').order('created_at',{ascending:false}).limit(300),
-    SB.from('admins').select('email')
+    SB.from('admins').select('email'),
+    SB.from('admin_settings').select('value').eq('key','topups').maybeSingle()
   ]);
   const err=[u,s,p,a,l].find(x=>x.error); if(err) toast('Помилка завантаження: '+err.error.message);
   D.users=(u.data||[]).map(x=>({...x,saved:(x.favs||[]).length,readings:(x.tarot||[]).length,favs:undefined,tarot:undefined}));
   D.subs={}; (s.data||[]).forEach(x=>D.subs[x.user_id]=x); D.pays=p.data||[]; D.ai=a.data||[]; D.log=l.data||[]; D.admins=(ad0&&ad0.data||[]).map(x=>x.email).sort();
+  D.topups=(tp&&tp.data&&Array.isArray(tp.data.value)?tp.data.value:[]).sort((x,y)=>x.d<y.d?-1:1);
+  { const from=D.topups.length?D.topups[0].d:isoDay(Date.now()-30*864e5); const sp=await SB.from('ai_usage').select('kind,cost,tokens_in,tokens_out,created_at').gte('created_at',from<isoDay(Date.now()-30*864e5)?from:isoDay(Date.now()-30*864e5)).order('created_at',{ascending:false}).limit(50000); D.spend=sp.error?[]:sp.data||[]; D.spendErr=sp.error&&sp.error.message; }
+  { const b=balEst(); const el=$('#cB'); if(el) el.textContent=b.has?('$'+b.left.toFixed(2)):''; }
   const act=Object.values(D.subs).filter(active).length;
   $('#cU').textContent=D.users.length; $('#cS').textContent=act; $('#cP').textContent=D.pays.length; $('#cA').textContent=D.admins.length;
 }
@@ -235,7 +245,7 @@ async function logA(action,target,details){ await SB.from('admin_log').insert({a
 
 /* ---------- views ---------- */
 function go(v){ VIEW=v; document.querySelectorAll('.navb').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); const m=$('#main');
-  m.innerHTML=v==='users'?vUsers():v==='subs'?vSubs():v==='pays'?vPays():v==='ai'?vAI():v==='log'?vLog():v==='admins'?vAdmins():vOverview(); bindView(); }
+  m.innerHTML=v==='users'?vUsers():v==='subs'?vSubs():v==='pays'?vPays():v==='ai'?vAI():v==='log'?vLog():v==='admins'?vAdmins():v==='bal'?vBal():vOverview(); bindView(); }
 document.querySelectorAll('.navb').forEach(b=>b.onclick=()=>go(b.dataset.v));
 const head=(t,acts='')=>`<div class="top"><div><p class="pk">[ адмінпанель ]</p><h2>${t}</h2></div><div class="acts">${acts}<button class="btn ghost sm" data-act="reload">Оновити</button></div></div>`;
 
@@ -296,6 +306,42 @@ function vAI(){
 function vLog(){
   return head('Журнал дій')+`<div class="panel">${D.log.length?`<div class="tw"><table><thead><tr><th>Коли</th><th>Хто</th><th>Дія</th><th>Користувач</th><th>Деталі</th></tr></thead><tbody>${D.log.map(l=>`<tr data-u="${l.target_user||''}"><td class="num">${fmtDT(l.created_at)}</td><td><small>${esc(l.admin_email)}</small></td><td>${esc(l.action)}</td><td>${esc(l.target_email||'')}</td><td><small>${esc(l.details?JSON.stringify(l.details):'')}</small></td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">Дій ще не було.</p>'}</div>`;
 }
+const usd=n=>'$'+(Math.round((n||0)*100)/100).toFixed(2);
+const KIND={reading:'Трактування Таро',follow:'Уточнення до розкладу',chat:'«Запитай свою матрицю»',report:'Персональний розбір',year:'Прогноз на 12 місяців',photo:'Розпізнавання фото'};
+function balEst(){
+  const top=D.topups.reduce((a,t)=>a+(+t.usd||0),0), from=D.topups.length?D.topups[0].d:null;
+  const spent=from?D.spend.filter(x=>isoDay(x.created_at)>=from).reduce((a,x)=>a+(+x.cost||0),0):0;
+  const wk=D.spend.filter(x=>new Date(x.created_at)>=Date.now()-7*864e5).reduce((a,x)=>a+(+x.cost||0),0)/7;
+  const priced=D.spend.filter(x=>x.cost!=null), avgReq=priced.length?priced.reduce((a,x)=>a+(+x.cost||0),0)/priced.length:0;
+  const left=top-spent; return {has:D.topups.length>0,top,spent,left,perDay:wk,days:wk>0?Math.floor(left/wk):null,avgReq,reqLeft:avgReq>0?Math.floor(left/avgReq):null,from};
+}
+function vBal(){
+  const b=balEst(), today=isoDay(Date.now());
+  const dayCost=d=>D.spend.filter(x=>isoDay(x.created_at)===d).reduce((a,x)=>a+(+x.cost||0),0);
+  const days=[]; for(let i=29;i>=0;i--) days.push(isoDay(Date.now()-i*864e5)); const vals=days.map(dayCost), mx=Math.max(0.0001,...vals);
+  const m30=D.spend.filter(x=>new Date(x.created_at)>=Date.now()-30*864e5), noCost=m30.filter(x=>x.cost==null).length;
+  const by={}; m30.filter(x=>x.cost!=null).forEach(x=>{ const k=by[x.kind]=by[x.kind]||{n:0,c:0,i:0,o:0}; k.n++; k.c+=+x.cost; k.i+=x.tokens_in||0; k.o+=x.tokens_out||0; });
+  const low=b.has&&(b.left<2||(b.days!=null&&b.days<7));
+  const kpi=(t,v,s,cls='')=>`<div class="panel kpi ${cls}"><small>${t}</small><b>${v}</b><span>${s||''}</span></div>`;
+  return head('Баланс ШІ')+`<div class="bal-v">
+  ${b.has?'':'<div class="panel bal-warn">Додайте нижче суму поповнення в Claude Console (і поточний баланс, наприклад $5 на сьогодні) — тоді тут з’явиться орієнтовний залишок і на скільки його вистачить.</div>'}
+  ${low?`<div class="panel bal-warn bad">Баланс закінчується: орієнтовно ${usd(b.left)}${b.days!=null?`, вистачить приблизно на ${b.days} дн.`:''} Поповніть у <a href="https://platform.claude.com/settings/billing" target="_blank" rel="noopener">Claude Console → Billing</a>.</div>`:''}
+  <div class="kpis kpis5">
+    ${kpi('Орієнтовний залишок',b.has?usd(b.left):'—',b.has?`поповнено ${usd(b.top)} з ${fmtD(b.from)}`:'немає даних про поповнення',low?'bad':'')}
+    ${kpi('Витрачено',b.has?usd(b.spent):usd(m30.reduce((a,x)=>a+(+x.cost||0),0)),b.has?'з першого поповнення':'за 30 днів')}
+    ${kpi('У середньому за день',usd(b.perDay),'за останні 7 днів')}
+    ${kpi('Вистачить приблизно',b.days!=null?`${b.days} дн.`:'—',b.reqLeft!=null&&b.has?`≈ ${b.reqLeft} запитів за середньою ціною ${usd(b.avgReq)}`:'')}
+    ${kpi('Сьогодні',usd(dayCost(today)),`${D.spend.filter(x=>isoDay(x.created_at)===today).length} запитів`)}
+  </div>
+  <div class="panel card"><h3>Витрати по днях · 30 днів</h3><div class="bars">${vals.map((v,i)=>`<i style="height:${Math.max(2,v/mx*100)}%" title="${days[i]}: ${usd(v)}"></i>`).join('')}</div><div class="bars-x"><span>${days[0].slice(5)}</span><span>макс. ${usd(Math.max(...vals))} / день</span><span>${days[29].slice(5)}</span></div></div>
+  <div class="panel card"><h3>За видами запитів · 30 днів</h3>${Object.keys(by).length?`<div class="tw"><table><thead><tr><th>Вид</th><th>Запитів</th><th>Токени вх / вих</th><th>Разом</th><th>Середня ціна</th></tr></thead><tbody>${Object.entries(by).sort((x,y)=>y[1].c-x[1].c).map(([k,v])=>`<tr><td>${KIND[k]||k}</td><td class="num">${v.n}</td><td class="num">${v.i.toLocaleString('uk-UA')} / ${v.o.toLocaleString('uk-UA')}</td><td class="num">${usd(v.c)}</td><td class="num">$${(v.c/v.n).toFixed(4)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">Ще немає запитів із записаною вартістю.</p>'}
+    ${noCost?`<p class="bal-n">${noCost} запит(ів) зроблено до того, як почали записувати вартість, — вони тут не враховані.</p>`:''}${D.spendErr?`<p class="bal-n bad">Не вдалося прочитати витрати: ${esc(D.spendErr)}</p>`:''}</div>
+  <div class="panel card"><h3>Поповнення балансу Anthropic</h3>
+    <form id="tpF" class="adm-f"><div class="field" style="flex:0 1 170px"><label for="tpD">Дата</label><input type="date" id="tpD" value="${today}" required></div><div class="field" style="flex:0 1 140px"><label for="tpU">Сума, $</label><input type="number" id="tpU" min="0.01" step="0.01" placeholder="20" required></div><div class="field"><label for="tpN">Нотатка</label><input id="tpN" placeholder="напр. стартовий баланс"></div><button class="btn go sm" type="submit">Додати</button></form>
+    ${D.topups.length?`<div class="tw" style="margin-top:14px"><table><thead><tr><th>Дата</th><th>Сума</th><th>Нотатка</th><th></th></tr></thead><tbody>${D.topups.map((t,i)=>`<tr><td class="num">${fmtD(t.d)}</td><td class="num">${usd(t.usd)}</td><td><small>${esc(t.note||'')}</small></td><td style="text-align:right"><button class="btn ghost sm" data-tp-del="${i}">Прибрати</button></td></tr>`).join('')}</tbody></table></div>`:''}
+    <p class="bal-n">Це оцінка за нашими записами: кожен запит до ШІ зберігає кількість токенів і ціну (Sonnet 5.5: $2 за 1 млн вхідних і $10 за 1 млн вихідних токенів). Точний баланс — у <a href="https://platform.claude.com/settings/billing" target="_blank" rel="noopener">Claude Console → Billing</a>; якщо він розходиться з оцінкою, додайте коригувальне поповнення.</p></div></div>`;
+}
+async function saveTopups(list,act,det){ const {error}=await SB.from('admin_settings').upsert({key:'topups',value:list,updated_at:new Date().toISOString()}); if(error){ toast('Не вдалося зберегти: '+error.message); return false; } await logA(act,null,det); await load(); go('bal'); return true; }
 function vAdmins(){
   const me=(ME&&ME.email||'').toLowerCase();
   const row=e=>{ const u=D.users.find(x=>(x.email||'').toLowerCase()===e.toLowerCase()), self=e.toLowerCase()===me;
@@ -305,6 +351,9 @@ function vAdmins(){
     <div class="panel">${D.admins.length?`<div class="tw"><table><thead><tr><th>Email</th><th>Статус</th><th></th></tr></thead><tbody>${D.admins.map(row).join('')}</tbody></table></div>`:'<p class="empty">Список порожній.</p>'}</div>`;
 }
 function bindView(){
+  { const f=$('#tpF'); if(f) f.onsubmit=async e=>{ e.preventDefault(); const usdv=Math.round(parseFloat($('#tpU').value)*100)/100; if(!(usdv>0)) return toast('Вкажіть суму.');
+      const t={d:$('#tpD').value,usd:usdv,note:$('#tpN').value.trim()}; if(await saveTopups([...D.topups,t],'поповнення балансу ШІ',t)) toast('Поповнення додано.'); }; }
+  document.querySelectorAll('[data-tp-del]').forEach(b=>b.onclick=async()=>{ if(!b.dataset.sure){ b.dataset.sure='1'; b.textContent='Точно?'; b.classList.add('bad'); return; } const i=+b.dataset.tpDel, t=D.topups[i]; await saveTopups(D.topups.filter((_,k)=>k!==i),'видалено поповнення',t); });
   { const f=$('#admF'); if(f) f.onsubmit=async e=>{ e.preventDefault(); const em=$('#admE').value.trim().toLowerCase(); if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return toast('Перевірте email.');
       if(D.admins.some(x=>x.toLowerCase()===em)) return toast('Цей email уже адмін.');
       const {error}=await SB.from('admins').insert({email:em}); if(error) return toast('Не вдалося додати: '+error.message);

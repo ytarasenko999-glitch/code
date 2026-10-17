@@ -113,3 +113,16 @@ create table if not exists public.admin_log (
 alter table public.admin_log enable row level security;
 drop policy if exists "log admin" on public.admin_log;
 create policy "log admin" on public.admin_log for all using (public.is_admin()) with check (public.is_admin());
+
+-- 7. Витрати на ШІ: токени й вартість кожного запиту + налаштування адмінки (поповнення балансу Anthropic)
+alter table public.ai_usage add column if not exists tokens_in integer;
+alter table public.ai_usage add column if not exists tokens_out integer;
+alter table public.ai_usage add column if not exists cost numeric(12,6);
+create table if not exists public.admin_settings (
+  key text primary key,
+  value jsonb,
+  updated_at timestamptz not null default now()
+);
+alter table public.admin_settings enable row level security;
+drop policy if exists "settings admin" on public.admin_settings;
+create policy "settings admin" on public.admin_settings for all using (public.is_admin()) with check (public.is_admin());

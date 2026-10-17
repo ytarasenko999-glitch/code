@@ -10,6 +10,8 @@ const DAILY_CAP = parseInt(process.env.AI_DAILY_CAP || '60', 10);   // safety ca
 const QUOTA = { plus: parseInt(process.env.AI_PLUS || '100', 10), pro: parseInt(process.env.AI_PRO || '300', 10) }; // per 30 days
 const DEEP = { report: { plus: 1, pro: 10 }, year: { plus: 1, pro: 10 } }; // personal readings / 12-month forecasts per 30 days
 const POOL = 'kind=not.in.(report,year,photo)';
+const PRICE_IN = parseFloat(process.env.AI_PRICE_IN || '2'), PRICE_OUT = parseFloat(process.env.AI_PRICE_OUT || '10'); // $ per million tokens (Sonnet 5.5)
+const costOf = (i, o) => Math.round(((i || 0) * PRICE_IN + (o || 0) * PRICE_OUT) / 1e6 * 1e6) / 1e6;
 const PHOTO_DAY = parseInt(process.env.AI_PHOTO_DAY || '20', 10); // photo recognition is free (part of the reading) but capped per day // tarot + ask-your-matrix share one request pool
 const FREE_START = parseInt(process.env.AI_FREE_START || '3', 10), FREE_WEEK = parseInt(process.env.AI_FREE_WEEK || '1', 10);
 const ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://code-matrix-test.vercel.app').split(',').map(s => s.trim());
@@ -111,8 +113,11 @@ async function balance(token, uid) {
   };
   return out;
 }
-async function logUse(token, uid, kind, source) {
-  await fetch(`${SB_URL}/rest/v1/ai_usage`, { method: 'POST', headers: { ...H(token), 'content-type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ user_id: uid, kind, source }) });
+async function logUse(token, uid, kind, source, tin, tout) {
+  const row = { user_id: uid, kind, source };
+  if (tin != null || tout != null) Object.assign(row, { tokens_in: tin || 0, tokens_out: tout || 0, cost: costOf(tin, tout) });
+  let r = await fetch(`${SB_URL}/rest/v1/ai_usage`, { method: 'POST', headers: { ...H(token), 'content-type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(row) });
+  if (!r.ok && row.cost != null) { delete row.tokens_in; delete row.tokens_out; delete row.cost; r = await fetch(`${SB_URL}/rest/v1/ai_usage`, { method: 'POST', headers: { ...H(token), 'content-type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(row) }); }
 }
 
 function cleanTurns(turns) {
@@ -195,12 +200,13 @@ module.exports = async (req, res) => {
     return fail(res, upstream.status === 429 ? 429 : 502, code, { detail });
   }
 
-  await logUse(token, user.id, json ? 'photo' : task === 'tarot' ? (messages.length > 1 ? 'follow' : 'reading') : task, al.source).catch(() => {});
+  const kindLog = json ? 'photo' : task === 'tarot' ? (messages.length > 1 ? 'follow' : 'reading') : task;
   res.setHeader('X-Ai-Left', String(Math.max(0, al.left)));
   res.setHeader('X-Ai-Plan', al.plan);
 
   if (json) {
     const data = await upstream.json();
+    await logUse(token, user.id, kindLog, al.source, data.usage && data.usage.input_tokens, data.usage && data.usage.output_tokens).catch(() => {});
     const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
     res.setHeader('content-type', 'application/json');
     return res.end(JSON.stringify({ text, stop: data.stop_reason }));
@@ -209,13 +215,19 @@ module.exports = async (req, res) => {
   res.statusCode = 200;
   res.setHeader('content-type', 'text/event-stream; charset=utf-8');
   res.setHeader('cache-control', 'no-cache, no-transform');
-  const reader = upstream.body.getReader();
+  const reader = upstream.body.getReader(), dec = new TextDecoder();
+  let tin = 0, tout = 0, tail = '';
   try {
     for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
-      res.write(Buffer.from(value));
+      const chunk = tail + dec.decode(value, { stream: true });
+      for (const m of chunk.matchAll(/"input_tokens":(\d+)/g)) tin = Math.max(tin, +m[1]);
+      for (const m of chunk.matchAll(/"output_tokens":(\d+)/g)) tout = Math.max(tout, +m[1]);
+      tail = chunk.slice(-40);
+      try { res.write(Buffer.from(value)); } catch (_) {}
     }
   } catch (_) { /* client went away */ }
+  await logUse(token, user.id, kindLog, al.source, tin, tout).catch(() => {});
   res.end();
 };
