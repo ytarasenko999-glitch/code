@@ -4,7 +4,8 @@ const { DEFAULTS, VARS, SAMPLE, render, forSupabase, merge, SUPPORT } = require(
 const SB_URL = process.env.SUPABASE_URL || 'https://blwyzqxhzvjzhqkabesi.supabase.co';
 const SB_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_v2wRmfGkiVW7fF6wIkPZBg_fjeS3wBu';
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const FROM = process.env.EMAIL_FROM || 'CODE <onboarding@resend.dev>';
+const FROM = process.env.EMAIL_FROM || 'CODE <hello@code-matrix.space>';
+const FALLBACK_FROM = 'CODE <onboarding@resend.dev>'; // used only while the domain is not verified in Resend
 
 const json = (res, code, obj) => { res.statusCode = code; res.setHeader('content-type', 'application/json'); res.setHeader('cache-control', 'no-store'); res.end(JSON.stringify(obj)); };
 const H = t => ({ apikey: SB_KEY, Authorization: `Bearer ${t}`, 'content-type': 'application/json' });
@@ -19,8 +20,10 @@ async function templates(headers) {
 }
 async function sendMail(to, msg) {
   const KEY = process.env.RESEND_API_KEY; if (!KEY) { const e = new Error('not_configured'); e.code = 'not_configured'; throw e; }
-  const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${KEY}`, 'content-type': 'application/json' }, body: JSON.stringify({ from: FROM, to: [to], subject: msg.subject, html: msg.html, text: msg.text, reply_to: SUPPORT }) });
-  const t = await r.text(); if (!r.ok) { const e = new Error(t.slice(0, 300)); e.code = 'send_failed'; throw e; }
+  const send = from => fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${KEY}`, 'content-type': 'application/json' }, body: JSON.stringify({ from, to: [to], subject: msg.subject, html: msg.html, text: msg.text, reply_to: SUPPORT }) });
+  let r = await send(FROM), t = await r.text();
+  if (!r.ok && FROM !== FALLBACK_FROM && /domain|verif/i.test(t)) { r = await send(FALLBACK_FROM); t = await r.text(); }
+  if (!r.ok) { const e = new Error(t.slice(0, 300)); e.code = 'send_failed'; throw e; }
   return JSON.parse(t || '{}');
 }
 async function logged(uid, kind, ref) {
