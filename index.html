@@ -1947,7 +1947,7 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
 .sub-cur>div{flex:1 1 220px}
 .sub-cur .btn.aura{flex:1 1 100%!important;padding:0 24px!important}
 .pf-act{display:grid!important;grid-template-columns:1fr 1fr;gap:10px}
-.pf-act .btn{width:100%;min-width:0;justify-content:center;height:52px}
+.pf-act .btn{width:100%;min-width:0;justify-content:center;height:52px!important;margin:0!important}
 @media (max-width:640px){.pf-act{grid-template-columns:1fr}}
 .empty .btn.aura{margin-top:18px!important}
 .aim-sgw{display:flex;flex-direction:column}
@@ -4502,8 +4502,8 @@ function authHTML(){
         <form id="authForm" novalidate>
           ${L?'':`<div class="field"><label for="auName">${T('name')}</label><input id="auName" class="nm" autocomplete="given-name" autocapitalize="words" maxlength="40" placeholder="${T('namePh')}"></div>`}
           <div class="field"><label for="auEmail">${T('aEmail')}</label><input id="auEmail" type="email" autocomplete="email" inputmode="email" placeholder="you@email.com" required></div>
-          ${L?'':`<div class="field"><label for="auPromo">${_t("Промокод")} <span class="muted">${_t("(необов’язково)")}</span></label><input id="auPromo" autocomplete="off" autocapitalize="characters" maxlength="30" placeholder="${_t("Якщо є")}" value="${esc((()=>{ try{ return localStorage.getItem('code-promo')||''; }catch(_){ return ''; } })())}"></div>`}
           <div class="field"><label for="auPw">${T('aPw')}</label><input id="auPw" type="password" autocomplete="${L?'current-password':'new-password'}" placeholder="${L?T('aPwLogin'):T('aPwReg')}" required>${L?'':`<small class="hint">${T('aPwHint')}</small>`}</div>
+          ${L?'':`<div class="field"><label for="auPromo">${_t("Промокод")} <span class="muted">${_t("(необов’язково)")}</span></label><input id="auPromo" autocomplete="off" autocapitalize="characters" maxlength="30" placeholder="${_t("Якщо є")}" value="${esc((()=>{ try{ return localStorage.getItem('code-promo')||''; }catch(_){ return ''; } })())}"></div>`}
           <label class="agree au-rem"><input type="checkbox" id="auRem"${remOn()?' checked':''}><span class="box" aria-hidden="true"></span><span>${_t("Запам’ятати мене на цьому пристрої")}</span></label>
           <div class="err" id="auErr" role="alert" hidden></div>
           <button class="btn go wide" type="submit">${L?T('aBtnLogin'):T('aBtnReg')}</button>
