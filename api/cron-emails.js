@@ -8,7 +8,8 @@ const SB_URL = process.env.SUPABASE_URL || 'https://blwyzqxhzvjzhqkabesi.supabas
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const SITE = process.env.SITE_URL || 'https://code-matrix-test.vercel.app';
 const PRICE = { plus: { m: 199, y: 1790 }, pro: { m: 549, y: 4990 } };
-const HS = () => ({ apikey: SERVICE, Authorization: `Bearer ${SERVICE}`, 'content-type': 'application/json' });
+/* new Supabase secret keys (sb_secret_…) go only in the apikey header; legacy service_role JWTs also as Bearer */
+const HS = () => (/^sb_secret_/.test(SERVICE) ? { apikey: SERVICE, 'content-type': 'application/json' } : { apikey: SERVICE, Authorization: `Bearer ${SERVICE}`, 'content-type': 'application/json' });
 const get = async path => { const r = await fetch(`${SB_URL}/rest/v1/${path}`, { headers: HS() }); if (!r.ok) throw new Error(path.split('?')[0] + ' ' + r.status); return r.json(); };
 const fmt = d => new Date(d).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Kyiv' });
 

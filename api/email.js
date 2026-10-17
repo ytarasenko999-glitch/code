@@ -8,7 +8,8 @@ const FROM = process.env.EMAIL_FROM || 'CODE <onboarding@resend.dev>';
 
 const json = (res, code, obj) => { res.statusCode = code; res.setHeader('content-type', 'application/json'); res.setHeader('cache-control', 'no-store'); res.end(JSON.stringify(obj)); };
 const H = t => ({ apikey: SB_KEY, Authorization: `Bearer ${t}`, 'content-type': 'application/json' });
-const HS = () => ({ apikey: SERVICE, Authorization: `Bearer ${SERVICE}`, 'content-type': 'application/json' });
+/* new Supabase secret keys (sb_secret_…) go only in the apikey header; legacy service_role JWTs also as Bearer */
+const HS = () => (/^sb_secret_/.test(SERVICE) ? { apikey: SERVICE, 'content-type': 'application/json' } : { apikey: SERVICE, Authorization: `Bearer ${SERVICE}`, 'content-type': 'application/json' });
 
 async function user(token) { const r = await fetch(`${SB_URL}/auth/v1/user`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${token}` } }); return r.ok ? r.json() : null; }
 async function isAdmin(token) { const r = await fetch(`${SB_URL}/rest/v1/rpc/is_admin`, { method: 'POST', headers: H(token), body: '{}' }); return r.ok && (await r.json()) === true; }
