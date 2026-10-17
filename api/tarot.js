@@ -145,7 +145,7 @@ module.exports = async (req, res) => {
 
   if ((req.body || {}).mode === 'balance') {
     try { const b = await balance(token, user.id); res.statusCode = 200; res.setHeader('content-type', 'application/json'); res.setHeader('cache-control', 'no-store'); return res.end(JSON.stringify(b)); }
-    catch (e) { return fail(res, 500, 'usage', { detail: String(e.message || e) }); }
+    catch (e) { const m = String(e.message || e); return fail(res, /usage_read_4\d\d/.test(m) ? 503 : 500, /usage_read_4\d\d/.test(m) ? 'setup' : 'usage', { detail: m }); }
   }
 
   const KEY = process.env.ANTHROPIC_API_KEY;
