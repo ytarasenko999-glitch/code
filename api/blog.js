@@ -53,10 +53,11 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(32px,5vw,54px
 .more{max-width:1120px;margin:30px auto 60px}
 .more h2,.list-h{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:400;margin:0 0 16px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
-.card{display:flex;flex-direction:column;border-radius:26px;overflow:hidden;background:var(--surface);border:1px solid var(--hair);text-decoration:none;color:var(--fg);transition:transform .2s,border-color .2s;backdrop-filter:blur(20px)}
+.card{display:flex;flex-direction:column;border-radius:26px;overflow:hidden;padding:10px;background:var(--surface);border:1px solid var(--hair);text-decoration:none;color:var(--fg);transition:transform .2s,border-color .2s;backdrop-filter:blur(20px)}
 .card:hover{transform:translateY(-3px);border-color:var(--line)}
-.card img{width:100%;height:auto;aspect-ratio:1200/630;object-fit:cover;display:block;background:var(--surface-2)}
-.card div{padding:18px 20px 22px}
+.card img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;object-position:62% 50%;display:block;border-radius:18px;background:var(--surface-2);transition:transform .5s}
+.card:hover img{transform:scale(1.015)}
+.card div{padding:18px 14px 14px}
 .card h3{font-family:var(--font-display);font-weight:500;font-size:20px;line-height:1.25;margin:0 0 8px}
 .card p{margin:0;color:var(--muted);font-size:14.5px;line-height:1.55}
 .card small{display:block;margin-top:12px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
