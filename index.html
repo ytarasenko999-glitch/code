@@ -1939,6 +1939,31 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
 .aim-sg button:hover{color:var(--accent)!important}
 .aim-sg button:hover::after{border-color:var(--accent);transform:translate(2px,-2px)}
 .aim-sg button:first-child{border-top:1px solid var(--hair)!important}
+/* cabinet menu: on phones a dropdown — current section on top, the full list opens under it */
+.dn-tog,.dn-go-m{display:none}
+.dn-in{display:flex;flex-direction:column;gap:4px}
+@media (max-width:820px){
+  .dn-go-m{display:flex;width:100%;justify-content:center;margin:0 0 14px}
+  .dash-nav .dn-sep,.dash-nav .dn-go{display:none!important}
+  .dash-nav{display:block!important;padding:8px!important;border-radius:24px}
+  .dn-tog{display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;border:0;border-radius:18px;background:var(--accent-soft);color:var(--fg);font:inherit;font-size:15px;font-weight:500;text-align:left;cursor:pointer}
+  .dn-tog svg{width:18px;height:18px;flex:0 0 auto}
+  .dn-tog em{margin-left:auto;font-style:normal;font-family:var(--font-mono);font-size:11px;padding:2px 9px;border-radius:999px;background:var(--surface-2);color:var(--fg)}
+  .dn-tog .dn-chev{flex:0 0 30px;height:30px;margin-left:8px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;transition:transform .3s,border-color .2s}
+  .dn-tog em+.dn-chev{margin-left:8px}
+  .dn-tog span+.dn-chev{margin-left:auto}
+  .dn-tog .dn-chev svg{width:12px;height:12px}
+  .dash-nav.open .dn-tog .dn-chev{transform:rotate(180deg);border-color:var(--accent)}
+  .dn-list{display:grid;grid-template-rows:0fr;transition:grid-template-rows .32s ease}
+  .dash-nav.open .dn-list{grid-template-rows:1fr}
+  .dn-in{overflow:hidden;min-height:0;gap:0}
+  .dn-in .dn{width:100%!important;padding:14px 16px;border-radius:0;border-bottom:1px solid var(--hair);font-size:15px}
+  .dn-in .dn:first-child{margin-top:6px;border-top:1px solid var(--hair)}
+  .dn-in .dn:last-of-type{border-bottom:0}
+  .dn-in .dn.on{background:none;color:var(--accent)}
+  .dn-in .dn.on em{background:var(--accent-soft);color:var(--accent)}
+  .dash{gap:14px!important}
+}
 .aim-gate{padding:8px 0}.aim-gate p{margin:0 0 12px;line-height:1.6}.aim-gate .btn{flex:0 0 auto!important}
 .aim-b{background:transparent!important;color:var(--fg)!important;border:1px solid var(--line)!important;box-shadow:none!important}
 .aim-b:hover{border-color:var(--accent)!important;color:var(--accent)!important}
@@ -4889,20 +4914,25 @@ function aimOpen(kind,spec){
 }
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-aim]'); if(b){ e.preventDefault(); aimOpen(b.dataset.aim,b.dataset.aimCtx); } });
 
+const CAB_ITEMS=()=>[{k:'data',ic:IC_USR,t:T('cDataT'),n:null},{k:'saved',ic:BM_SVG,t:T('cSavedT'),n:USER.favs.length},{k:'hist',ic:IC_CLOCK,t:T('cHistT'),n:(USER.hist||[]).length},{k:'tarot',ic:IC_CARDS,t:_t("Мої розклади"),n:tpHist().length},{k:'sub',ic:IC_PLAN,t:'Підписка',n:USER&&USER.sub&&USER.sub.plan!=='free'&&USER.sub.paid_until&&new Date(USER.sub.paid_until)>new Date()?USER.sub.plan[0].toUpperCase()+USER.sub.plan.slice(1):'Free'}];
 function cabinetHTML(){
   const p=USER.profile||{};
   return `<div class="cab fade">
     <div class="cab-head"><div><p class="eyebrow">[ ${T('cK')} ] <span>${esc(USER.email)}</span></p><h1 class="cab-t"><span class="lt">${T('cHi')}</span> <b>${esc(p.name||T('cFriend'))}</b></h1></div>
       <div class="cab-acts"><button class="btn ghost sm" id="toStart" type="button">${T('cBack')}</button><button class="btn ghost sm" id="logoutBtn" type="button">${T('cOut')}</button></div></div>
     <div class="dash">
+      ${(()=>{ const cur=CAB_ITEMS().find(x=>x.k===CAB_TAB)||CAB_ITEMS()[0]; return `<button class="btn go dn-go dn-go-m" type="button" data-mymx>${T('sMine')}</button>
       <nav class="panel dash-nav" aria-label="${T('cK')}">
+        <button class="dn-tog" type="button" aria-expanded="false" aria-controls="dnList">${cur.ic}<span>${cur.t}</span>${cur.n!=null?`<em>${cur.n}</em>`:''}<i class="dn-chev" aria-hidden="true"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5L6 8l3.5-3.5"/></svg></i></button>`; })()}
+        <div class="dn-list" id="dnList"><div class="dn-in">
         <button class="dn${CAB_TAB==='data'?' on':''}" type="button" data-tab="data" aria-current="${CAB_TAB==='data'?'page':'false'}">${IC_USR}<span>${T('cDataT')}</span></button>
         <button class="dn${CAB_TAB==='saved'?' on':''}" type="button" data-tab="saved" aria-current="${CAB_TAB==='saved'?'page':'false'}">${BM_SVG}<span>${T('cSavedT')}</span><em>${USER.favs.length}</em></button>
         <button class="dn${CAB_TAB==='hist'?' on':''}" type="button" data-tab="hist" aria-current="${CAB_TAB==='hist'?'page':'false'}">${IC_CLOCK}<span>${T('cHistT')}</span><em>${(USER.hist||[]).length}</em></button>
         <button class="dn${CAB_TAB==='tarot'?' on':''}" type="button" data-tab="tarot" aria-current="${CAB_TAB==='tarot'?'page':'false'}">${IC_CARDS}<span>${_t("Мої розклади")}</span><em>${tpHist().length}</em></button>
         <button class="dn${CAB_TAB==='sub'?' on':''}" type="button" data-tab="sub" aria-current="${CAB_TAB==='sub'?'page':'false'}">${IC_PLAN}<span>Підписка</span><em>${USER&&USER.sub&&USER.sub.plan!=='free'&&USER.sub.paid_until&&new Date(USER.sub.paid_until)>new Date()?USER.sub.plan[0].toUpperCase()+USER.sub.plan.slice(1):'Free'}</em></button>
+        </div></div>
         <div class="dn-sep" aria-hidden="true"></div>
-        <button class="btn go dn-go" type="button" id="myMatrix">${T('sMine')}</button>
+        <button class="btn go dn-go" type="button" id="myMatrix" data-mymx>${T('sMine')}</button>
       </nav>
       <section class="panel dash-main">${CAB_TAB==='data'?dataPane(p):CAB_TAB==='hist'?histPane():CAB_TAB==='tarot'?tarotPane():CAB_TAB==='sub'?subPane():savedPane()}</section>
     </div></div>`;
@@ -4966,10 +4996,11 @@ function renderHome(){
   $('#logoutBtn').addEventListener('click',logout);
   $('#toStart').addEventListener('click',()=>showHome('start'));
   h.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{ CAB_TAB=b.dataset.tab; PF_EDIT=false; renderHome(); const t=h.querySelector('.dn.on'); t&&t.focus({preventScroll:true}); }));
-  $('#myMatrix').addEventListener('click',()=>{
+  { const tg=h.querySelector('.dn-tog'), nv=h.querySelector('.dash-nav'); if(tg) tg.addEventListener('click',()=>{ const o=!nv.classList.contains('open'); nv.classList.toggle('open',o); tg.setAttribute('aria-expanded',String(o)); }); }
+  h.querySelectorAll('[data-mymx]').forEach(b=>b.addEventListener('click',()=>{
     if(profileReady(USER.profile)){ setMode('solo'); fill(USER.profile); $('#q').requestSubmit(); }
     else { CAB_TAB='data'; PF_EDIT=true; renderHome(); const e=$('#pfErr'); e.textContent=T('cFill'); e.hidden=false; e.classList.add('info'); }
-  });
+  }));
   if(CAB_TAB==='tarot'){
     h.querySelectorAll('[data-cto]').forEach(b=>b.addEventListener('click',()=>{ const x=tpHist()[+b.dataset.cto]; if(x) tpOpenSaved(x); }));
     h.querySelectorAll('[data-ctd]').forEach(b=>b.addEventListener('click',()=>{ const l=tpHist(); l.splice(+b.dataset.ctd,1); tpSaveHist(l); renderHome(); toast(_t("Розклад видалено.")); }));
