@@ -1946,6 +1946,10 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
 @media (prefers-reduced-motion:reduce){.btn.aura::before{animation:none}}
 .aim-gate .btn.aura{margin-top:8px}
 .sub-cur>div{flex:1 1 220px}
+.btn.aura.tp-plans{display:inline-flex;width:auto;height:48px!important;padding:0 26px!important;gap:9px;align-items:center;font-weight:600;letter-spacing:.06em}
+.btn.aura.tp-plans::before{bottom:-22px;left:-8%;right:-8%;opacity:.8}
+.btn.aura.tp-plans:hover::before{opacity:1}
+.btn.aura.tp-plans svg{width:17px;height:17px}
 .sub-cur .btn.aura{flex:1 1 100%!important;padding:0 24px!important}
 .pf-act{display:grid!important;grid-template-columns:1fr 1fr;gap:10px}
 .pf-act .btn{width:100%;min-width:0;justify-content:center;height:52px!important;margin:0!important}
@@ -6376,7 +6380,7 @@ function tpRight(){
 const tpThinking=()=>`<div class="tp-think"><span class="tp-orb" aria-hidden="true"></span><span>${_t("Карти говорять…")}</span></div>`;
 function renderTarot(){
   const sec=$('#tarot'); if(!sec) return;
-  sec.innerHTML=`<div class="res-head fade"><div><div class="title-row"><h2>${_t("Таро-<b>трактувальник</b>")}</h2><div class="tr-acts"><button class="btn ghost dl tp-plans" type="button" data-plans>${IC_PLAN}<span>Тарифи</span></button></div></div><div class="meta">${_t("Ваше питання · ваші карти · тлумачення від ШІ")}</div></div></div>
+  sec.innerHTML=`<div class="res-head fade"><div><div class="title-row"><h2>${_t("Таро-<b>трактувальник</b>")}</h2><div class="tr-acts"><button class="btn aura tp-plans" type="button" data-plans>${IC_PLAN}<span>Тарифи</span></button></div></div><div class="meta">${_t("Ваше питання · ваші карти · тлумачення від ШІ")}</div></div></div>
     <div class="grid tgrid"><div class="panel tp-l fade" id="tpL">${tpForm()}</div><aside class="panel side tp-r" id="tpR">${tpRight()}</aside></div>`;
 }
 function tpRefreshL(){ const l=$('#tpL'); if(!l) return; const q=$('#tpQ'), foc=document.activeElement===q, pos=q?q.selectionStart:0; l.innerHTML=tpForm(); if(foc){ const nq=$('#tpQ'); nq.focus({preventScroll:true}); try{nq.setSelectionRange(pos,pos)}catch(_){} } }
