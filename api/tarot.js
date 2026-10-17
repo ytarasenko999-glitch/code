@@ -190,7 +190,9 @@ module.exports = async (req, res) => {
       : /too long|too large|exceed/i.test(t) ? 'prompt_too_large'
       : upstream.status === 401 || upstream.status === 403 ? 'not_configured'
       : /credit|balance|billing/i.test(t) ? 'no_credit' : 'upstream';
-    return fail(res, upstream.status === 429 ? 429 : 502, code);
+    let detail = ''; try { const j = JSON.parse(t); detail = `${upstream.status} ${j.error && j.error.type || ''}: ${(j.error && j.error.message || '').slice(0, 200)}`; } catch (_) { detail = `${upstream.status}`; }
+    console.error('anthropic error', detail);
+    return fail(res, upstream.status === 429 ? 429 : 502, code, { detail });
   }
 
   await logUse(token, user.id, json ? 'photo' : task === 'tarot' ? (messages.length > 1 ? 'follow' : 'reading') : task, al.source).catch(() => {});
