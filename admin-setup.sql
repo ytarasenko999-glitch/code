@@ -53,6 +53,17 @@ drop policy if exists "sub admin all" on public.subscriptions;
 drop policy if exists "sub own autorenew" on public.subscriptions;
 create policy "sub own read" on public.subscriptions for select using (auth.uid() = user_id or public.is_admin());
 create policy "sub admin all" on public.subscriptions for all using (public.is_admin()) with check (public.is_admin());
+-- користувач сам вмикає/вимикає автопродовження своєї активної підписки (інші поля змінює лише адмін)
+create or replace function public.set_auto_renew(turn_on boolean) returns boolean
+language plpgsql security definer set search_path = public as $$
+begin
+  update public.subscriptions set auto_renew = turn_on, updated_at = now()
+   where user_id = auth.uid() and plan in ('plus','pro') and paid_until > now();
+  if not found then raise exception 'no_active_plan'; end if;
+  return turn_on;
+end $$;
+revoke all on function public.set_auto_renew(boolean) from public, anon;
+grant execute on function public.set_auto_renew(boolean) to authenticated;
 
 -- 4. Оплати (і ручні записи адміна, повернення)
 create table if not exists public.payments (

@@ -1986,7 +1986,6 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
   .sub-dash>.sub-cur .pk{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0}
   .sub-dash>.sub-cur h3{font-size:22px;margin:6px 0 2px}
   .sub-dash>.sub-cur .muted{font-size:12.5px;margin:0}
-  .sub-dash>.sub-cur .btn.aura{flex:0 0 auto!important;width:auto;height:40px!important;padding:0 20px!important;font-size:11px}
   .sub-dash>.sub-bal,.sub-dash .bal-g{display:contents}
   .sub-dash .bal-h{display:none}
   .sub-dash .bal-t,.sub-dash .bal-skel{flex:1 1 130px;min-width:0;border-radius:18px}
@@ -1997,6 +1996,22 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
   .sub-dash .bal-l{min-height:2.7em}
   .sub-f.pl-lim{max-width:none}
 }
+.sub-cur{flex-direction:column!important;align-items:stretch!important;gap:12px!important}
+.sub-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.sub-top .pk{margin:0}
+.sub-until{font-size:12.5px;color:var(--muted);text-align:right;white-space:nowrap}
+.sub-name{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.sub-name h3{margin:0!important}
+.sub-tag{font-family:var(--font-mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.sub-mini{margin:-4px 0 0;font-size:12.5px;color:var(--muted)}
+.sub-btns{display:flex;gap:8px;margin-top:auto}
+.sub-btns .btn{flex:1 1 0!important;width:auto!important;min-width:0;justify-content:center;height:48px!important;padding:0 14px!important;white-space:nowrap}
+.sub-cur .sub-btns .btn.aura{flex:1 1 0!important}
+@media (min-width:821px){ .sub-dash>.sub-cur .sub-btns .btn{height:42px!important;font-size:11px} .sub-dash>.sub-cur>*{width:100%} }
+.info-box{width:min(480px,100%)}.info-b p{margin:0 0 12px;line-height:1.6}.info-a{display:flex;margin-top:6px}.info-a .btn{flex:1 1 auto!important}
+.sw input{cursor:pointer}
+.sub-cur>div{flex:0 0 auto!important}
+.info-box h3{font-size:clamp(22px,3.2vw,30px)!important}
+@media (max-width:820px){ .sub-btns{flex-direction:column} .sub-until{white-space:normal} .sub-btns .btn,.sub-cur .sub-btns .btn.aura{flex:0 0 auto!important;width:100%!important;height:52px!important} .sub-top .pk{white-space:nowrap} }
 .aim-gate{padding:8px 0}.aim-gate p{margin:0 0 12px;line-height:1.6}.aim-gate .btn{flex:0 0 auto!important}
 .aim-b{background:transparent!important;color:var(--fg)!important;border:1px solid var(--line)!important;box-shadow:none!important}
 .aim-b:hover{border-color:var(--accent)!important;color:var(--accent)!important}
@@ -4769,14 +4784,51 @@ function subPane(){
   const sb=USER&&USER.sub, active=sb&&(sb.plan==='plus'||sb.plan==='pro')&&sb.paid_until&&new Date(sb.paid_until)>new Date();
   const cur=PLANS.find(x=>x.id===(active?sb.plan:'free')), dt=active?new Date(sb.paid_until).toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'}):'';
   return `<div class="dm-h"><h2>Підписка</h2></div>
-    <div class="sub-dash"><div class="sub-cur"><div><p class="pk">[ Поточний тариф ]</p><h3>${cur.n}</h3><p class="muted">${active?`Діє до ${dt}${sb.period==='y'?' · річна оплата':''}`:'Діє безстроково'}${!window.CODE_SB&&sb&&sb.packs?` · пакетних запитів: ${sb.packs}`:''}${!window.CODE_SB&&sb&&sb.pack_reports?` · пакетних розборів: ${sb.pack_reports}`:''}</p></div><button class="btn go aura" type="button" data-plans>${active?'Змінити тариф':'Обрати тариф'}</button></div>
+    <div class="sub-dash"><div class="sub-cur"><div class="sub-top"><p class="pk">[ Поточний тариф ]</p><span class="sub-until">${active?`Діє до ${dt}`:'Безстроково'}</span></div>
+      <div class="sub-name"><h3>${cur.n}</h3>${active&&sb.period==='y'?'<span class="sub-tag">річний</span>':''}${!active&&sb&&(sb.packs||sb.pack_reports)?'<span class="sub-tag">+ пакет</span>':''}</div>
+      ${!active&&sb&&(sb.packs||sb.pack_reports)?`<p class="sub-mini">${window.CODE_SB?'Що лишилося в пакеті — у картках поруч.':`Пакет: ${sb.packs||0} запитів, ${sb.pack_reports||0} розбір.`}</p>`:''}
+      <div class="sub-btns">${!active?`<button class="btn go aura" type="button" data-plans>Обрати тариф</button>`
+        :sb.plan==='plus'?`<button class="btn ghost" type="button" data-plans="renew">Продовжити Plus</button><button class="btn go aura" type="button" data-plans="pro">Підвищити до Pro</button>`
+        :`<button class="btn go aura" type="button" data-plans="renew">Продовжити Pro</button>`}</div></div>
     ${window.CODE_SB&&USER?(setTimeout(fillBalance,0),'<div class="sub-bal" id="subBal"><div class="bal-g"><div class="bal-skel"></div><div class="bal-skel"></div><div class="bal-skel"></div></div></div>'):''}</div>${window.CODE_SB&&USER?'<p class="sub-dnote">Розпізнавання фото — без витрати запитів, до 20 фото на день.</p>':''}
     ${limHTML(cur).replace('class="pl-lim"','class="sub-f pl-lim"')}
-    <div class="sub-blk"><div class="sub-row"><div><b>Автопродовження</b><small>${active?(sb.auto_renew?`Увімкнене: ${dt} доступ продовжиться автоматично. Вимкнути можна будь-коли.`:`Вимкнене: після ${dt} доступ повернеться до безкоштовного тарифу, нічого не спишеться.`):'Вимкнене. З’явиться, коли ви оформите Plus або Pro, — і лише якщо ви самі його увімкнете.'}</small></div><label class="sw"><input type="checkbox" disabled${active&&sb.auto_renew?' checked':''}><i></i></label></div></div>
+    <div class="sub-blk"><div class="sub-row"><div><b>Автопродовження</b><small>${active?(sb.auto_renew?`Увімкнене: ${dt} доступ продовжиться автоматично. Вимкнути можна будь-коли.`:`Вимкнене: після ${dt} доступ повернеться до безкоштовного тарифу, нічого не спишеться.`):'Вимкнене. З’явиться, коли ви оформите Plus або Pro, — і лише якщо ви самі його увімкнете.'}</small></div><label class="sw"><input type="checkbox" id="subAuto" aria-label="Автопродовження"${active&&sb.auto_renew?' checked':''}><i></i></label></div></div>
     <div class="sub-blk"><b>Історія оплат</b><p class="muted">Оплат ще не було.</p></div>
     <p class="muted sub-note">Оплата разова: доступ діє місяць або рік і нічого не списується без вашої згоди. Питання щодо оплат — <a class="mail-l" href="mailto:code.matrix.support@gmail.com?subject=CODE%20оплата" target="_blank" rel="noopener">code.matrix.support@gmail.com</a></p>`;
 }
-document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-plans]'); if(b){ e.preventDefault(); openPlans(); } });
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-plans]'); if(b){ e.preventDefault(); const v=b.dataset.plans, sb=USER&&USER.sub;
+  if(v==='renew'&&sb){ PLAN_PER=sb.period==='y'?'y':'m'; openPlans(sb.plan); } else if(v==='pro'){ openPlans('pro'); } else openPlans(); } });
+/* simple info dialog in the site style */
+function infoModal(title,html,acts){
+  const d=document.createElement('div'); d.className='tf-ov'; d.setAttribute('role','dialog'); d.setAttribute('aria-modal','true');
+  d.innerHTML=`<div class="tf-bg"></div><div class="tf-box info-box"><button class="x" type="button" data-tf="x" aria-label="Закрити">${IC_X}</button><div class="tf-h"><div><p class="pk">[ CODE ]</p><h3>${title}</h3></div></div><div class="info-b">${html}</div>${acts?`<div class="info-a">${acts}</div>`:''}</div>`;
+  document.body.appendChild(d); document.documentElement.classList.add('mdl-on'); requestAnimationFrame(()=>d.classList.add('in'));
+  const close=()=>{ d.classList.remove('in'); if(!document.querySelector('.tf-ov.in')) document.documentElement.classList.remove('mdl-on'); setTimeout(()=>d.remove(),240); document.removeEventListener('keydown',k,true); };
+  const k=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopImmediatePropagation(); close(); } };
+  document.addEventListener('keydown',k,true);
+  d.addEventListener('click',e=>{ if(e.target.closest('[data-tf=x]')||e.target.classList.contains('tf-bg')||e.target.closest('[data-plans]')) close(); });
+  return close;
+}
+/* auto-renew switch in the cabinet: saved through the server; explains why when it can't be changed */
+document.addEventListener('change',async e=>{
+  const cb=e.target; if(!cb||cb.id!=='subAuto') return;
+  const want=cb.checked, sb=USER&&USER.sub, active=sb&&(sb.plan==='plus'||sb.plan==='pro')&&sb.paid_until&&new Date(sb.paid_until)>new Date();
+  cb.checked=!want;
+  if(!active){ infoModal('Автопродовження',`<p>Автопродовження працює лише з платним тарифом — Plus або Pro. Зараз у вас безкоштовний тариф, тож продовжувати нічого.</p><p class="muted">Коли оформите підписку, тут можна буде увімкнути автопродовження. За замовчуванням воно завжди вимкнене — без вашої згоди нічого не списується.</p>`,`<button class="btn go aura" type="button" data-plans>Обрати тариф</button>`); return; }
+  if(typeof window.codeSetAutoRenew!=='function'){ infoModal('Автопродовження',`<p>Керувати автопродовженням можна на сайті CODE після входу в акаунт.</p>`); return; }
+  cb.disabled=true;
+  try{ await window.codeSetAutoRenew(want); sb.auto_renew=want; cb.checked=want;
+    const dt=new Date(sb.paid_until).toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'}), sm=cb.closest('.sub-row')&&cb.closest('.sub-row').querySelector('small');
+    if(sm) sm.textContent=want?`Увімкнене: ${dt} доступ продовжиться автоматично. Вимкнути можна будь-коли.`:`Вимкнене: після ${dt} доступ повернеться до безкоштовного тарифу, нічого не спишеться.`;
+    toast(want?'Автопродовження увімкнено.':'Автопродовження вимкнено.'); }
+  catch(err){ const m=String(err&&err.message||err);
+    const why=/no_active_plan/.test(m)?'Сервер не бачить у вас активної підписки Plus або Pro. Якщо ви щойно оплатили, оновіть сторінку за хвилину.'
+      :/Could not find the function|set_auto_renew/.test(m)?'Ця функція ще налаштовується на нашому боці. Спробуйте трохи пізніше — або напишіть нам, і ми змінимо налаштування вручну.'
+      :/JWT|login|auth/i.test(m)?'Сесія входу завершилася. Увійдіть в акаунт ще раз і повторіть.'
+      :/fetch|network|Failed/i.test(m)?'Немає зв’язку з сервером. Перевірте інтернет і спробуйте ще раз.':'Не вдалося зберегти зміну.';
+    infoModal('Не вдалося змінити автопродовження',`<p>${why}</p><p class="muted">Технічна причина: ${esc(m.slice(0,160))}</p><p class="muted">Питання — <a class="mail-l" href="mailto:code.matrix.support@gmail.com?subject=CODE%20автопродовження" target="_blank" rel="noopener">code.matrix.support@gmail.com</a></p>`); }
+  finally{ cb.disabled=false; }
+});
 const IC_PLAN=`<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5l2.4 5 5.4.7-4 3.8 1 5.4-4.8-2.6-4.8 2.6 1-5.4-4-3.8 5.4-.7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
 
 /* ---------- paid AI on the matrix: personal reading, "ask your matrix", the year month by month ---------- */
@@ -6970,6 +7022,7 @@ new MutationObserver(()=>{ const h=document.querySelector('.sso [data-sso="Googl
 /* AI tarot reader on the hosted site: same interface as window.claude.use('sample'), served by /api/tarot */
 const aiToken=async()=>{ await ready; if(!sb) return null; const {data}=await sb.auth.getSession(); return data&&data.session?data.session.access_token:null; };
 const aiErr=(code,text)=>Object.assign(new Error(code),{code,text});
+window.codeSetAutoRenew=async on=>{ await ready; if(!sb) throw new Error('offline'); const {data,error}=await sb.rpc('set_auto_renew',{turn_on:!!on}); if(error) throw new Error(error.message||'error'); return data; };
 window.codeBalance=async()=>{ const tok=await aiToken(); if(!tok) throw new Error('login'); const r=await fetch('/api/tarot',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+tok},body:JSON.stringify({mode:'balance'})}); if(!r.ok){ let c=''; try{ c=(await r.json()).code||''; }catch(_){} throw new Error(c||('http_'+r.status)); } return r.json(); };
 async function aiCall(payload,signal){
   const tok=await aiToken(); if(!tok) throw aiErr('login');
