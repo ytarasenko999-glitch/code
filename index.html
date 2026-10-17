@@ -1796,6 +1796,72 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
 .dl-row .langs{flex-wrap:nowrap!important;gap:4px!important;min-width:0}
 .dl-row .lang-b{min-width:0!important;flex:0 0 auto;width:clamp(28px,8.4vw,36px);height:32px;padding:0!important}
 .dl-row .theme-sw{flex:0 0 auto;margin-left:auto}
+
+/* tariffs dialog + subscription pane */
+.tp-plans{white-space:nowrap}
+.tf-ov{position:fixed;inset:0;z-index:120;display:grid;place-items:center;padding:20px;opacity:0;transition:opacity .22s}
+.tf-ov.in{opacity:1}
+.tf-bg{position:absolute;inset:0;background:rgba(5,5,14,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.tf-box{position:relative;width:min(1080px,100%);max-height:calc(100svh - 40px);overflow:auto;overscroll-behavior:contain;padding:30px 28px 26px;border-radius:30px;background:var(--pop-bg);backdrop-filter:saturate(180%) blur(36px);-webkit-backdrop-filter:saturate(180%) blur(36px);border:1px solid var(--hair);box-shadow:var(--shadow);transform:translateY(10px) scale(.985);transition:transform .25s}
+.tf-ov.in .tf-box{transform:none}
+.tf-box>.x{position:absolute;right:18px;top:18px;z-index:2}
+.tf-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:22px;padding-right:48px}
+.tf-h h3{margin:4px 0 6px;font-family:var(--font-display);font-weight:300;font-size:clamp(24px,3.2vw,34px);text-transform:uppercase;letter-spacing:-.02em}
+.tf-s{margin:0;color:var(--muted);font-size:14px;max-width:52ch}
+.tf-per{display:inline-flex;padding:4px;border-radius:999px;border:1px solid var(--line);gap:2px}
+.tf-per button{border:0;background:none;padding:8px 16px;border-radius:999px;font:inherit;font-size:13.5px;color:var(--muted);cursor:pointer}
+.tf-per button em{font-style:normal;color:var(--accent);font-size:12px;margin-left:4px}
+.tf-per [aria-selected="true"]{background:var(--accent-soft);color:var(--fg);box-shadow:inset 0 0 0 1px var(--accent)}
+.tf-g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.pl{display:flex;flex-direction:column;padding:20px 18px 18px;border-radius:24px;background:var(--surface-2);border:1px solid transparent;min-width:0}
+.pl.hot{border-color:var(--accent);background:linear-gradient(160deg,var(--accent-soft),transparent 70%),var(--surface-2);box-shadow:0 20px 50px -30px var(--glow)}
+.pl-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pl-h h4{margin:0;font-family:var(--font-display);font-weight:500;font-size:20px;text-transform:uppercase;letter-spacing:-.01em}
+.pl-tag{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.pl-d{margin:8px 0 14px;color:var(--muted);font-size:13px;line-height:1.45;min-height:2.9em}
+.pl-pr{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.pl-pr b{font-family:var(--font-display);font-weight:300;font-size:30px;letter-spacing:-.02em}
+.pl-pr span{color:var(--muted);font-size:13px}
+.pl-sub{margin:2px 0 14px;font-size:12px;color:var(--accent);min-height:1.4em}
+.pl ul{list-style:none;margin:0 0 16px;padding:0;display:flex;flex-direction:column;gap:7px;flex:1}
+.pl li{position:relative;padding-left:20px;font-size:13.5px;line-height:1.45}
+.pl li::before{content:"";position:absolute;left:2px;top:.45em;width:9px;height:5px;border-left:1.6px solid var(--accent);border-bottom:1.6px solid var(--accent);transform:rotate(-45deg)}
+.pl-soon{margin:-6px 0 14px;font-size:11.5px;color:var(--muted)}
+.pl .btn{width:100%;justify-content:center;flex:0 0 auto!important;height:46px!important;margin-top:auto}
+.pl ul{flex:0 1 auto}
+.co-acts .btn{height:46px!important}
+.tf-h .pk{color:var(--accent);font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;margin:0}
+.pl .btn[disabled]{opacity:.6;cursor:default}
+.tf-note{margin:18px 0 0;font-size:12.5px;color:var(--muted);text-align:center}
+.co{max-width:520px}
+.co-row{display:flex;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--hair);font-size:15px}
+.co-row span{color:var(--muted)}
+.co-auto{margin:18px 0 6px}
+.co-hint{margin:0 0 16px;font-size:13px;line-height:1.55;color:var(--muted);padding:12px 14px;border-radius:16px;background:var(--surface-2)}
+.co-legal{font-size:12px;color:var(--muted);margin:14px 0 18px}
+.co-legal a{color:var(--accent)}
+.co-acts{display:flex;gap:10px;flex-wrap:wrap}
+.co-acts .btn{flex:1 1 auto;justify-content:center}
+@media (max-width:980px){.tf-g{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.tf-ov{padding:0;align-items:end}.tf-box{border-radius:26px 26px 0 0;max-height:94svh;padding:24px 16px calc(20px + env(safe-area-inset-bottom,0px))}.tf-g{grid-template-columns:1fr}.tf-h{padding-right:40px}.pl-d{min-height:0}}
+.sub-cur{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding:20px;border-radius:22px;background:linear-gradient(150deg,var(--accent-soft),transparent 75%),var(--surface-2);margin-bottom:16px}
+.sub-cur .btn{flex:0 0 auto!important;padding:0 22px!important}
+.sub-cur h3{margin:4px 0 2px;font-family:var(--font-display);font-weight:400;font-size:24px;text-transform:uppercase}
+.sub-f{list-style:none;margin:0 0 18px;padding:0 4px;display:grid;gap:7px}
+.sub-f li{position:relative;padding-left:20px;font-size:14px}
+.sub-f li::before{content:"";position:absolute;left:2px;top:.45em;width:9px;height:5px;border-left:1.6px solid var(--accent);border-bottom:1.6px solid var(--accent);transform:rotate(-45deg)}
+.sub-blk{padding:16px 18px;border-radius:18px;border:1px solid var(--hair);margin-bottom:12px}
+.sub-blk>b{display:block;margin-bottom:4px}
+.sub-row{display:flex;justify-content:space-between;align-items:center;gap:14px}
+.sub-row small{display:block;color:var(--muted);font-size:12.5px;margin-top:3px;line-height:1.45}
+.sw{position:relative;flex:0 0 auto;width:46px;height:28px}
+.sw input{position:absolute;opacity:0;inset:0;margin:0}
+.sw i{position:absolute;inset:0;border-radius:999px;background:var(--surface-2);border:1px solid var(--line)}
+.sw i::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:var(--muted);transition:transform .2s}
+.sw input:checked+i{background:var(--accent)}
+.sw input:checked+i::after{transform:translateX(18px);background:#fff}
+.sw input:disabled+i{opacity:.5}
+.sub-note{margin-top:14px;line-height:1.55}
 </style>
 </head>
 <body>
@@ -4430,6 +4496,78 @@ function tpOpenSaved(x){
   TAR.read={...x,chat:x.chat||[],turns:(x.turns&&x.turns.length)?x.turns:[{role:'user',content:tpPrompt(x)},{role:'assistant',content:x.ans||'-'}]}; TAR.busy=false; TAR.q=x.q; TAR.sp=x.sp; TAR.slots=x.slots.map(c=>({id:c.id,r:!!c.r}));
   showTarot(); setTimeout(()=>{ const r=$('#tpR'); if(r&&innerWidth<=980) r.scrollIntoView({behavior:'smooth',block:'start'}); },380);
 }
+
+/* ---------- tariffs (UAH) & subscription — payment itself is not connected yet ---------- */
+const PLANS=[
+  {id:'free',n:'Безкоштовний',m:0,y:0,tag:'',d:'Щоб познайомитися з CODE',f:['Матриця, сумісність, прогноз по роках','Довідник арканів і шпаргалка','PDF з вашою матрицею','3 трактування Таро після реєстрації','+1 трактування щотижня']},
+  {id:'plus',n:'Plus',m:199,y:1790,tag:'Популярний',d:'Для себе — питати карти, коли потрібно',f:['100 запитів до трактувальника на місяць','Уточнювальні питання до розкладів','Розпізнавання розкладу з фото','Врахування вашої матриці долі','Усе з безкоштовного тарифу']},
+  {id:'pro',n:'Pro',m:549,y:4990,tag:'Для тарологів',d:'Робоче місце для консультацій',f:['300 запитів на місяць','База клієнтів з їхніми матрицями','Розклад для клієнта в один клік','Тон відповіді «для мене» / «для клієнта»','Звіт клієнту з вашим брендингом','Шаблони консультацій'],soon:'Частина інструментів Pro з’явиться поступово'},
+  {id:'pack',n:'Пакет',m:79,y:0,tag:'Без підписки',d:'10 трактувань — використайте, коли зручно',f:['10 трактувань Таро','Не згорають через місяць','Разова оплата']}
+];
+let PLAN_PER='m';
+const uah=n=>`${String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ')} грн`;
+function plansHTML(){
+  const card=p=>{
+    const yr=PLAN_PER==='y'&&p.y, price=p.id==='free'?'0 грн':p.id==='pack'?uah(p.m):yr?uah(p.y):uah(p.m), per=p.id==='free'?'назавжди':p.id==='pack'?'разово':yr?'на рік':'на місяць';
+    const sub=yr?`≈ ${uah(Math.round(p.y/12))} на місяць · вигода ${Math.round((1-p.y/(p.m*12))*100)}%`:p.id==='pack'?'≈ 8 грн за трактування':'';
+    return `<article class="pl${p.id==='plus'?' hot':''}" data-p="${p.id}">
+      <div class="pl-h"><h4>${p.n}</h4>${p.tag?`<span class="pl-tag">${p.tag}</span>`:''}</div>
+      <p class="pl-d">${p.d}</p>
+      <div class="pl-pr"><b>${price}</b><span>${per}</span></div><p class="pl-sub">${sub||'&nbsp;'}</p>
+      <ul>${p.f.map(x=>`<li>${x}</li>`).join('')}</ul>${p.soon?`<p class="pl-soon">${p.soon}</p>`:''}
+      ${p.id==='free'?`<button class="btn ghost sm" type="button" disabled>${USER?'Ваш поточний тариф':'Доступно після реєстрації'}</button>`:`<button class="btn ${p.id==='plus'?'go':'ghost'} sm" type="button" data-buy="${p.id}">${p.id==='pack'?'Купити пакет':'Оформити'}</button>`}
+    </article>`;
+  };
+  return `<div class="tf-h"><div><p class="pk">[ Тарифи ]</p><h3 id="tfT">Оберіть свій формат</h3><p class="tf-s">Ціни в гривнях. Оплата разова — продовжувати автоматично чи ні, вирішуєте ви.</p></div>
+    <div class="tf-per" role="tablist" aria-label="Період оплати"><button type="button" role="tab" aria-selected="${PLAN_PER==='m'}" data-per="m">Місяць</button><button type="button" role="tab" aria-selected="${PLAN_PER==='y'}" data-per="y">Рік <em>−25%</em></button></div></div>
+    <div class="tf-g">${PLANS.map(card).join('')}</div>
+    <p class="tf-note">Запит — це одне трактування розкладу, одне уточнення або одне розпізнавання фото. Невикористані запити не переносяться на наступний місяць.</p>`;
+}
+function checkoutHTML(id){
+  const p=PLANS.find(x=>x.id===id), yr=PLAN_PER==='y'&&p.y, price=p.id==='pack'?p.m:yr?p.y:p.m;
+  const until=new Date(); if(p.id!=='pack'){ if(yr) until.setFullYear(until.getFullYear()+1); else until.setDate(until.getDate()+30); }
+  const dt=until.toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'});
+  return `<div class="tf-h"><div><p class="pk">[ Оформлення ]</p><h3 id="tfT">${p.n}${p.id==='pack'?'':yr?' · рік':' · місяць'}</h3></div></div>
+    <div class="co">
+      <div class="co-row"><span>Сума</span><b>${uah(price)}</b></div>
+      ${p.id==='pack'?`<div class="co-row"><span>Що отримаєте</span><b>10 трактувань без терміну дії</b></div>`:`<div class="co-row"><span>Доступ діятиме до</span><b>${dt}</b></div>`}
+      ${p.id==='pack'?'':`<label class="agree co-auto"><input type="checkbox" id="coAuto"><span class="box" aria-hidden="true"></span><span>Автоматично продовжувати ${yr?'щороку':'щомісяця'}</span></label>
+      <p class="co-hint" id="coHint">Без автопродовження: після ${dt} доступ просто повернеться до безкоштовного тарифу, нічого не спишеться. За 3 дні ми нагадаємо.</p>`}
+      <p class="co-legal">Натискаючи «Оплатити», ви погоджуєтеся з <a href="/terms.html" target="_blank" rel="noopener">умовами</a>. Оплата карткою через захищений платіжний сервіс.</p>
+      <div class="co-acts"><button class="btn ghost sm" type="button" data-tf="back">Назад</button><button class="btn go sm" type="button" data-pay="${id}">Оплатити ${uah(price)}</button></div>
+    </div>`;
+}
+function openPlans(start){
+  const d=document.createElement('div'); d.className='tf-ov'; d.setAttribute('role','dialog'); d.setAttribute('aria-modal','true'); d.setAttribute('aria-labelledby','tfT');
+  d.innerHTML=`<div class="tf-bg"></div><div class="tf-box"><button class="x" type="button" data-tf="x" aria-label="${_t("Закрити")}">${IC_X}</button><div class="tf-in"></div></div>`;
+  const inn=d.querySelector('.tf-in'), show=h=>{ inn.innerHTML=h; inn.scrollTop=0; d.querySelector('.tf-box').scrollTop=0; };
+  show(start?checkoutHTML(start):plansHTML());
+  document.body.appendChild(d); document.documentElement.classList.add('mdl-on'); requestAnimationFrame(()=>d.classList.add('in'));
+  const prev=document.activeElement;
+  const close=()=>{ d.classList.remove('in'); document.documentElement.classList.remove('mdl-on'); setTimeout(()=>d.remove(),240); document.removeEventListener('keydown',key,true); if(prev&&prev.focus&&prev.isConnected) prev.focus({preventScroll:true}); };
+  const key=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopImmediatePropagation(); close(); } };
+  document.addEventListener('keydown',key,true);
+  d.addEventListener('change',e=>{ if(e.target.id==='coAuto'){ const h=d.querySelector('#coHint'), id=d.querySelector('[data-pay]').dataset.pay, p=PLANS.find(x=>x.id===id), yr=PLAN_PER==='y'&&p.y, price=yr?p.y:p.m, dt=d.querySelector('.co-row:nth-child(2) b').textContent;
+    h.textContent=e.target.checked?`${dt} ми автоматично спишемо ${uah(price)} і продовжимо доступ. Вимкнути можна будь-коли в кабінеті → «Підписка». За 3 дні до списання надішлемо нагадування.`:`Без автопродовження: після ${dt} доступ просто повернеться до безкоштовного тарифу, нічого не спишеться. За 3 дні ми нагадаємо.`; } });
+  d.addEventListener('click',e=>{
+    if(e.target.closest('[data-tf=x]')||e.target.classList.contains('tf-bg')){ close(); return; }
+    const per=e.target.closest('[data-per]'); if(per){ PLAN_PER=per.dataset.per; show(plansHTML()); return; }
+    const buy=e.target.closest('[data-buy]'); if(buy){ if(!USER){ close(); toast('Увійдіть або зареєструйтеся, щоб оформити тариф.'); AUTH_MODE='register'; showHome('cab'); return; } show(checkoutHTML(buy.dataset.buy)); return; }
+    if(e.target.closest('[data-tf=back]')){ show(plansHTML()); return; }
+    if(e.target.closest('[data-pay]')){ toast('Оплата з’явиться найближчим часом — ми повідомимо вас листом.'); close(); }
+  });
+}
+function subPane(){
+  const free=PLANS[0];
+  return `<div class="dm-h"><h2>Підписка</h2></div>
+    <div class="sub-cur"><div><p class="pk">[ Поточний тариф ]</p><h3>${free.n}</h3><p class="muted">Діє безстроково</p></div><button class="btn go sm" type="button" data-plans>Обрати тариф</button></div>
+    <ul class="sub-f">${free.f.map(x=>`<li>${x}</li>`).join('')}</ul>
+    <div class="sub-blk"><div class="sub-row"><div><b>Автопродовження</b><small>Вимкнене. З’явиться, коли ви оформите Plus або Pro, — і лише якщо ви самі його увімкнете.</small></div><label class="sw"><input type="checkbox" disabled><i></i></label></div></div>
+    <div class="sub-blk"><b>Історія оплат</b><p class="muted">Оплат ще не було.</p></div>
+    <p class="muted sub-note">Оплата разова: доступ діє місяць або рік і нічого не списується без вашої згоди. Питання щодо оплат — <a class="mail-l" href="mailto:code.matrix.support@gmail.com?subject=CODE%20оплата" target="_blank" rel="noopener">code.matrix.support@gmail.com</a></p>`;
+}
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-plans]'); if(b){ e.preventDefault(); openPlans(); } });
+const IC_PLAN=`<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5l2.4 5 5.4.7-4 3.8 1 5.4-4.8-2.6-4.8 2.6 1-5.4-4-3.8 5.4-.7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
 function cabinetHTML(){
   const p=USER.profile||{};
   return `<div class="cab fade">
@@ -4441,10 +4579,11 @@ function cabinetHTML(){
         <button class="dn${CAB_TAB==='saved'?' on':''}" type="button" data-tab="saved" aria-current="${CAB_TAB==='saved'?'page':'false'}">${BM_SVG}<span>${T('cSavedT')}</span><em>${USER.favs.length}</em></button>
         <button class="dn${CAB_TAB==='hist'?' on':''}" type="button" data-tab="hist" aria-current="${CAB_TAB==='hist'?'page':'false'}">${IC_CLOCK}<span>${T('cHistT')}</span><em>${(USER.hist||[]).length}</em></button>
         <button class="dn${CAB_TAB==='tarot'?' on':''}" type="button" data-tab="tarot" aria-current="${CAB_TAB==='tarot'?'page':'false'}">${IC_CARDS}<span>${_t("Мої розклади")}</span><em>${tpHist().length}</em></button>
+        <button class="dn${CAB_TAB==='sub'?' on':''}" type="button" data-tab="sub" aria-current="${CAB_TAB==='sub'?'page':'false'}">${IC_PLAN}<span>Підписка</span><em>Free</em></button>
         <div class="dn-sep" aria-hidden="true"></div>
         <button class="btn go dn-go" type="button" id="myMatrix">${T('sMine')}</button>
       </nav>
-      <section class="panel dash-main">${CAB_TAB==='data'?dataPane(p):CAB_TAB==='hist'?histPane():CAB_TAB==='tarot'?tarotPane():savedPane()}</section>
+      <section class="panel dash-main">${CAB_TAB==='data'?dataPane(p):CAB_TAB==='hist'?histPane():CAB_TAB==='tarot'?tarotPane():CAB_TAB==='sub'?subPane():savedPane()}</section>
     </div></div>`;
 }
 async function downloadFav(f,btn){ const prev=STATE; STATE=favState(f); try{ await downloadCode(btn); } finally{ STATE=prev; } }
@@ -5320,7 +5459,7 @@ function tpRight(){
 const tpThinking=()=>`<div class="tp-think"><span class="tp-orb" aria-hidden="true"></span><span>${_t("Карти говорять…")}</span></div>`;
 function renderTarot(){
   const sec=$('#tarot'); if(!sec) return;
-  sec.innerHTML=`<div class="res-head fade"><div><div class="title-row"><h2>${_t("Таро-<b>трактувальник</b>")}</h2></div><div class="meta">${_t("Ваше питання · ваші карти · тлумачення від ШІ")}</div></div></div>
+  sec.innerHTML=`<div class="res-head fade"><div><div class="title-row"><h2>${_t("Таро-<b>трактувальник</b>")}</h2><div class="tr-acts"><button class="btn ghost dl tp-plans" type="button" data-plans>${IC_PLAN}<span>Тарифи</span></button></div></div><div class="meta">${_t("Ваше питання · ваші карти · тлумачення від ШІ")}</div></div></div>
     <div class="grid tgrid"><div class="panel tp-l fade" id="tpL">${tpForm()}</div><aside class="panel side tp-r" id="tpR">${tpRight()}</aside></div>`;
 }
 function tpRefreshL(){ const l=$('#tpL'); if(!l) return; const q=$('#tpQ'), foc=document.activeElement===q, pos=q?q.selectionStart:0; l.innerHTML=tpForm(); if(foc){ const nq=$('#tpQ'); nq.focus({preventScroll:true}); try{nq.setSelectionRange(pos,pos)}catch(_){} } }
