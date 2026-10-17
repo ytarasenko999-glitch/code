@@ -128,7 +128,8 @@ td small{display:block;color:var(--muted);font-size:12px}
   <h1 id="gTitle">Вхід</h1>
   <p id="gText">Доступ лише для адміністраторів CODE.</p>
   <div id="gForm">
-    <button class="btn ghost" type="button" id="gGoogle">Увійти через Google</button>
+    <div id="gisBox" style="display:flex;justify-content:center;min-height:44px"></div><button class="btn ghost" type="button" id="gGoogle" hidden>Увійти через Google</button>
+    <p class="err" id="gStat" hidden></p>
     <div class="or">або email</div>
     <form id="gMail"><div class="field"><label for="gE">Email</label><input id="gE" type="email" autocomplete="email" required></div><div class="field"><label for="gP">Пароль</label><input id="gP" type="password" autocomplete="current-password" required></div><div class="err" id="gErr" hidden></div><button class="btn" type="submit">Увійти</button></form>
   </div>
@@ -167,7 +168,23 @@ const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('in');clearT
 
 /* ---------- auth gate ---------- */
 const gate=(title,text,denied)=>{ $('#app').hidden=true; $('#gate').hidden=false; $('#gTitle').textContent=title; $('#gText').textContent=text; $('#gForm').hidden=!!denied; $('#gDenied').hidden=!denied; };
-$('#gGoogle').onclick=()=>SB.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
+$('#gGoogle').onclick=()=>SB.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+'/studio/'}});
+const stat=(m,bad)=>{ const e=$('#gStat'); e.textContent=m; e.hidden=!m; e.style.color=bad?'var(--bad)':'var(--muted)'; };
+/* errors returned in the address after a redirect sign-in */
+{ const h=new URLSearchParams(location.hash.slice(1)+'&'+location.search.slice(1)); const er=h.get('error_description')||h.get('error'); if(er) setTimeout(()=>stat('Google: '+er,true),50); }
+/* Google sign-in in a popup (same as the main site) — no redirect, works with the registered domain */
+const GCID='908657032514-nfibgmccqqkb1nn098pps2senl60qdr1.apps.googleusercontent.com';
+(async()=>{
+  const ok=await new Promise(r=>{ const s=document.createElement('script'); s.src='https://accounts.google.com/gsi/client'; s.onload=()=>r(true); s.onerror=()=>r(false); document.head.appendChild(s); });
+  if(!ok||!window.crypto||!crypto.subtle){ $('#gGoogle').hidden=false; return; }
+  const raw=crypto.randomUUID()+Date.now(), buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw)), hashed=[...new Uint8Array(buf)].map(x=>x.toString(16).padStart(2,'0')).join('');
+  google.accounts.id.initialize({client_id:GCID,nonce:hashed,ux_mode:'popup',itp_support:true,callback:async r=>{
+    stat('Входимо…');
+    const {error}=await SB.auth.signInWithIdToken({provider:'google',token:r.credential,nonce:raw});
+    if(error){ stat('Не вдалося увійти через Google: '+error.message,true); $('#gGoogle').hidden=false; return; }
+    stat(''); boot(); }});
+  google.accounts.id.renderButton($('#gisBox'),{type:'standard',theme:'outline',size:'large',shape:'pill',text:'continue_with',logo_alignment:'center',width:340,locale:'uk'});
+})();
 $('#gMail').onsubmit=async e=>{ e.preventDefault(); const er=$('#gErr'); er.hidden=true;
   const {error}=await SB.auth.signInWithPassword({email:$('#gE').value.trim(),password:$('#gP').value});
   if(error){ er.textContent='Невірний email або пароль.'; er.hidden=false; } else boot(); };
@@ -178,7 +195,7 @@ async function boot(){
   const {data}=await SB.auth.getSession(); const s=data&&data.session;
   if(!s){ gate('Вхід','Доступ лише для адміністраторів CODE.'); return; }
   const {data:ok,error}=await SB.rpc('is_admin');
-  if(error){ gate('Налаштування не завершено','Схоже, у базі ще не створено таблиці адмінпанелі (файл admin-setup.sql). '+error.message,true); return; }
+  if(error){ gate('Налаштування не завершено',`Ви увійшли як ${s.user.email}, але в базі ще немає таблиць адмінпанелі — потрібно виконати файл admin-setup.sql у Supabase. (${error.message})`,true); return; }
   if(!ok){ gate('Немає доступу',`Акаунт ${s.user.email} не має прав адміністратора.`,true); return; }
   ME=s.user; if(location.hash.includes('access_token')) history.replaceState(null,'',location.pathname);
   $('#gate').hidden=true; $('#app').hidden=false; $('#who').textContent=ME.email;
