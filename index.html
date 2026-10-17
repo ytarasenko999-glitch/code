@@ -7002,7 +7002,7 @@ function newPasswordDialog(){
 
 /* Google sign-in via Google Identity Services: the consent screen shows the app name "CODE" and our domain instead of the Supabase address */
 const GCID='908657032514-nfibgmccqqkb1nn098pps2senl60qdr1.apps.googleusercontent.com';
-const GIS_ORIGINS=['https://code-matrix-test.vercel.app','https://code-matrix.space'];
+const GIS_ORIGINS=['https://code-matrix-test.vercel.app']; /* add 'https://code-matrix.space' once it is in the Google client's Authorized JavaScript origins */
 let gisP=null;
 const loadGIS=()=>gisP||(gisP=new Promise(res=>{ if(window.google&&google.accounts&&google.accounts.id) return res(true); const s=document.createElement('script'); s.src='https://accounts.google.com/gsi/client'; s.async=true; s.onload=()=>res(true); s.onerror=()=>res(false); document.head.appendChild(s); }));
 const sha256hex=async t=>{ const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''); };
