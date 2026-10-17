@@ -1,7 +1,7 @@
 /* CODE · email templates (defaults) + branded HTML renderer.
    Templates are edited in the admin (/studio → «Email-розсилки») and saved to admin_settings.emails;
    these defaults are used for anything not customised yet. */
-const SITE = process.env.SITE_URL || 'https://code-matrix-test.vercel.app';
+const SITE = process.env.SITE_URL || 'https://code-matrix.space';
 const SUPPORT = 'code.matrix.support@gmail.com';
 
 const VARS = {

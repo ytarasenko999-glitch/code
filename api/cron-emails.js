@@ -6,7 +6,7 @@ const { render, merge } = require('./_emails.js');
 const { sendMail } = require('./email.js');
 const SB_URL = process.env.SUPABASE_URL || 'https://blwyzqxhzvjzhqkabesi.supabase.co';
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const SITE = process.env.SITE_URL || 'https://code-matrix-test.vercel.app';
+const SITE = process.env.SITE_URL || 'https://code-matrix.space';
 const PRICE = { plus: { m: 199, y: 1790 }, pro: { m: 549, y: 4990 } };
 /* new Supabase secret keys (sb_secret_…) go only in the apikey header; legacy service_role JWTs also as Bearer */
 const HS = () => (/^sb_secret_/.test(SERVICE) ? { apikey: SERVICE, 'content-type': 'application/json' } : { apikey: SERVICE, Authorization: `Bearer ${SERVICE}`, 'content-type': 'application/json' });

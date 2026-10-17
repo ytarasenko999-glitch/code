@@ -77,8 +77,8 @@ const card = p => `<a class="card" href="/blog/${esc(p.slug)}">${p.cover ? `<img
 const endCta = `<section class="endcta"><h2>Розрахуйте свою матрицю долі</h2><p>Безкоштовно, за датою народження: особистість, таланти, гроші, стосунки, кармічний хвіст і програми років.</p><a class="cta-b" href="/">Розрахувати матрицю</a></section>`;
 
 module.exports = async (req, res) => {
-  const host = req.headers['x-forwarded-host'] || req.headers.host || 'code-matrix-test.vercel.app';
-  const base = `https://${host}`;
+  /* canonical links, sitemap and OG always point to the main domain, so the old *.vercel.app copy is not indexed as a duplicate */
+  const base = (process.env.SITE_URL || 'https://code-matrix.space').replace(/\/$/, '');
   const q = req.query || {};
   const send = (code, html, type) => { res.statusCode = code; res.setHeader('content-type', (type || 'text/html') + '; charset=utf-8'); res.setHeader('cache-control', code === 200 ? 'public, s-maxage=300, stale-while-revalidate=86400' : 'no-store'); res.end(html); };
   try {

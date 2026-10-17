@@ -14,7 +14,7 @@ const PRICE_IN = parseFloat(process.env.AI_PRICE_IN || '2'), PRICE_OUT = parseFl
 const costOf = (i, o) => Math.round(((i || 0) * PRICE_IN + (o || 0) * PRICE_OUT) / 1e6 * 1e6) / 1e6;
 const PHOTO_DAY = parseInt(process.env.AI_PHOTO_DAY || '20', 10); // photo recognition is free (part of the reading) but capped per day // tarot + ask-your-matrix share one request pool
 const FREE_START = parseInt(process.env.AI_FREE_START || '3', 10), FREE_WEEK = parseInt(process.env.AI_FREE_WEEK || '1', 10);
-const ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://code-matrix-test.vercel.app').split(',').map(s => s.trim());
+const ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://code-matrix.space,https://www.code-matrix.space,https://code-matrix-test.vercel.app').split(',').map(s => s.trim());
 
 const fail = (res, status, code, extra) => { res.statusCode = status; res.setHeader('content-type', 'application/json'); res.end(JSON.stringify({ code, ...(extra || {}) })); };
 

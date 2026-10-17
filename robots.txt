@@ -3,4 +3,4 @@ Allow: /
 Disallow: /studio/
 Disallow: /api/
 
-Sitemap: https://code-matrix-test.vercel.app/sitemap.xml
+Sitemap: https://code-matrix.space/sitemap.xml
