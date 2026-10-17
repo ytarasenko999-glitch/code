@@ -58,6 +58,18 @@ module.exports = async (req, res) => {
       const kind = !SERVICE ? '' : /^sb_secret_/.test(SERVICE) ? 'secret' : /^sb_publishable_/.test(SERVICE) ? 'publishable' : /^eyJ/.test(SERVICE) ? 'jwt' : 'other';
       return json(res, 200, { resend: !!process.env.RESEND_API_KEY, from: FROM, own_domain: !/resend\.dev/.test(FROM), service: !!SERVICE && service_ok === 200, service_kind: kind, service_len: SERVICE.length, service_trim: SERVICE !== SERVICE.trim(), service_ok, cron: !!process.env.CRON_SECRET });
     }
+    if (mode === 'domain') {
+      const KEY = process.env.RESEND_API_KEY; if (!KEY) return json(res, 503, { code: 'not_configured' });
+      const H2 = { Authorization: `Bearer ${KEY}`, 'content-type': 'application/json' };
+      const l = await fetch('https://api.resend.com/domains', { headers: H2 }); const lt = await l.json().catch(() => ({}));
+      if (!l.ok) return json(res, 200, { ok: false, status: l.status, detail: lt });
+      const out = [];
+      for (const d of (lt.data || [])) {
+        if (b.verify && d.status !== 'verified') await fetch(`https://api.resend.com/domains/${d.id}/verify`, { method: 'POST', headers: H2 }).catch(() => {});
+        const g = await fetch(`https://api.resend.com/domains/${d.id}`, { headers: H2 }); out.push(g.ok ? await g.json() : d);
+      }
+      return json(res, 200, { ok: true, domains: out });
+    }
     if (mode === 'test') {
       const all = await templates(H(token)), tpl = b.tpl || all.find(t => t.id === b.id); if (!tpl) return json(res, 400, { code: 'no_template' });
       const to = String(b.to || u.email).trim(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return json(res, 400, { code: 'bad_email' });
