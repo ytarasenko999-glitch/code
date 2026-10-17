@@ -94,6 +94,9 @@ td small{display:block;color:var(--muted);font-size:12px}
 .badge.warn{color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent)}
 .badge.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
 .empty{padding:30px;text-align:center;color:var(--muted)}
+.adm-p{padding:20px 22px;margin-bottom:14px}.adm-t{margin:0 0 14px;color:var(--muted);font-size:13.5px;line-height:1.55;max-width:70ch}
+.adm-f{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.adm-f .field{flex:1 1 260px}.adm-f .btn{height:42px}
+.btn.bad{border-color:var(--bad);color:var(--bad)}
 .num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .neg{color:var(--bad)}
 
@@ -146,6 +149,7 @@ td small{display:block;color:var(--muted);font-size:12px}
     <button class="navb" data-v="pays">Оплати<em id="cP"></em></button>
     <button class="navb" data-v="ai">ШІ-запити</button>
     <button class="navb" data-v="log">Журнал дій</button>
+    <button class="navb" data-v="admins">Адміністратори<em id="cA"></em></button>
     <div class="sp"></div>
     <div class="side-acts"><button class="btn ghost sm" type="button" id="theme">Тема</button><button class="btn ghost sm" type="button" id="out">Вийти</button></div>
   </nav>
@@ -163,7 +167,7 @@ const fmtD=d=>d?new Date(d).toLocaleDateString('uk-UA',{day:'2-digit',month:'2-d
 const fmtDT=d=>d?new Date(d).toLocaleString('uk-UA',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
 const uah=n=>`${Math.round(n).toLocaleString('uk-UA')} грн`;
 const isoDay=d=>{const x=new Date(d);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');};
-let D={users:[],subs:{},pays:[],ai:[],log:[]}, VIEW='overview', ME=null, SUBF='active', Q='';
+let D={users:[],subs:{},pays:[],ai:[],log:[],admins:[]}, VIEW='overview', ME=null, SUBF='active', Q='';
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('in');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('in'),2600);};
 
 /* ---------- auth gate ---------- */
@@ -205,18 +209,19 @@ async function boot(){
 /* ---------- data ---------- */
 async function load(){
   const since=new Date(Date.now()-60*864e5).toISOString();
-  const [u,s,p,a,l]=await Promise.all([
+  const [u,s,p,a,l,ad0]=await Promise.all([
     SB.from('user_data').select('id,email,profile,created_at,updated_at,favs,tarot').order('created_at',{ascending:false}).limit(5000),
     SB.from('subscriptions').select('*').limit(5000),
     SB.from('payments').select('*').order('created_at',{ascending:false}).limit(2000),
     SB.from('ai_usage').select('user_id,kind,source,created_at').gte('created_at',since).order('created_at',{ascending:false}).limit(20000),
-    SB.from('admin_log').select('*').order('created_at',{ascending:false}).limit(300)
+    SB.from('admin_log').select('*').order('created_at',{ascending:false}).limit(300),
+    SB.from('admins').select('email')
   ]);
   const err=[u,s,p,a,l].find(x=>x.error); if(err) toast('Помилка завантаження: '+err.error.message);
   D.users=(u.data||[]).map(x=>({...x,saved:(x.favs||[]).length,readings:(x.tarot||[]).length,favs:undefined,tarot:undefined}));
-  D.subs={}; (s.data||[]).forEach(x=>D.subs[x.user_id]=x); D.pays=p.data||[]; D.ai=a.data||[]; D.log=l.data||[];
+  D.subs={}; (s.data||[]).forEach(x=>D.subs[x.user_id]=x); D.pays=p.data||[]; D.ai=a.data||[]; D.log=l.data||[]; D.admins=(ad0&&ad0.data||[]).map(x=>x.email).sort();
   const act=Object.values(D.subs).filter(active).length;
-  $('#cU').textContent=D.users.length; $('#cS').textContent=act; $('#cP').textContent=D.pays.length;
+  $('#cU').textContent=D.users.length; $('#cS').textContent=act; $('#cP').textContent=D.pays.length; $('#cA').textContent=D.admins.length;
 }
 const active=s=>s&&(s.plan==='plus'||s.plan==='pro')&&s.paid_until&&new Date(s.paid_until)>new Date();
 const planOf=uid=>{ const s=D.subs[uid]; return active(s)?s.plan:'free'; };
@@ -230,7 +235,7 @@ async function logA(action,target,details){ await SB.from('admin_log').insert({a
 
 /* ---------- views ---------- */
 function go(v){ VIEW=v; document.querySelectorAll('.navb').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); const m=$('#main');
-  m.innerHTML=v==='users'?vUsers():v==='subs'?vSubs():v==='pays'?vPays():v==='ai'?vAI():v==='log'?vLog():vOverview(); bindView(); }
+  m.innerHTML=v==='users'?vUsers():v==='subs'?vSubs():v==='pays'?vPays():v==='ai'?vAI():v==='log'?vLog():v==='admins'?vAdmins():vOverview(); bindView(); }
 document.querySelectorAll('.navb').forEach(b=>b.onclick=()=>go(b.dataset.v));
 const head=(t,acts='')=>`<div class="top"><div><p class="pk">[ адмінпанель ]</p><h2>${t}</h2></div><div class="acts">${acts}<button class="btn ghost sm" data-act="reload">Оновити</button></div></div>`;
 
@@ -291,7 +296,23 @@ function vAI(){
 function vLog(){
   return head('Журнал дій')+`<div class="panel">${D.log.length?`<div class="tw"><table><thead><tr><th>Коли</th><th>Хто</th><th>Дія</th><th>Користувач</th><th>Деталі</th></tr></thead><tbody>${D.log.map(l=>`<tr data-u="${l.target_user||''}"><td class="num">${fmtDT(l.created_at)}</td><td><small>${esc(l.admin_email)}</small></td><td>${esc(l.action)}</td><td>${esc(l.target_email||'')}</td><td><small>${esc(l.details?JSON.stringify(l.details):'')}</small></td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">Дій ще не було.</p>'}</div>`;
 }
+function vAdmins(){
+  const me=(ME&&ME.email||'').toLowerCase();
+  const row=e=>{ const u=D.users.find(x=>(x.email||'').toLowerCase()===e.toLowerCase()), self=e.toLowerCase()===me;
+    return `<tr><td>${esc(e)}${u&&nameOf(u)?`<small>${esc(nameOf(u))}</small>`:''}</td><td>${self?'<span class="badge ok">це ви</span>':u?'<span class="badge ok">акаунт є</span>':'<span class="badge">ще не входив</span>'}</td><td style="text-align:right">${self?'':`<button class="btn ghost sm" data-adm-del="${esc(e)}">Прибрати</button>`}</td></tr>`; };
+  return head('Адміністратори')+`<div class="panel adm-p"><p class="adm-t">Адмін входить сюди через Google з указаним email. Додайте свій запасний акаунт, щоб не втратити доступ, якщо основний стане недоступним. Себе прибрати не можна — так адмінка ніколи не залишиться без власника.</p>
+    <form id="admF" class="adm-f"><div class="field"><label for="admE">Email Google-акаунта</label><input type="email" id="admE" required autocomplete="off" placeholder="name@gmail.com"></div><button class="btn go sm" type="submit">Додати адміна</button></form></div>
+    <div class="panel">${D.admins.length?`<div class="tw"><table><thead><tr><th>Email</th><th>Статус</th><th></th></tr></thead><tbody>${D.admins.map(row).join('')}</tbody></table></div>`:'<p class="empty">Список порожній.</p>'}</div>`;
+}
 function bindView(){
+  { const f=$('#admF'); if(f) f.onsubmit=async e=>{ e.preventDefault(); const em=$('#admE').value.trim().toLowerCase(); if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return toast('Перевірте email.');
+      if(D.admins.some(x=>x.toLowerCase()===em)) return toast('Цей email уже адмін.');
+      const {error}=await SB.from('admins').insert({email:em}); if(error) return toast('Не вдалося додати: '+error.message);
+      await logA('додано адміна',{email:em},{email:em}); await load(); go('admins'); toast('Адміна додано. Він може входити через Google з цим email.'); }; }
+  document.querySelectorAll('[data-adm-del]').forEach(b=>b.onclick=async()=>{ const em=b.dataset.admDel;
+    if(!b.dataset.sure){ b.dataset.sure='1'; b.textContent='Точно прибрати?'; b.classList.add('bad'); setTimeout(()=>{ if(b.isConnected){ delete b.dataset.sure; b.textContent='Прибрати'; b.classList.remove('bad'); } },4000); return; }
+    const {error}=await SB.from('admins').delete().eq('email',em); if(error) return toast('Не вдалося прибрати: '+error.message);
+    await logA('прибрано адміна',{email:em},{email:em}); await load(); go('admins'); toast('Доступ адміна прибрано.'); });
   const q=$('#q'); if(q){ q.oninput=()=>{ Q=q.value; const pos=q.selectionStart; go('users'); const n=$('#q'); n.focus(); n.setSelectionRange(pos,pos); }; }
   document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{ SUBF=b.dataset.f; go('subs'); });
   document.querySelectorAll('#main [data-u]').forEach(r=>{ if(r.dataset.u) r.onclick=()=>openUser(r.dataset.u); });

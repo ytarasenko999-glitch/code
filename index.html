@@ -1977,6 +1977,26 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
 .bal-skel{height:96px;border-radius:18px;background:var(--surface-2);animation:balPulse 1.4s ease-in-out infinite}
 @keyframes balPulse{50%{opacity:.45}}
 @media (max-width:520px){.bal-g{grid-template-columns:1fr 1fr}.bal-n b{font-size:28px}}
+/* desktop: plan + balances as one compact row of tiles */
+.sub-dnote{display:none}
+@media (min-width:821px){
+  .sub-dash{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 10px}
+  .sub-dash>.sub-cur{flex:1.7 1 250px;margin:0;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:14px;padding:16px 18px;border-radius:18px}
+  .sub-dash>.sub-cur>div{flex:0 0 auto}
+  .sub-dash>.sub-cur .pk{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0}
+  .sub-dash>.sub-cur h3{font-size:22px;margin:6px 0 2px}
+  .sub-dash>.sub-cur .muted{font-size:12.5px;margin:0}
+  .sub-dash>.sub-cur .btn.aura{flex:0 0 auto!important;width:auto;height:40px!important;padding:0 20px!important;font-size:11px}
+  .sub-dash>.sub-bal,.sub-dash .bal-g{display:contents}
+  .sub-dash .bal-h{display:none}
+  .sub-dash .bal-t,.sub-dash .bal-skel{flex:1 1 130px;min-width:0;border-radius:18px}
+  .sub-dash .bal-t{padding:16px 16px 14px;justify-content:space-between}
+  .sub-dash .bal-n b{font-size:30px}
+  .sub-dash>.sub-bal>p{flex:1 1 100%}
+  .sub-dnote{display:block;margin:0 0 18px;font-size:12.5px;color:var(--muted)}
+  .sub-dash .bal-l{min-height:2.7em}
+  .sub-f.pl-lim{max-width:none}
+}
 .aim-gate{padding:8px 0}.aim-gate p{margin:0 0 12px;line-height:1.6}.aim-gate .btn{flex:0 0 auto!important}
 .aim-b{background:transparent!important;color:var(--fg)!important;border:1px solid var(--line)!important;box-shadow:none!important}
 .aim-b:hover{border-color:var(--accent)!important;color:var(--accent)!important}
@@ -4749,8 +4769,8 @@ function subPane(){
   const sb=USER&&USER.sub, active=sb&&(sb.plan==='plus'||sb.plan==='pro')&&sb.paid_until&&new Date(sb.paid_until)>new Date();
   const cur=PLANS.find(x=>x.id===(active?sb.plan:'free')), dt=active?new Date(sb.paid_until).toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'}):'';
   return `<div class="dm-h"><h2>Підписка</h2></div>
-    <div class="sub-cur"><div><p class="pk">[ Поточний тариф ]</p><h3>${cur.n}</h3><p class="muted">${active?`Діє до ${dt}${sb.period==='y'?' · річна оплата':''}`:'Діє безстроково'}${sb&&sb.packs?` · пакетних запитів: ${sb.packs}`:''}${sb&&sb.pack_reports?` · пакетних розборів: ${sb.pack_reports}`:''}</p></div><button class="btn go aura" type="button" data-plans>${active?'Змінити тариф':'Обрати тариф'}</button></div>
-    ${window.CODE_SB&&USER?(setTimeout(fillBalance,0),'<div class="sub-bal" id="subBal"><div class="bal-g"><div class="bal-skel"></div><div class="bal-skel"></div><div class="bal-skel"></div></div></div>'):''}
+    <div class="sub-dash"><div class="sub-cur"><div><p class="pk">[ Поточний тариф ]</p><h3>${cur.n}</h3><p class="muted">${active?`Діє до ${dt}${sb.period==='y'?' · річна оплата':''}`:'Діє безстроково'}${!window.CODE_SB&&sb&&sb.packs?` · пакетних запитів: ${sb.packs}`:''}${!window.CODE_SB&&sb&&sb.pack_reports?` · пакетних розборів: ${sb.pack_reports}`:''}</p></div><button class="btn go aura" type="button" data-plans>${active?'Змінити тариф':'Обрати тариф'}</button></div>
+    ${window.CODE_SB&&USER?(setTimeout(fillBalance,0),'<div class="sub-bal" id="subBal"><div class="bal-g"><div class="bal-skel"></div><div class="bal-skel"></div><div class="bal-skel"></div></div></div>'):''}</div>${window.CODE_SB&&USER?'<p class="sub-dnote">Розпізнавання фото — без витрати запитів, до 20 фото на день.</p>':''}
     ${limHTML(cur).replace('class="pl-lim"','class="sub-f pl-lim"')}
     <div class="sub-blk"><div class="sub-row"><div><b>Автопродовження</b><small>${active?(sb.auto_renew?`Увімкнене: ${dt} доступ продовжиться автоматично. Вимкнути можна будь-коли.`:`Вимкнене: після ${dt} доступ повернеться до безкоштовного тарифу, нічого не спишеться.`):'Вимкнене. З’явиться, коли ви оформите Plus або Pro, — і лише якщо ви самі його увімкнете.'}</small></div><label class="sw"><input type="checkbox" disabled${active&&sb.auto_renew?' checked':''}><i></i></label></div></div>
     <div class="sub-blk"><b>Історія оплат</b><p class="muted">Оплат ще не було.</p></div>

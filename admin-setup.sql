@@ -18,6 +18,11 @@ grant execute on function public.is_admin() to anon, authenticated;
 
 drop policy if exists "admins read" on public.admins;
 create policy "admins read" on public.admins for select using (public.is_admin());
+-- адміни можуть додавати інших адмінів і прибирати їх (себе — ні, щоб адмінка не лишилася без власника)
+drop policy if exists "admins add" on public.admins;
+drop policy if exists "admins remove" on public.admins;
+create policy "admins add" on public.admins for insert with check (public.is_admin());
+create policy "admins remove" on public.admins for delete using (public.is_admin() and lower(email) <> lower(coalesce(auth.jwt()->>'email','')));
 
 -- 2. Дата реєстрації в user_data + доступ адміна до даних користувачів
 alter table public.user_data add column if not exists created_at timestamptz default now();
