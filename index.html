@@ -4558,11 +4558,12 @@ function openPlans(start){
   });
 }
 function subPane(){
-  const free=PLANS[0];
+  const sb=USER&&USER.sub, active=sb&&(sb.plan==='plus'||sb.plan==='pro')&&sb.paid_until&&new Date(sb.paid_until)>new Date();
+  const cur=PLANS.find(x=>x.id===(active?sb.plan:'free')), dt=active?new Date(sb.paid_until).toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'}):'';
   return `<div class="dm-h"><h2>Підписка</h2></div>
-    <div class="sub-cur"><div><p class="pk">[ Поточний тариф ]</p><h3>${free.n}</h3><p class="muted">Діє безстроково</p></div><button class="btn go sm" type="button" data-plans>Обрати тариф</button></div>
-    <ul class="sub-f">${free.f.map(x=>`<li>${x}</li>`).join('')}</ul>
-    <div class="sub-blk"><div class="sub-row"><div><b>Автопродовження</b><small>Вимкнене. З’явиться, коли ви оформите Plus або Pro, — і лише якщо ви самі його увімкнете.</small></div><label class="sw"><input type="checkbox" disabled><i></i></label></div></div>
+    <div class="sub-cur"><div><p class="pk">[ Поточний тариф ]</p><h3>${cur.n}</h3><p class="muted">${active?`Діє до ${dt}${sb.period==='y'?' · річна оплата':''}`:'Діє безстроково'}${sb&&sb.packs?` · пакетних трактувань: ${sb.packs}`:''}</p></div><button class="btn go sm" type="button" data-plans>${active?'Змінити тариф':'Обрати тариф'}</button></div>
+    <ul class="sub-f">${cur.f.map(x=>`<li>${x}</li>`).join('')}</ul>
+    <div class="sub-blk"><div class="sub-row"><div><b>Автопродовження</b><small>${active?(sb.auto_renew?`Увімкнене: ${dt} доступ продовжиться автоматично. Вимкнути можна будь-коли.`:`Вимкнене: після ${dt} доступ повернеться до безкоштовного тарифу, нічого не спишеться.`):'Вимкнене. З’явиться, коли ви оформите Plus або Pro, — і лише якщо ви самі його увімкнете.'}</small></div><label class="sw"><input type="checkbox" disabled${active&&sb.auto_renew?' checked':''}><i></i></label></div></div>
     <div class="sub-blk"><b>Історія оплат</b><p class="muted">Оплат ще не було.</p></div>
     <p class="muted sub-note">Оплата разова: доступ діє місяць або рік і нічого не списується без вашої згоди. Питання щодо оплат — <a class="mail-l" href="mailto:code.matrix.support@gmail.com?subject=CODE%20оплата" target="_blank" rel="noopener">code.matrix.support@gmail.com</a></p>`;
 }
@@ -4579,7 +4580,7 @@ function cabinetHTML(){
         <button class="dn${CAB_TAB==='saved'?' on':''}" type="button" data-tab="saved" aria-current="${CAB_TAB==='saved'?'page':'false'}">${BM_SVG}<span>${T('cSavedT')}</span><em>${USER.favs.length}</em></button>
         <button class="dn${CAB_TAB==='hist'?' on':''}" type="button" data-tab="hist" aria-current="${CAB_TAB==='hist'?'page':'false'}">${IC_CLOCK}<span>${T('cHistT')}</span><em>${(USER.hist||[]).length}</em></button>
         <button class="dn${CAB_TAB==='tarot'?' on':''}" type="button" data-tab="tarot" aria-current="${CAB_TAB==='tarot'?'page':'false'}">${IC_CARDS}<span>${_t("Мої розклади")}</span><em>${tpHist().length}</em></button>
-        <button class="dn${CAB_TAB==='sub'?' on':''}" type="button" data-tab="sub" aria-current="${CAB_TAB==='sub'?'page':'false'}">${IC_PLAN}<span>Підписка</span><em>Free</em></button>
+        <button class="dn${CAB_TAB==='sub'?' on':''}" type="button" data-tab="sub" aria-current="${CAB_TAB==='sub'?'page':'false'}">${IC_PLAN}<span>Підписка</span><em>${USER&&USER.sub&&USER.sub.plan!=='free'&&USER.sub.paid_until&&new Date(USER.sub.paid_until)>new Date()?USER.sub.plan[0].toUpperCase()+USER.sub.plan.slice(1):'Free'}</em></button>
         <div class="dn-sep" aria-hidden="true"></div>
         <button class="btn go dn-go" type="button" id="myMatrix">${T('sMine')}</button>
       </nav>
@@ -6439,6 +6440,7 @@ async function hydrate(session){
   }
   try{ localStorage.setItem('code-tarot',JSON.stringify(row.tarot||[])); localStorage.setItem('code-tarot-people',JSON.stringify(row.people||[])); }catch(_){}
   USER={email:u.email,profile:row.profile||emptyProfile(),favs:row.favs||[],hist:row.hist||[],uid:u.id};
+  try{ const {data:sr}=await sb.from('subscriptions').select('plan,period,paid_until,auto_renew,packs').eq('user_id',u.id).maybeSingle(); USER.sub=sr||null; }catch(_){ USER.sub=null; }
   setAcctIcon();
   return USER;
 }
@@ -6587,6 +6589,8 @@ if(!(window.claude&&window.claude.use)) TP_SAMPLE=aiSample;
 const _tpErr=window.tpErr;
 window.tpErr=function(c){
   if(c==='login') return 'Щоб отримати трактування, увійдіть або зареєструйтеся — це безкоштовно і займає хвилину.';
+  if(c==='free_quota'){ setTimeout(()=>typeof openPlans==='function'&&openPlans(),900); return 'Безкоштовні трактування на цей тиждень закінчилися. Наступне з’явиться за кілька днів — або оберіть тариф, щоб питати карти без очікування.'; }
+  if(c==='plan_quota'){ setTimeout(()=>typeof openPlans==='function'&&openPlans(),900); return 'Ліміт запитів вашого тарифу на цей місяць вичерпано. Можна докупити пакет або перейти на більший тариф.'; }
   if(c==='daily_limit') return 'Ви використали денний ліміт трактувань. Повертайтеся завтра — ліміт оновлюється щодня.';
   if(c==='not_configured'||c==='no_credit') return 'Трактувальник тимчасово недоступний. Ми вже знаємо і виправляємо.';
   if(c==='network') return 'Немає зв’язку з сервером. Перевірте інтернет і спробуйте ще раз.';

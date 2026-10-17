@@ -6,7 +6,9 @@
 const SB_URL = process.env.SUPABASE_URL || 'https://blwyzqxhzvjzhqkabesi.supabase.co';
 const SB_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_v2wRmfGkiVW7fF6wIkPZBg_fjeS3wBu';
 const MODEL = process.env.AI_MODEL || 'claude-sonnet-5-5';
-const DAILY = parseInt(process.env.AI_DAILY_LIMIT || '15', 10);
+const DAILY_CAP = parseInt(process.env.AI_DAILY_CAP || '60', 10);   // safety cap per user per day, any plan
+const QUOTA = { plus: parseInt(process.env.AI_PLUS || '100', 10), pro: parseInt(process.env.AI_PRO || '300', 10) }; // per 30 days
+const FREE_START = parseInt(process.env.AI_FREE_START || '3', 10), FREE_WEEK = parseInt(process.env.AI_FREE_WEEK || '1', 10);
 const ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://code-matrix-test.vercel.app').split(',').map(s => s.trim());
 
 const fail = (res, status, code, extra) => { res.statusCode = status; res.setHeader('content-type', 'application/json'); res.end(JSON.stringify({ code, ...(extra || {}) })); };
@@ -17,16 +19,42 @@ async function sbUser(token) {
   const u = await r.json();
   return u && u.id ? u : null;
 }
-async function usedToday(token, uid) {
-  const since = new Date(); since.setUTCHours(0, 0, 0, 0);
-  const r = await fetch(`${SB_URL}/rest/v1/ai_usage?select=id&user_id=eq.${uid}&created_at=gte.${encodeURIComponent(since.toISOString())}`,
-    { headers: { apikey: SB_KEY, Authorization: `Bearer ${token}`, Prefer: 'count=exact', Range: '0-0' } });
+const H = token => ({ apikey: SB_KEY, Authorization: `Bearer ${token}` });
+async function countUse(token, uid, { since, source } = {}) {
+  let q = `${SB_URL}/rest/v1/ai_usage?select=id&user_id=eq.${uid}`;
+  if (since) q += `&created_at=gte.${encodeURIComponent(since.toISOString())}`;
+  if (source) q += `&source=eq.${source}`;
+  const r = await fetch(q, { headers: { ...H(token), Prefer: 'count=exact', Range: '0-0' } });
   if (!r.ok) throw new Error('usage_read_' + r.status);
   const cr = r.headers.get('content-range') || '';
   return parseInt(cr.split('/')[1] || '0', 10) || 0;
 }
-async function logUse(token, uid, kind) {
-  await fetch(`${SB_URL}/rest/v1/ai_usage`, { method: 'POST', headers: { apikey: SB_KEY, Authorization: `Bearer ${token}`, 'content-type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ user_id: uid, kind }) });
+async function getSub(token, uid) {
+  const r = await fetch(`${SB_URL}/rest/v1/subscriptions?select=plan,paid_until,packs&user_id=eq.${uid}`, { headers: H(token) });
+  if (!r.ok) return null;
+  const a = await r.json(); return a && a[0] ? a[0] : null;
+}
+/* decides which allowance pays for this request: plan → free → pack */
+async function allowance(token, uid) {
+  const day = new Date(); day.setUTCHours(0, 0, 0, 0);
+  if (await countUse(token, uid, { since: day }) >= DAILY_CAP) return { ok: false, code: 'daily_limit' };
+  const sub = (await getSub(token, uid)) || { plan: 'free', packs: 0 };
+  const paid = (sub.plan === 'plus' || sub.plan === 'pro') && sub.paid_until && new Date(sub.paid_until) > new Date();
+  if (paid) {
+    const used = await countUse(token, uid, { since: new Date(Date.now() - 30 * 864e5), source: 'plan' });
+    if (used < QUOTA[sub.plan]) return { ok: true, source: 'plan', left: QUOTA[sub.plan] - used - 1, plan: sub.plan };
+  } else {
+    const all = await countUse(token, uid, { source: 'free' });
+    if (all < FREE_START) return { ok: true, source: 'free', left: FREE_START - all - 1, plan: 'free' };
+    const week = await countUse(token, uid, { since: new Date(Date.now() - 7 * 864e5), source: 'free' });
+    if (week < FREE_WEEK) return { ok: true, source: 'free', left: 0, plan: 'free' };
+  }
+  const packs = sub.packs || 0;
+  if (packs > 0) { const usedP = await countUse(token, uid, { source: 'pack' }); if (usedP < packs) return { ok: true, source: 'pack', left: packs - usedP - 1, plan: sub.plan || 'free' }; }
+  return { ok: false, code: paid ? 'plan_quota' : 'free_quota', plan: paid ? sub.plan : 'free' };
+}
+async function logUse(token, uid, kind, source) {
+  await fetch(`${SB_URL}/rest/v1/ai_usage`, { method: 'POST', headers: { ...H(token), 'content-type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ user_id: uid, kind, source }) });
 }
 
 function cleanTurns(turns) {
@@ -60,9 +88,9 @@ module.exports = async (req, res) => {
   try { user = await sbUser(token); } catch (_) { return fail(res, 502, 'network'); }
   if (!user) return fail(res, 401, 'login');
 
-  let used = 0;
-  try { used = await usedToday(token, user.id); } catch (e) { return fail(res, 500, 'usage', { detail: String(e.message || e) }); }
-  if (used >= DAILY) return fail(res, 429, 'daily_limit', { limit: DAILY });
+  let al;
+  try { al = await allowance(token, user.id); } catch (e) { return fail(res, 500, 'usage', { detail: String(e.message || e) }); }
+  if (!al.ok) return fail(res, al.code === 'daily_limit' ? 429 : 402, al.code, { plan: al.plan });
 
   const body = req.body || {};
   const json = body.mode === 'json';
@@ -94,8 +122,9 @@ module.exports = async (req, res) => {
     return fail(res, upstream.status === 429 ? 429 : 502, code);
   }
 
-  logUse(token, user.id, json ? 'photo' : (messages.length > 1 ? 'follow' : 'reading')).catch(() => {});
-  res.setHeader('X-Ai-Left', String(Math.max(0, DAILY - used - 1)));
+  await logUse(token, user.id, json ? 'photo' : (messages.length > 1 ? 'follow' : 'reading'), al.source).catch(() => {});
+  res.setHeader('X-Ai-Left', String(Math.max(0, al.left)));
+  res.setHeader('X-Ai-Plan', al.plan);
 
   if (json) {
     const data = await upstream.json();
