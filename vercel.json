@@ -1,13 +1,70 @@
 {
-  "functions": { "api/tarot.js": { "maxDuration": 300 }, "api/blog.js": { "maxDuration": 15 } },
+  "functions": {
+    "api/tarot.js": {
+      "maxDuration": 300
+    },
+    "api/blog.js": {
+      "maxDuration": 15
+    }
+  },
   "rewrites": [
-    { "source": "/blog", "destination": "/api/blog" },
-    { "source": "/blog/:slug", "destination": "/api/blog?slug=:slug" },
-    { "source": "/sitemap.xml", "destination": "/api/blog?sitemap=1" }
+    {
+      "source": "/blog",
+      "destination": "/api/blog"
+    },
+    {
+      "source": "/blog/:slug",
+      "destination": "/api/blog?slug=:slug"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/blog?sitemap=1"
+    }
   ],
   "headers": [
-    { "source": "/studio/(.*)", "headers": [ { "key": "X-Robots-Tag", "value": "noindex, nofollow" }, { "key": "Cache-Control", "value": "no-store" } ] },
-    { "source": "/studio", "headers": [ { "key": "X-Robots-Tag", "value": "noindex, nofollow" } ] },
-    { "source": "/api/(.*)", "headers": [ { "key": "X-Robots-Tag", "value": "noindex" } ] }
+    {
+      "source": "/studio/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/studio",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
+    },
+    {
+      "source": "/blog-setup.sql",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://supabase.com"
+        },
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        }
+      ]
+    }
   ]
 }
