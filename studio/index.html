@@ -160,7 +160,7 @@ td small{display:block;color:var(--muted);font-size:12px}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 (()=>{
-const SB=supabase.createClient('https://blwyzqxhzvjzhqkabesi.supabase.co','sb_publishable_v2wRmfGkiVW7fF6wIkPZBg_fjeS3wBu',{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const SB=supabase.createClient('https://blwyzqxhzvjzhqkabesi.supabase.co','sb_publishable_v2wRmfGkiVW7fF6wIkPZBg_fjeS3wBu',{auth:{lock:async(n,_t,fn)=>{ if(!navigator.locks) return fn(); const ac=new AbortController(), tm=setTimeout(()=>ac.abort(),3000); try{ return await navigator.locks.request(n,{signal:ac.signal},async()=>{ clearTimeout(tm); return fn(); }); }catch(e){ if(e&&e.name==='AbortError') return fn(); throw e; } },persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const PRICE={plus:{m:199,y:1790},pro:{m:549,y:4990}}, QUOTA={plus:100,pro:300}, AI_UAH=1.05;
 const $=s=>document.querySelector(s), esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtD=d=>d?new Date(d).toLocaleDateString('uk-UA',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
