@@ -2022,6 +2022,7 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
 .dr-lang{padding-top:4px}
 .dr-lang .theme-sw{margin-left:0}
 .au-rem{margin:2px 0 4px}
+.ft-blog{display:block;text-decoration:none}
 .aim-gate{padding:8px 0}.aim-gate p{margin:0 0 12px;line-height:1.6}.aim-gate .btn{flex:0 0 auto!important}
 .aim-b{background:transparent!important;color:var(--fg)!important;border:1px solid var(--line)!important;box-shadow:none!important}
 .aim-b:hover{border-color:var(--accent)!important;color:var(--accent)!important}
@@ -2126,7 +2127,7 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
       <div class="foot-cols">
         <div><h5 data-i18n="ftSec">Розділи</h5><button class="flink" data-nav="matrix" data-i18n="tMatrix">Матриця</button><button class="flink" data-nav="today" data-i18n="tToday">Сьогодні</button><button class="flink" data-nav="years" data-i18n="tYears">Прогноз по роках</button><button class="flink" data-nav="arcana" data-i18n="tArc">Аркани</button><button class="flink" data-nav="tarot" data-i18n="mTarot">Таро-трактувальник</button></div>
         <div><h5 data-i18n="ftCalc">Розрахунки</h5><button class="flink" data-mode="solo" data-i18n="mSolo">Особиста матриця</button><button class="flink" data-mode="pair" data-i18n="mPair">Сумісність</button><button class="flink" data-nav="arcana" data-i18n="mCat">Довідник арканів</button></div>
-        <div><h5 data-i18n="ftMeth">Метод</h5><span class="ftxt" data-i18n="ftM1">Матриця долі Наталії Ладіні</span><span class="ftxt" data-i18n="ftM2">22 Старші Аркани</span><span class="ftxt" data-i18n="ftM3">Карта здоров’я, програми, роки</span></div>
+        <div><h5 data-i18n="ftMeth">Метод</h5><span class="ftxt" data-i18n="ftM1">Матриця долі Наталії Ладіні</span><span class="ftxt" data-i18n="ftM2">22 Старші Аркани</span><span class="ftxt" data-i18n="ftM3">Карта здоров’я, програми, роки</span><a class="flink ft-blog" href="/blog">Блог</a></div>
       </div>
     </div>
     <div class="foot-bot"><span>© 2026 CODE</span><span data-i18n="ftCopy">Інструмент самопізнання, а не прогноз чи діагноз</span></div>
@@ -5178,6 +5179,8 @@ function goCalc(mode,view){
   setTimeout(()=>{const f=$(mode==='pair'?'#n1':'#name'); f&&f.focus({preventScroll:true});},400);
 }
 function focusForm(mode){ setMode(mode); window.scrollTo({top:0,behavior:'smooth'}); if(document.body.classList.contains('fc')&&innerWidth<=820) setFormOpen(true); setTimeout(()=>{const f=$(mode==='pair'?'#n1':'#name'); f&&f.focus({preventScroll:true});},350); }
+/* deep links from the blog: /?go=tarot | years | pair | today | cat | guide | acct */
+setTimeout(()=>{ try{ const g=new URLSearchParams(location.search).get('go'); if(g&&/^(solo|pair|today|years|cat|guide|tarot|acct)$/.test(g)){ const b=document.querySelector(`#drawer [data-act="${g}"]`); if(b) b.click(); history.replaceState(null,'',location.pathname+location.hash); } }catch(_){} },700);
 $('#drawer').addEventListener('click',e=>{
   const b=e.target.closest('[data-act]'); if(!b) return;
   const a=b.dataset.act; closeDrawer();
