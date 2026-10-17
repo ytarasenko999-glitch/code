@@ -1864,7 +1864,10 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
 .sub-note{margin-top:14px;line-height:1.55}
 
 /* AI on the matrix */
-.aim{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:18px 4px 4px;padding-top:18px;border-top:1px solid var(--hair)}
+.aim{display:block;margin:18px 4px 4px;padding-top:20px;border-top:1px solid var(--hair)}
+.aim-ask{margin:26px 0 0;padding-top:22px}
+.mdl .aim-ask,#mdlBody .aim-ask{margin-top:30px}
+.acc-in .aim-ask{margin-top:20px}
 .aim-y{grid-template-columns:1fr;margin:4px 0 14px;padding:0 0 14px;border-top:0;border-bottom:1px solid var(--hair)}
 .aim-i{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}
 .aim-b{height:48px!important;padding:0 22px!important;flex:0 0 auto!important;gap:10px}
@@ -1891,6 +1894,10 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
 .aim-acts .btn{flex:0 0 auto!important}
 .aim-err{padding:12px 16px;border-radius:16px;background:color-mix(in srgb,var(--p-red) 10%,transparent);color:var(--fg);font-size:14px}
 .aim-gate{padding:8px 0}.aim-gate p{margin:0 0 12px;line-height:1.6}.aim-gate .btn{flex:0 0 auto!important}
+.aim-b{background:transparent!important;color:var(--fg)!important;border:1px solid var(--line)!important;box-shadow:none!important}
+.aim-b:hover{border-color:var(--accent)!important;color:var(--accent)!important}
+.aim-b .ai-ic{width:15px;height:15px;flex:0 0 auto;opacity:.85}
+@media (max-width:640px){.aim-i{align-items:stretch;text-align:center}.aim-b{width:100%;justify-content:center}.aim-h{max-width:none;margin:0 auto;padding:0 6px}}
 @media (max-width:640px){.aim{grid-template-columns:1fr}.aim-chat{max-height:52svh}.aim-f{flex-direction:column;align-items:stretch}}
 </style>
 </head>
@@ -3311,7 +3318,8 @@ function chakraSection(){
       <aside class="panel chside" id="chside">${chakraDetail(ci)}</aside>
     </div></section>`;
 }
-function chakraDetail(i){
+function chakraDetail(i){ return withAsk(chakraDetail0(i),'chak:'+i); }
+function chakraDetail0(i){
   const P=STATE.P, A=ARC, {rows,total}=chakraRows(P), badge=(v,c)=>`<span class="chip static"><b style="--c:${c}">${v}</b>${A[v].n}</span>`;
   if(i===7){
     const t=total;
@@ -3842,11 +3850,11 @@ function accordion(){
       <div class="acc-body"><div class="acc-in"><div>
         ${s.raw?s.raw:`${sphProgs(s)}<div class="chips">${s.ids.map(chipArc).join('')}</div>
         <div class="txt">${s.html.filter(Boolean).map(blk).join('')}</div>`}
-        <div class="sph-more">${moreBtn('sph:'+i)}</div>
+        <div class="sph-more">${moreBtn('sph:'+i)}</div>${aiAsk('sph:'+i)}
       </div></div></div></li>`).join('')}</ul>`;
 }
 const isSheet=()=>innerWidth<=820;
-const detHTML=d=>d?dedupeHTML(detHTML0(d)):accordion();
+const detHTML=d=>d?withAsk(dedupeHTML(detHTML0(d)),detSpec(d)):accordion();
 const detHTML0=d=>!d?accordion():d.type==='tcat'?tcatDetail(d.id):d.type==='arc'?arcDetail(d.id):d.type==='prog'?progDetail(d.k):d.type==='year'?yearDetail(d.age):d.type==='day'?dayDetail(d.key):catDetail(d.v);
 function sheetOpen(html,onClose){
   const sh=$('#msheet'), body=$('#msBody'), head=$('#msHead'); body.innerHTML=html;
@@ -4724,22 +4732,56 @@ async function aimRun(task,turns,onText,signal){
 const aimPaid=()=>{ if(!(window.CODE_SB)) return true; const sb=USER&&USER.sub; return !!(sb&&(sb.plan==='plus'||sb.plan==='pro')&&sb.paid_until&&new Date(sb.paid_until)>new Date()); };
 function aiBlock(){
   if(isPair()) return '';
-  return `<div class="aim">
-    <div class="aim-i"><button class="btn go aim-b" type="button" data-aim="chat"><span>${_t("Запитай свою матрицю")}</span></button><p class="aim-h">${_t("Поставте будь-яке питання про себе — ШІ розбере його через вашу матрицю долі: характер, таланти, гроші, стосунки, кармічні завдання.")}</p></div>
-    <div class="aim-i"><button class="btn ghost aim-b" type="button" data-aim="report"><span>${_t("Персональний розбір від ШІ")}</span><em class="aim-tag">Plus</em></button><p class="aim-h">${_t("Цілісний глибокий розбір усієї матриці: як ваші енергії впливають одна на одну, сценарії, що повторюються, гроші, стосунки, рід і план на 90 днів.")}</p></div>
-  </div>`;
+  return `<div class="aim"><div class="aim-i"><button class="btn ghost aim-b" type="button" data-aim="report">${AI_IC}<span>${_t("Персональний розбір від ШІ")}</span><em class="aim-tag">Plus</em></button><p class="aim-h">${_t("Цілісний глибокий розбір усієї матриці: як ваші енергії впливають одна на одну, сценарії, що повторюються, гроші, стосунки, рід і план на 90 днів.")}</p></div></div>`;
 }
-const aiYearBtn=()=>isPair()?'':`<div class="aim aim-y"><div class="aim-i"><button class="btn ghost aim-b" type="button" data-aim="year"><span>${_t("Прогноз на 12 місяців")}</span><em class="aim-tag">Plus</em></button><p class="aim-h">${_t("Персональний прогноз по місяцях: загальна лінія року, найкращі періоди й періоди уваги, тема, фокус і одна дія на кожен місяць.")}</p></div></div>`;
-function aimOpen(kind){
+const AI_IC='<svg class="ai-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>';
+/* «Запитай свою матрицю» — at the bottom of every opened info block, with the block as context */
+function aiAsk(spec){
+  if(!STATE||!STATE.P||isPair()||!spec) return '';
+  return `<div class="aim aim-ask"><div class="aim-i"><button class="btn ghost aim-b" type="button" data-aim="chat" data-aim-ctx="${esc(spec)}">${AI_IC}<span>${_t("Запитай свою матрицю")}</span></button><p class="aim-h">${_t("Залишилися питання саме про це? ШІ відповість з урахуванням усієї вашої матриці.")}</p></div></div>`;
+}
+function withAsk(html,spec){ const a=aiAsk(spec); return a?html.replace(/<\/div>\s*$/,a+'</div>'):html; }
+const detSpec=d=>!d?'':d.type==='arc'?'arc:'+d.id:d.type==='cat'?'cat:'+d.v:d.type==='prog'?'prog:'+d.k:d.type==='year'?'year:'+d.age:d.type==='day'?'day:'+d.key:'';
+const SPH_SUG={
+  "Особистість":["Як мені краще проявляти себе, щоб мене правильно сприймали?","Що в моєму характері заважає мені найбільше?","Як вийти з мінусу центральної енергії?"],
+  "Таланти":["Як розкрити мій головний талант?","У якій справі мої таланти принесуть дохід?","Чому я сумніваюся у своїх здібностях?"],
+  "Кармічний хвіст":["Як мій кармічний хвіст проявляється в житті зараз?","Що конкретно робити, щоб пропрацювати програму?","Які ситуації в мене повторюються через хвіст?"],
+  "Гроші":["Що заважає мені заробляти більше?","Яка сфера заробітку мені найкраще підходить?","Як відкрити грошовий канал саме мені?"],
+  "Стосунки":["Чому в стосунках у мене повторюється один сценарій?","Який партнер мені підходить?","Що мені варто змінити в собі для гармонійних стосунків?"],
+  "Рід":["Які родові програми впливають на мене найбільше?","Що я взяла від роду як ресурс?","Як опрацювати родові сценарії?"],
+  "Призначення":["У чому моє призначення зараз, у цьому віці?","Як зрозуміти, що я на своєму шляху?","Що мені робити, щоб реалізувати призначення?"],
+  "Ресурс і здоров’я":["Звідки мені брати енергію?","Що виснажує мене найбільше?","Які звички підтримають мій ресурс?"],
+  "Програми":["Яка програма в моїй матриці зараз найактивніша?","Як пропрацювати мої кармічні програми?","Які програми є моїм ресурсом?"]
+};
+function aimCtx(spec){
+  if(!spec||!STATE.P) return null;
+  const i=spec.indexOf(':'), t=spec.slice(0,i), v=spec.slice(i+1), P=STATE.P;
+  if(t==='arc'){ const x=P[v], a=ARC[x], pl=POS[v]?POS[v][0]:v;
+    return {label:_f("{0} — {1} {2}",[pl,x,a.n]),sug:[_f("Як мені проявляти {0} у плюсі в цій позиції?",[a.n]),_t("Як ця енергія впливає на мої гроші й стосунки?"),_t("Що заважає мені розкрити цю позицію?")]}; }
+  if(t==='cat'){ const a=ARC[+v];
+    return {label:_f("Аркан {0} {1}",[v,a.n]),sug:[_f("Як аркан {0} проявляється в моїй матриці?",[a.n]),_f("Як мені прожити енергію {0} у плюсі?",[a.n]),_t("Що ця енергія дає мені як ресурс?")]}; }
+  if(t==='prog'){ const p=getProg(v); if(!p) return null; const c=p.vals.join('-');
+    return {label:_f("Програма {0}{1}",[c,p.named?` «${p.named.n}»`:'']),sug:[_t("Як ця програма проявляється в моєму житті?"),_f("Як мені пропрацювати програму {0}?",[c]),_t("Що зміниться, коли програма стане ресурсом?")]}; }
+  if(t==='year'){ const a=+v, tt=P.YEARS[a];
+    return {label:_f("Рік у віці {0} · {1}",[a,tt.join('-')]),sug:[_t("На що звернути увагу в цьому році?"),_t("Що цей рік означає для роботи й грошей?"),_t("Що цей рік означає для стосунків?")]}; }
+  if(t==='day') return {label:_t("Енергія дня"),sug:[_t("Як мені найкраще прожити сьогоднішній день?"),_t("Чого сьогодні краще уникати?"),_t("Яке рішення сьогодні вдасться легше?")]};
+  if(t==='chak'){ const n=+v===7?_t("Енергополе"):CHAK[+v].n;
+    return {label:_f("Карта здоров’я · {0}",[n]),sug:[_f("Що допоможе мені наповнити {0}?",[n]),_t("Як мій емоційний стан пов’язаний з цією зоною?"),_t("Які звички підтримають мою енергію?")]}; }
+  if(t==='sph'){ const sp=spheres(P,STATE.g,STATE.name); sp.splice(3,0,{t:_t("Програми"),k:"Програми"}); const s=sp[+v]; if(!s) return null;
+    return {label:_f("Сфера «{0}»",[s.t]),sug:(SPH_SUG[s.k]||[]).map(q=>_t(q))}; }
+  return null;
+}
+const aiYearBtn=()=>isPair()?'':`<div class="aim aim-y"><div class="aim-i"><button class="btn ghost aim-b" type="button" data-aim="year">${AI_IC}<span>${_t("Прогноз на 12 місяців")}</span><em class="aim-tag">Plus</em></button><p class="aim-h">${_t("Персональний прогноз по місяцях: загальна лінія року, найкращі періоди й періоди уваги, тема, фокус і одна дія на кожен місяць.")}</p></div></div>`;
+function aimOpen(kind,spec){
   if(!STATE||!STATE.P) return;
-  const key=AIM_KEY(), st=aiStore(), rec=st[key]||{}, ctlBox={c:null};
+  const key=AIM_KEY(), st=aiStore(), rec=st[key]||{}, ctlBox={c:null}, cx=kind==='chat'?aimCtx(spec):null;
   const title={chat:_t("Запитай свою матрицю"),report:_t("Персональний розбір матриці"),year:_t("Прогноз на 12 місяців")}[kind];
   const d=document.createElement('div'); d.className='tf-ov aim-ov'; d.setAttribute('role','dialog'); d.setAttribute('aria-modal','true'); d.setAttribute('aria-labelledby','aimT');
   d.innerHTML=`<div class="tf-bg"></div><div class="tf-box aim-box"><button class="x" type="button" data-tf="x" aria-label="${_t("Закрити")}">${IC_X}</button>
     <div class="tf-h"><div><p class="pk">[ ${esc(STATE.name||_t("Ваша матриця"))} · ${STATE.d}.${STATE.m}.${STATE.y} ]</p><h3 id="aimT">${title}</h3></div></div><div class="aim-body"></div></div>`;
-  document.body.appendChild(d); document.documentElement.classList.add('mdl-on'); requestAnimationFrame(()=>d.classList.add('in'));
+  document.body.appendChild(d); document.documentElement.classList.add('mdl-on'); requestAnimationFrame(()=>{ d.classList.add('in'); const x=d.querySelector('[data-tf=x]'); if(x&&!matchMedia('(hover:none)').matches) x.focus({preventScroll:true}); });
   const body=d.querySelector('.aim-body');
-  const close=()=>{ if(ctlBox.c) ctlBox.c.abort(); d.classList.remove('in'); document.documentElement.classList.remove('mdl-on'); setTimeout(()=>d.remove(),240); document.removeEventListener('keydown',onKey,true); };
+  const close=()=>{ if(ctlBox.c) ctlBox.c.abort(); d.classList.remove('in'); if(!(document.getElementById('mdl')&&!document.getElementById('mdl').hidden)) document.documentElement.classList.remove('mdl-on'); setTimeout(()=>d.remove(),240); document.removeEventListener('keydown',onKey,true); };
   const onKey=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopImmediatePropagation(); close(); } };
   document.addEventListener('keydown',onKey,true);
   d.addEventListener('click',e=>{ if(e.target.closest('[data-tf=x]')||e.target.classList.contains('tf-bg')) close(); });
@@ -4748,20 +4790,20 @@ function aimOpen(kind){
   if(kind==='chat'){
     const hist=(rec.chat||[]).slice(-20); let turns=[]; hist.forEach(m=>{ turns.push({role:'user',content:m.q}); turns.push({role:'assistant',content:m.a}); });
     const SUG=[_t("Яка професія мені найбільше підходить?"),_t("Що заважає мені заробляти більше?"),_t("Чому в стосунках у мене повторюється один сценарій?"),_t("На що звернути увагу цього року?")];
-    let sug=SUG;
-    const draw=()=>{ body.innerHTML=`<div class="aim-chat">${hist.length?hist.map(m=>`<div class="aim-q">${esc(m.q)}</div><div class="aim-a tp-ans">${tpMd(m.a)}</div>`).join(''):`<p class="aim-intro">${_t("Питайте про що завгодно: роботу, гроші, стосунки, рішення, які зараз перед вами. Відповідь спиратиметься на позиції саме вашої матриці.")}</p>`}</div>
+    let sug=cx&&cx.sug.length?cx.sug:SUG;
+    const draw=()=>{ body.innerHTML=`${cx?`<p class="aim-meta aim-cx">${_t("Розділ")}: ${esc(cx.label)}</p>`:''}<div class="aim-chat">${hist.length?hist.map(m=>`<div class="aim-q">${esc(m.q)}</div><div class="aim-a tp-ans">${tpMd(m.a)}</div>`).join(''):`<p class="aim-intro">${_t("Питайте про що завгодно: роботу, гроші, стосунки, рішення, які зараз перед вами. Відповідь спиратиметься на позиції саме вашої матриці.")}</p>`}</div>
       <div class="tp-sg aim-sg">${sug.map(q=>`<button type="button" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>
       <form class="aim-f"><textarea id="aimIn" rows="2" maxlength="600" placeholder="${_t("Ваше питання до матриці…")}"></textarea><button class="btn go sm" type="submit">${_t("Запитати")}</button></form><div id="aimE"></div>`;
       const ch=body.querySelector('.aim-chat'); ch.scrollTop=ch.scrollHeight; };
     draw();
     const ask=async q=>{ q=q.trim(); if(!q||ctlBox.c) return;
-      const m={q,a:''}; hist.push(m); draw();
+      const m={q,a:'',cx:cx?cx.label:''}; hist.push(m); draw();
       const last=()=>{ const a=body.querySelectorAll('.aim-a'); return a[a.length-1]; };
       const all=[];
-      hist.forEach((x,i)=>{ all.push({role:'user',content:i?x.q:aimChatPrompt()+`\n\nQUESTION: ${x.q}`}); if(i<hist.length-1) all.push({role:'assistant',content:x.a||'—'}); });
+      hist.forEach((x,i)=>{ const cn=x.cx?`CONTEXT: the person asked this while reading the section «${x.cx}» of their matrix — answer in that context, using the energies of this section first, then the rest of the matrix.\n`:''; all.push({role:'user',content:i?cn+x.q:aimChatPrompt()+`\n\n${cn}QUESTION: ${x.q}`}); if(i<hist.length-1) all.push({role:'assistant',content:x.a||'—'}); });
       const ctl=new AbortController(); ctlBox.c=ctl;
       try{ const res=await aimRun('chat',all,t=>{ m.a=t; const a=last(); if(a) a.innerHTML=tpMd(t); },ctl.signal);
-        m.a=res.text; sug=(tpFuParse(res.text)||SUG).slice(0,3); const s2=aiStore(); s2[key]=s2[key]||{}; s2[key].chat=hist.map(x=>({q:x.q,a:x.a})); aiSave(s2); draw(); }
+        m.a=res.text; sug=(tpFuParse(res.text)||SUG).slice(0,3); const s2=aiStore(); s2[key]=s2[key]||{}; s2[key].chat=hist.map(x=>({q:x.q,a:x.a,cx:x.cx||''})); aiSave(s2); draw(); }
       catch(e){ hist.pop(); draw(); body.querySelector('#aimE').innerHTML=errBox(tpErr(e&&e.code)); }
       finally{ ctlBox.c=null; } };
     body.addEventListener('click',e=>{ const b=e.target.closest('[data-q]'); if(b) ask(b.dataset.q); });
@@ -4787,7 +4829,7 @@ function aimOpen(kind){
   });
   if(saved) show(saved.text,saved.ts,false); else run();
 }
-document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-aim]'); if(b){ e.preventDefault(); aimOpen(b.dataset.aim); } });
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-aim]'); if(b){ e.preventDefault(); aimOpen(b.dataset.aim,b.dataset.aimCtx); } });
 
 function cabinetHTML(){
   const p=USER.profile||{};
@@ -6452,6 +6494,7 @@ function openMore(spec){
   $('#mdlToc').innerHTML=D.S.map((s,k)=>`<button type="button" data-sec="${k}"><b>${String(k+1).padStart(2,'0')}</b>${s.t}</button>`).join('');
   setTimeout(()=>dedupeDOM($('#mdlBody')),0);
   $('#mdlBody').innerHTML=_f("{0}<p class=\"note\">Трактування — інструмент самопізнання за методом Матриці долі, а не прогноз чи діагноз.</p>",[D.S.map((s,k)=>`<section class="msec" id="msec${k}"><h3><b>${String(k+1).padStart(2,'0')}</b>${s.t}</h3>${s.html}</section>`).join('')]);
+  if(t!=='doc') $('#mdlBody').insertAdjacentHTML('beforeend',aiAsk(spec));
   MORE_PREV=document.activeElement;
   m.hidden=false; document.documentElement.classList.add('mdl-on');
   { const bd=$('#mdlBody'), tc=$('#mdlToc'); bd.style.scrollBehavior='auto'; tc.style.scrollBehavior='auto'; bd.scrollTop=0; tc.scrollLeft=0; bd.style.scrollBehavior=''; tc.style.scrollBehavior=''; tc.querySelectorAll('.on').forEach(b=>b.classList.remove('on')); }
@@ -6490,7 +6533,7 @@ document.addEventListener('click',e=>{
   if(e.target.closest('#mdlX')||e.target.classList.contains('mdl-bg')) closeMore();
 });
 document.addEventListener('keydown',e=>{
-  const m=$('#mdl'); if(!m||m.hidden) return;
+  const m=$('#mdl'); if(!m||m.hidden||document.querySelector('.aim-ov')) return;
   if(e.key==='Escape'){ e.preventDefault(); e.stopImmediatePropagation(); closeMore(); return; }
   if(e.key==='Tab'){
     const f=[...m.querySelectorAll('button,[href],[tabindex]:not([tabindex="-1"])')].filter(x=>!x.disabled&&x.offsetParent!==null);
