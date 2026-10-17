@@ -1404,6 +1404,18 @@ body.auth-on .foot{margin-top:0!important}
 .pd-lab{display:flex;flex-direction:column;gap:2px;padding:0 4px 4px}
 .pd-lab b{font-family:var(--font-display);font-stretch:110%;font-weight:500;font-size:14px;text-transform:uppercase;letter-spacing:.02em}
 .pd-lab small{color:var(--muted);font-size:12px}
+.pd-wl{margin-top:16px;padding:14px 16px;border-radius:18px;border:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
+.pd-wl.off{cursor:pointer}.pd-wl.off .pd-chk{opacity:.75;pointer-events:none}
+.pd-chk{display:flex;align-items:flex-start;gap:12px;cursor:pointer}
+.pd-chk input{position:absolute;opacity:0;pointer-events:none}
+.pd-box{flex:0 0 22px;height:22px;margin-top:1px;border-radius:7px;border:1.5px solid var(--line);display:grid;place-items:center;transition:background .15s,border-color .15s}
+.pd-box::after{content:"";width:10px;height:6px;border:2px solid #fff;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px);opacity:0}
+.pd-chk input:checked+.pd-box{background:var(--accent);border-color:var(--accent)}.pd-chk input:checked+.pd-box::after{opacity:1}
+.pd-chk input:focus-visible+.pd-box{outline:2px solid var(--accent);outline-offset:2px}
+.pd-tx{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}.pd-tx b{font-weight:500;font-size:14.5px}.pd-tx small{color:var(--muted);font-size:12.5px;line-height:1.45}
+.pd-wl .aim-tag{align-self:center}
+.pd-brand{height:44px;padding:0 16px;border-radius:14px;border:1px solid transparent;background:var(--surface-2);font:inherit;font-size:14.5px;color:var(--fg)}
+.pd-brand:focus{outline:none;border-color:var(--accent)}
 .pd-acts{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
 .pd-acts .btn{height:46px;padding:0 22px;display:inline-flex;align-items:center;gap:10px}
 .pd-spin{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:pdSpin .8s linear infinite;display:none}
@@ -4136,29 +4148,38 @@ function pdfBlocks(png){
       <div class="two"><div><h4 class="ok">${_t("Сценарії в плюсі")}</h4>${pUL(ARC[t[0]].yp)}</div><div><h4 class="no">${_t("Сценарії в мінусі")}</h4>${pUL(ARC[t[0]].ym)}</div></div>
       <h4>${_t("Як прожити рік")}</h4><p>${tx.w}</p></div>`);
   }
-  B.push(`<div class="pend"><div class="pword">CODE</div><p class="pmuted">${_t("Матриця долі — інструмент самопізнання, а не прогноз чи діагноз.")}</p></div>`);
+  B.push(`<div class="pend">${PDF_WL?(PDF_WL.brand?`<div class="pword">${esc(PDF_WL.brand)}</div>`:''):'<div class="pword">CODE</div>'}<p class="pmuted">${_t("Матриця долі — інструмент самопізнання, а не прогноз чи діагноз.")}</p></div>`);
   return B;
 }
 /* PDF theme picker — opens at once, prepares the generator, then lets the person choose light or dark */
+let PDF_WL=null;
+const proOn=()=>{ if(!window.CODE_SB) return true; const sb=USER&&USER.sub; return !!(sb&&sb.plan==='pro'&&sb.paid_until&&new Date(sb.paid_until)>new Date()); };
 function pdfDialog(){
   return new Promise(resolve=>{
+    const pro=proOn(), wl0=LS.get('code-pdf-wl',{on:false,brand:''});
     const cur=(document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
     const d=document.createElement('div'); d.className='pdlg'; d.setAttribute('role','dialog'); d.setAttribute('aria-modal','true'); d.setAttribute('aria-labelledby','pdlgT');
     const card=(t,lab)=>`<label class="pd-opt"><input type="radio" name="pdth" value="${t}"${t===cur?' checked':''}><span class="pd-prev ${t}"><i class="g"></i><i class="r"></i><i class="c"></i><i class="l1"></i><i class="l2"></i><i class="b"></i></span><span class="pd-lab"><b>${lab}</b><small>${t==='light'?T('pdLightS'):T('pdDarkS')}</small></span></label>`;
     d.innerHTML=`<div class="pdlg-bg"></div><div class="pdlg-box"><button class="x" type="button" data-pd="x" aria-label="${_t("Закрити")}">${IC_X}</button>
       <p class="pk">[ PDF ]</p><h3 id="pdlgT">${T('pdT')}</h3><p class="pd-sub">${T('pdS')}</p>
       <div class="pd-opts">${card('light',T('pdLight'))}${card('dark',T('pdDark'))}</div>
+      ${`<div class="pd-wl${pro?'':' off'}"${pro?'':` data-pd="pro" role="button" tabindex="0"`}><label class="pd-chk"><input type="checkbox" id="pdWl"${pro&&wl0.on?' checked':''}${pro?'':' disabled'}><span class="pd-box" aria-hidden="true"></span><span class="pd-tx"><b>${_t("Без логотипу CODE")}</b><small>${pro?_t("Для роботи з клієнтами: у файлі не буде нашого бренду. Можна вказати своє ім’я або назву практики."):_t("Для роботи з клієнтами: PDF без нашого бренду, з вашим ім’ям. Доступно в тарифі Pro.")}</small></span>${pro?'':'<em class="aim-tag">Pro</em>'}</label>${pro?`<input class="pd-brand" id="pdBrand" maxlength="40" autocomplete="organization" placeholder="${_t("Ваше ім’я або бренд (необов’язково)")}" value="${esc(wl0.brand||'')}"${wl0.on?'':' hidden'}>`:''}</div>`}
       <div class="pd-acts"><button class="btn ghost sm" type="button" data-pd="x">${T('pdCancel')}</button><button class="btn go sm" type="button" data-pd="ok" disabled><span class="pd-spin" aria-hidden="true"></span><span class="pd-t">${T('pdPrep')}</span></button></div></div>`;
     document.body.appendChild(d); requestAnimationFrame(()=>d.classList.add('in'));
     const ok=d.querySelector('[data-pd=ok]'), okT=ok.querySelector('.pd-t'); let busy=false, done=false;
     const close=()=>{ if(done) return; done=true; d.classList.remove('in'); setTimeout(()=>d.remove(),250); document.removeEventListener('keydown',key,true); };
     const key=e=>{ if(e.key==='Escape'&&!busy){ e.preventDefault(); e.stopImmediatePropagation(); close(); resolve(null); } };
     document.addEventListener('keydown',key,true);
+    { const cb=d.querySelector('#pdWl'), br=d.querySelector('#pdBrand'); if(cb&&br) cb.addEventListener('change',()=>{ br.hidden=!cb.checked; if(cb.checked) br.focus({preventScroll:true}); }); }
+    d.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-pd=pro]')){ e.preventDefault(); e.target.click(); } });
     d.addEventListener('click',e=>{
       if(busy) return;
+      if(e.target.closest('[data-pd=pro]')){ close(); resolve(null); openPlans(); return; }
       if(e.target.closest('[data-pd=x]')||e.target.classList.contains('pdlg-bg')){ close(); resolve(null); return; }
       if(e.target.closest('[data-pd=ok]')&&!ok.disabled){ busy=true; d.classList.add('busy'); ok.disabled=true;
-        resolve({theme:d.querySelector('input[name=pdth]:checked').value,set:t=>{okT.textContent=t;},close}); }
+        const cb=d.querySelector('#pdWl'), br=d.querySelector('#pdBrand'), wl=pro&&cb&&cb.checked?{on:true,brand:(br&&br.value||'').trim().slice(0,40)}:null;
+        if(pro) LS.set('code-pdf-wl',{on:!!wl,brand:br?br.value.trim().slice(0,40):''});
+        resolve({theme:d.querySelector('input[name=pdth]:checked').value,wl,set:t=>{okT.textContent=t;},close}); }
     });
     d.ready=()=>{ ok.disabled=false; okT.textContent=T('pdGo'); d.classList.add('ready'); ok.focus({preventScroll:true}); };
     d.fail=()=>{ close(); resolve(null); };
@@ -4179,14 +4200,15 @@ async function downloadCode(btn){
   }catch(e){ d.fail(); toast(_t("Не вдалося підготувати PDF. Спробуйте ще раз.")); btn.disabled=false; return; }
   const ch=await pick;
   if(!ch){ btn.disabled=false; return; }
-  try{ await renderPdf(dl,ch.theme,ch.set); toast(_t("PDF збережено.")); }
+  try{ await renderPdf(dl,ch.theme,ch.set,ch.wl); toast(_t("PDF збережено.")); }
   catch(e){ if(e&&e.code==='declined'){} else if(e&&e.code==='rate_limited') toast(_t("Вікно збереження вже відкрите.")); else toast(_t("Не вдалося сформувати PDF. Спробуйте ще раз.")); }
   finally{ ch.close(); btn.disabled=false; }
 }
 /* lays blocks out page after page; a block that does not fit is split between pages instead of jumping whole */
 const PDF_MOB=()=>matchMedia('(max-width: 820px)').matches||matchMedia('(pointer: coarse) and (max-width: 1100px)').matches;
-async function renderPdf(dl,theme,setStatus){
-  PDFPAL=theme==='light'?PAL_L:PAL_D;
+async function renderPdf(dl,theme,setStatus,wl){
+  PDFPAL=theme==='light'?PAL_L:PAL_D; PDF_WL=wl&&wl.on?wl:null;
+  const BRAND=PDF_WL?esc(PDF_WL.brand||''):'CODE';
   const MOBP=PDF_MOB(), PW=MOBP?430:794, WPT=MOBP?322.5:595.28, HPT=MOBP?645:841.89;
   let host;
   try{
@@ -4194,7 +4216,7 @@ async function renderPdf(dl,theme,setStatus){
     const png=await matrixPng();
     host=document.createElement('div'); host.className='pdf-host'+(MOBP?' mob':''); document.body.appendChild(host);
     const pages=[];
-    const newPage=()=>{const p=document.createElement('div');p.className='pdf-page'+(theme==='light'?' light':'')+(MOBP?' mob':'');p.innerHTML=`<div class="pglow"></div><div class="pglow2"></div><div class="ph"><span data-go="cover">CODE</span><span data-go="cover">${_f("{0} · зміст ↑",[isPair()?_t("Матриця сумісності"):_t("Матриця долі")])}</span></div><div class="pb"></div><div class="pf"></div>`;host.appendChild(p);pages.push(p);return p.querySelector('.pb');};
+    const newPage=()=>{const p=document.createElement('div');p.className='pdf-page'+(theme==='light'?' light':'')+(MOBP?' mob':'');p.innerHTML=`<div class="pglow"></div><div class="pglow2"></div><div class="ph"><span data-go="cover">${BRAND}</span><span data-go="cover">${_f("{0} · зміст ↑",[isPair()?_t("Матриця сумісності"):_t("Матриця долі")])}</span></div><div class="pb"></div><div class="pf"></div>`;host.appendChild(p);pages.push(p);return p.querySelector('.pb');};
     let body=newPage();
     const fits=()=>body.scrollHeight<=body.clientHeight+1;
     const LIST=el=>el.matches&&el.matches('ul,.pz');
@@ -4250,9 +4272,9 @@ async function renderPdf(dl,theme,setStatus){
     }
     try{ if(doc.outline){ doc.outline.add(null,_t("Обкладинка і зміст"),{pageNumber:1}); (pdfBlocks.toc||[]).forEach(e=>{ if(AP[e.a]!=null) doc.outline.add(null,e.t,{pageNumber:AP[e.a]+1}); }); } }catch(_){}
     setStatus(T('pdSave'));
-    const fname=(isPair()?`${_f("CODE-сумісність-{0}-{1}",[STATE.a.n||'1',STATE.b.n||'2'])}`:`CODE-${STATE.name||_t("матриця")}-${STATE.d}.${STATE.m}.${STATE.y}`).replace(/[\\/:*?"<>|]+/g,'')+(theme==='light'?'-light':'')+(MOBP?'-mobile':'')+'.pdf';
+    const fname=(isPair()?`${_f("CODE-сумісність-{0}-{1}",[STATE.a.n||'1',STATE.b.n||'2'])}`:`CODE-${STATE.name||_t("матриця")}-${STATE.d}.${STATE.m}.${STATE.y}`).replace(/^CODE-/,PDF_WL?(PDF_WL.brand?PDF_WL.brand+'-':(isPair()?'':_t("Матриця")+'-')):'CODE-').replace(/[\\/:*?"<>|]+/g,'')+(theme==='light'?'-light':'')+(MOBP?'-mobile':'')+'.pdf';
     await dl.save({filename:fname,data:doc.output('blob')});
-  } finally { if(host) host.remove(); PDFPAL=PAL_D; }
+  } finally { if(host) host.remove(); PDFPAL=PAL_D; PDF_WL=null; }
 }
 
 
@@ -4570,8 +4592,8 @@ function tpOpenSaved(x){
 /* ---------- tariffs (UAH) & subscription — payment itself is not connected yet ---------- */
 const PLANS=[
   {id:'free',n:'Безкоштовний',m:0,y:0,tag:'',d:'Щоб познайомитися з CODE',f:['Матриця, сумісність, прогноз по роках','Довідник арканів і шпаргалка','PDF з вашою матрицею','3 трактування Таро після реєстрації','+1 трактування щотижня']},
-  {id:'plus',n:'Plus',m:199,y:1790,tag:'Популярний',d:'Для себе — питати карти, коли потрібно',f:['100 запитів до трактувальника на місяць','Уточнювальні питання до розкладів','Розпізнавання розкладу з фото','Врахування вашої матриці долі','Усе з безкоштовного тарифу']},
-  {id:'pro',n:'Pro',m:549,y:4990,tag:'Для тарологів',d:'Робоче місце для консультацій',f:['300 запитів на місяць','База клієнтів з їхніми матрицями','Розклад для клієнта в один клік','Тон відповіді «для мене» / «для клієнта»','Звіт клієнту з вашим брендингом','Шаблони консультацій'],soon:'Частина інструментів Pro з’явиться поступово'},
+  {id:'plus',n:'Plus',m:199,y:1790,tag:'Популярний',d:'Для себе — питати карти, коли потрібно',f:['100 запитів до трактувальника на місяць','Уточнювальні питання до розкладів','Розпізнавання розкладу з фото','Врахування вашої матриці долі','«Запитай свою матрицю» — з тих самих запитів','Усе з безкоштовного тарифу']},
+  {id:'pro',n:'Pro',m:549,y:4990,tag:'Для тарологів',d:'Робоче місце для консультацій',f:['300 запитів на місяць','База клієнтів з їхніми матрицями','Розклад для клієнта в один клік','Тон відповіді «для мене» / «для клієнта»','PDF без логотипу CODE — з вашим ім’ям, для клієнтів','Шаблони консультацій'],soon:'Частина інструментів Pro з’явиться поступово'},
   {id:'pack',n:'Пакет',m:79,y:0,tag:'Без підписки',d:'10 трактувань — використайте, коли зручно',f:['10 трактувань Таро','Не згорають через місяць','Разова оплата']}
 ];
 let PLAN_PER='m';
