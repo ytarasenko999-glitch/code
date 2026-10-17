@@ -63,6 +63,10 @@ main{min-width:0;display:flex;flex-direction:column;gap:18px}
 .top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;padding:6px 4px 0}
 .top h2{font-weight:200;font-size:clamp(28px,3.4vw,42px)}
 .top .acts{display:flex;gap:8px;flex-wrap:wrap}
+.pt-code{font-family:var(--font-mono);font-size:12.5px;padding:3px 8px;border-radius:8px;background:var(--accent-soft)}
+.pt-chev{display:inline-block;width:12px;color:var(--muted)}
+.pt-row.on td{background:var(--surface-2)}
+.pt-sub>td{background:var(--surface-2);padding:6px 18px 16px!important}
 .an-chips{display:flex;gap:6px;flex-wrap:wrap}
 .an-list{display:flex;flex-direction:column;gap:9px}
 .an-r{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(60px,1fr) 44px 40px;gap:10px;align-items:center;font-size:13.5px}
@@ -199,6 +203,7 @@ select.tb{max-width:240px}
     <div class="who" id="who"></div>
     <button class="navb" data-v="overview">Огляд</button>
     <button class="navb" data-v="an">Аналітика<em id="cAn"></em></button>
+    <button class="navb" data-v="partners">Партнери<em id="cPt"></em></button>
     <button class="navb" data-v="users">Користувачі<em id="cU"></em></button>
     <button class="navb" data-v="subs">Підписки<em id="cS"></em></button>
     <button class="navb" data-v="pays">Оплати<em id="cP"></em></button>
@@ -268,8 +273,8 @@ async function boot(){
 /* ---------- data ---------- */
 async function load(){
   const since=new Date(Date.now()-60*864e5).toISOString();
-  const [u,s,p,a,l,ad0,tp,po,dc]=await Promise.all([
-    SB.from('user_data').select('id,email,profile,created_at,updated_at,favs,tarot').order('created_at',{ascending:false}).limit(5000),
+  const [u,s,p,a,l,ad0,tp,po,dc,pt]=await Promise.all([
+    SB.from('user_data').select('id,email,profile,created_at,updated_at,favs,tarot,promo').order('created_at',{ascending:false}).limit(5000),
     SB.from('subscriptions').select('*').limit(5000),
     SB.from('payments').select('*').order('created_at',{ascending:false}).limit(2000),
     SB.from('ai_usage').select('user_id,kind,source,created_at').gte('created_at',since).order('created_at',{ascending:false}).limit(20000),
@@ -277,8 +282,10 @@ async function load(){
     SB.from('admins').select('email'),
     SB.from('admin_settings').select('value').eq('key','topups').maybeSingle(),
     SB.from('posts').select('*').order('published_at',{ascending:false,nullsFirst:true}).limit(1000),
-    SB.from('admin_settings').select('value').eq('key','docs').maybeSingle()
+    SB.from('admin_settings').select('value').eq('key','docs').maybeSingle(),
+    SB.from('partners').select('*').order('created_at',{ascending:true})
   ]);
+  D.partners=pt&&pt.data||[]; D.partnersErr=pt&&pt.error&&pt.error.message; { const el=$('#cPt'); if(el) el.textContent=D.partners.length||''; }
   const err=[u,s,p,a,l].find(x=>x.error); if(err) toast('Помилка завантаження: '+err.error.message);
   D.users=(u.data||[]).map(x=>({...x,saved:(x.favs||[]).length,readings:(x.tarot||[]).length,favs:undefined,tarot:undefined}));
   D.subs={}; (s.data||[]).forEach(x=>D.subs[x.user_id]=x); D.pays=p.data||[]; D.ai=a.data||[]; D.log=l.data||[]; D.admins=(ad0&&ad0.data||[]).map(x=>x.email).sort();
@@ -302,7 +309,7 @@ async function logA(action,target,details){ await SB.from('admin_log').insert({a
 
 /* ---------- views ---------- */
 function go(v){ VIEW=v; document.querySelectorAll('.navb').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); const m=$('#main');
-  m.innerHTML=v==='users'?vUsers():v==='subs'?vSubs():v==='pays'?vPays():v==='ai'?vAI():v==='log'?vLog():v==='admins'?vAdmins():v==='bal'?vBal():v==='blog'?vBlog():v==='post'?vPost():v==='docs'?vDocs():v==='mail'?vMail():v==='an'?vAn():vOverview(); bindView(); }
+  m.innerHTML=v==='users'?vUsers():v==='subs'?vSubs():v==='pays'?vPays():v==='ai'?vAI():v==='log'?vLog():v==='admins'?vAdmins():v==='bal'?vBal():v==='blog'?vBlog():v==='post'?vPost():v==='docs'?vDocs():v==='mail'?vMail():v==='an'?vAn():v==='partners'?vPartners():vOverview(); bindView(); }
 document.querySelectorAll('.navb').forEach(b=>b.onclick=async()=>{ if(b.dataset.v==='blog') EDIT=null; if(b.dataset.v==='mail'){ MAIL=null; await loadMail(); } if(b.dataset.v==='an') await loadAn(); go(b.dataset.v); });
 const head=(t,acts='')=>`<div class="top"><div><p class="pk">[ адмінпанель ]</p><h2>${t}</h2></div><div class="acts">${acts}<button class="btn ghost sm" data-act="reload">Оновити</button></div></div>`;
 
@@ -497,15 +504,15 @@ function bindPost(){
 }
 
 /* ---------- documentation: services, accounts, payment details (never secrets) ---------- */
-const DOCF=[['name','Сервіс'],['purpose','Для чого'],['url','Посилання'],['account','Акаунт (з якого входити)'],['support','Підтримка / контакти'],['notes','Нотатки']];
+const DOCF=[['name','Сервіс'],['purpose','Для чого'],['url','Посилання'],['account','Акаунт (з якого входити)'],['keyloc','Ключ: де зберігається (назва змінної, без самого ключа)'],['support','Підтримка / контакти'],['notes','Нотатки']];
 function vDocs(){
-  const cats=[...new Set(D.docs.map(d=>d.cat||'Інше').concat(['Сервіси','Оплата','Інше']))];
+  const cats=[...new Set(D.docs.map(d=>d.cat||'Інше').concat(['Сервіси','API і ключі','Google-акаунти','Домен і пошта','Платіжні системи','Інше']))];
   const ed=DOC_EDIT==null?null:DOC_EDIT==='new'?{cat:'Сервіси'}:D.docs[DOC_EDIT];
   const link=u=>u?(/^https?:/.test(u)?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.replace(/^https?:\/\//,'').slice(0,42))}</a>`:esc(u)):'—';
   return head('Документація',`<button class="btn go sm" data-doc-new>Додати запис</button>`)+`
   <div class="panel bal-warn">Тут — де що лежить і з якого акаунта туди входити. <b>Не записуйте сюди паролі, API-ключі та секрети</b>: вони мають жити лише в самих сервісах (ключ ШІ — у Vercel).</div>
   ${ed?`<form class="panel pe-p doc-f" id="docF"><p class="pk">[ ${DOC_EDIT==='new'?'Новий запис':'Редагування'} ]</p><div class="doc-g"><div class="field"><label for="dcat">Розділ</label><select id="dcat">${cats.map(c=>`<option${(ed.cat||'Сервіси')===c?' selected':''}>${esc(c)}</option>`).join('')}</select></div>${DOCF.map(([k,t])=>`<div class="field${k==='notes'||k==='purpose'?' wide':''}"><label for="d_${k}">${t}</label>${k==='notes'?`<textarea id="d_${k}" rows="2">${esc(ed[k]||'')}</textarea>`:`<input id="d_${k}" value="${esc(ed[k]||'')}"${k==='name'?' required':''}>`}</div>`).join('')}</div><div class="pe-acts"><button class="btn go sm" type="submit">Зберегти</button><button class="btn ghost sm" type="button" data-doc-cancel>Скасувати</button>${DOC_EDIT!=='new'?'<button class="btn bad sm" type="button" data-doc-del>Видалити</button>':''}</div></form>`:''}
-  ${cats.filter(c=>D.docs.some(d=>(d.cat||'Інше')===c)).map(c=>`<div class="panel card"><h3>${esc(c)}</h3><div class="tw"><table><thead><tr><th>Сервіс</th><th>Для чого</th><th>Посилання</th><th>Акаунт</th><th>Підтримка</th><th>Нотатки</th><th></th></tr></thead><tbody>${D.docs.map((d,i)=>[d,i]).filter(([d])=>(d.cat||'Інше')===c).map(([d,i])=>`<tr><td><b>${esc(d.name)}</b></td><td><small>${esc(d.purpose||'')}</small></td><td>${link(d.url)}</td><td>${d.account?esc(d.account):'<span class="badge">уточнити</span>'}</td><td><small>${esc(d.support||'—')}</small></td><td><small>${esc(d.notes||'')}</small></td><td style="text-align:right"><button class="btn ghost sm" data-doc-edit="${i}">Змінити</button></td></tr>`).join('')}</tbody></table></div></div>`).join('')||'<p class="empty">Поки порожньо.</p>'}`;
+  ${cats.filter(c=>D.docs.some(d=>(d.cat||'Інше')===c)).map(c=>`<div class="panel card"><h3>${esc(c)}</h3><div class="tw"><table><thead><tr><th>Сервіс</th><th>Для чого</th><th>Посилання</th><th>Акаунт</th><th>Ключ</th><th>Підтримка</th><th>Нотатки</th><th></th></tr></thead><tbody>${D.docs.map((d,i)=>[d,i]).filter(([d])=>(d.cat||'Інше')===c).map(([d,i])=>`<tr><td><b>${esc(d.name)}</b></td><td><small>${esc(d.purpose||'')}</small></td><td>${link(d.url)}</td><td>${d.account?esc(d.account):'<span class="badge">уточнити</span>'}</td><td>${d.keyloc?`<code class="pt-code">${esc(d.keyloc)}</code>`:'<small>—</small>'}</td><td><small>${esc(d.support||'—')}</small></td><td><small>${esc(d.notes||'')}</small></td><td style="text-align:right"><button class="btn ghost sm" data-doc-edit="${i}">Змінити</button></td></tr>`).join('')}</tbody></table></div></div>`).join('')||'<p class="empty">Поки порожньо.</p>'}`;
 }
 async function saveDocs(list,act){ const {error}=await SB.from('admin_settings').upsert({key:'docs',value:list,updated_at:new Date().toISOString()}); if(error){ toast('Не вдалося зберегти: '+error.message); return; } await logA(act,null,null); DOC_EDIT=null; await load(); go('docs'); toast('Збережено.'); }
 function bindDocs(){
@@ -655,6 +662,13 @@ function anTop(rows,keyFn,nameFn,limit=12){
   const L=Object.entries(m).map(([k,o])=>({k,v:o.s.size,n:o.n})).sort((a,b)=>b.v-a.v||b.n-a.n).slice(0,limit), mx=L.length?L[0].v:1;
   return L.length?`<div class="an-list">${L.map(x=>`<div class="an-r"><span class="an-n" title="${esc(nameFn?nameFn(x.k):x.k)}">${esc(nameFn?nameFn(x.k):x.k)}</span><span class="an-b"><i style="width:${Math.max(2,x.v/mx*100)}%"></i></span><b>${x.v}</b><small>${Math.round(x.v/tot*100)}%</small></div>`).join('')}</div>`:'<p class="empty">Поки немає даних.</p>';
 }
+const anChan=r=>{ const s=r.src||'', m=(r.medium||'').toLowerCase();
+  if(/^(cpc|ppc|paid|ads?|paid[_-]?social|banner|target)$/.test(m)) return 'Реклама';
+  if(/^(google|bing|duckduckgo|yahoo|ecosia)$/.test(s)) return 'Пошук (органічний)';
+  if(/^(tiktok|instagram|facebook|threads|telegram|youtube|pinterest|x|viber|whatsapp|linkedin)$/.test(s)) return 'Соцмережі та месенджери';
+  if(s==='ai') return 'ШІ-чати'; if(s==='email') return 'Email';
+  if(s==='direct') return 'Прямі заходи';
+  return s.startsWith('ref:')?'Інші сайти':'Інше (мітки)'; };
 function vAn(){
   const R=AN.rows, uniq=a=>new Set(a.map(r=>r.sid)).size, today=isoDay(Date.now());
   const days=[]; for(let i=AN.days-1;i>=0;i--) days.push(isoDay(Date.now()-i*864e5));
@@ -671,6 +685,8 @@ function vAn(){
   ${AN.days>1?`<div class="panel card"><h3>Відвідувачі по днях</h3><div class="bars">${vals.map((v,i)=>`<i style="height:${Math.max(2,v/mx*100)}%" title="${days[i]}: ${v}"></i>`).join('')}</div><div class="bars-x"><span>${days[0].slice(5)}</span><span>макс. ${mx} / день</span><span>${days[days.length-1].slice(5)}</span></div></div>`:''}
   <div class="grid2">
     <div class="panel card"><h3>Джерела трафіку</h3>${anTop(R,r=>r.src&&r.src.startsWith('ref:')?'ref':r.src,k=>k==='ref'?'Інші сайти (посилання)':srcName(k),15)}<p class="bal-n">«Прямі заходи» — людина ввела адресу, відкрила із закладок або з застосунку, який не передає джерело. Щоб точно бачити TikTok, Instagram чи Telegram, ставте посилання з мітками (нижче).</p></div>
+    <div class="panel card"><h3>Канали: пошук, соцмережі, реклама</h3>${anTop(R,anChan,null,8)}<p class="bal-n">Пошук — Google, Bing тощо без реклами; Реклама — посилання з міткою cpc/ads/paid або з Google Ads.</p></div>
+    <div class="panel card"><h3>Хто читає блог</h3>${anTop(R.filter(r=>String(r.path||'').startsWith('/blog')),anChan,null,8)}<p class="bal-n">Звідки приходять люди на сторінки блогу — тут видно, чи працює SEO.</p></div>
     <div class="panel card"><h3>Сайти, з яких перейшли</h3>${anTop(R,r=>r.ref,null,15)}</div>
     <div class="panel card"><h3>Кампанії (UTM-мітки)</h3>${anTop(R.filter(r=>r.campaign||r.medium),r=>[srcName(r.src),r.medium,r.campaign].filter(Boolean).join(' · '),null,15)}</div>
     <div class="panel card"><h3>Сторінки входу</h3>${anTop(R,r=>r.path,k=>({'/':'Головна','/blog':'Блог','/?go=tarot':'Таро','/?go=acct':'Кабінет','/?go=guide':'Шпаргалка','/?go=cat':'Довідник арканів','/?go=pair':'Сумісність','/?go=years':'Прогноз по роках'})[k]||(k.startsWith('/blog/')?'Блог: '+k.slice(6):k),15)}</div>
@@ -693,8 +709,52 @@ function bindAn(){
   ['#utS','#utM','#utC','#utP'].forEach(id=>{ const e=$(id); e.oninput=upd; e.onchange=upd; }); upd();
   $('#utCp').onclick=async()=>{ try{ await navigator.clipboard.writeText(o.textContent); toast('Посилання скопійовано.'); }catch(_){ toast('Не вдалося скопіювати.'); } };
 }
+
+/* ---------- partners & promo codes ---------- */
+let PT_EDIT=null, PT_OPEN=new Set();
+const ptUsers=c=>D.users.filter(u=>(u.promo||'').toUpperCase()===String(c||'').toUpperCase());
+const ptLink=c=>`https://code-matrix.space/?promo=${encodeURIComponent(c)}`;
+function vPartners(){
+  if(D.partnersErr) return head('Партнери')+`<div class="panel bal-warn bad">Не вдалося прочитати партнерів: ${esc(D.partnersErr)}</div>`;
+  const ed=PT_EDIT==null?null:PT_EDIT==='new'?{}:D.partners.find(x=>x.id===PT_EDIT)||{};
+  const known=new Set(D.partners.map(x=>x.code.toUpperCase())), stray=D.users.filter(u=>u.promo&&!known.has(u.promo.toUpperCase()));
+  const tot=D.partners.reduce((n,x)=>n+ptUsers(x.code).length,0);
+  const row=x=>{ const us=ptUsers(x.code), op=PT_OPEN.has(x.id), paid=us.filter(u=>planOf(u.id)!=='free').length;
+    return `<tr class="pt-row${op?' on':''}" data-pt-tog="${x.id}" style="cursor:pointer"><td><span class="pt-chev">${op?'▾':'▸'}</span> ${esc(x.name)}${x.note?`<small>${esc(x.note)}</small>`:''}</td><td>${esc(x.email||'—')}</td><td><code class="pt-code">${esc(x.code)}</code></td><td class="num"><b>${us.length}</b>${paid?`<small>${paid} з підпискою</small>`:''}</td>
+      <td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" data-pt-copy="${esc(x.code)}">Посилання</button> <button class="btn ghost sm" data-pt-edit="${x.id}">Змінити</button></td></tr>
+      ${op?`<tr class="pt-sub"><td colspan="5">${us.length?`<table class="mini"><tbody>${us.map(u=>`<tr data-u="${u.id}" style="cursor:pointer"><td>${esc(u.email)}${nameOf(u)?`<small>${esc(nameOf(u))}</small>`:''}</td><td class="num">${fmtD(u.created_at)}</td><td>${badge(planOf(u.id))}</td></tr>`).join('')}</tbody></table>`:'<p class="empty" style="padding:10px 0">За цим промокодом ще ніхто не зареєструвався.</p>'}<p class="bal-n" style="margin:10px 0 0">Посилання партнера: <code>${esc(ptLink(x.code))}</code></p></td></tr>`:''}`; };
+  return head('Партнери',`<button class="btn go sm" data-pt-new>Додати партнера</button>`)+`
+  <div class="kpis"><div class="panel kpi"><small>Партнерів</small><b>${D.partners.length}</b><span></span></div><div class="panel kpi"><small>Прийшло за промокодами</small><b>${tot}</b><span>${D.users.length?Math.round(tot/D.users.length*100):0}% усіх користувачів</span></div><div class="panel kpi"><small>З них з підпискою</small><b>${D.partners.reduce((n,x)=>n+ptUsers(x.code).filter(u=>planOf(u.id)!=='free').length,0)}</b><span></span></div><div class="panel kpi"><small>Як це працює</small><b style="font-size:15px;line-height:1.35;font-family:inherit;font-weight:500">Партнер ділиться своїм посиланням або промокодом</b><span>код зберігається при реєстрації</span></div></div>
+  ${ed?`<form class="panel pe-p doc-f" id="ptF"><p class="pk">[ ${PT_EDIT==='new'?'Новий партнер':'Редагування'} ]</p><div class="doc-g">
+    <div class="field"><label for="ptN">Ім’я</label><input id="ptN" required maxlength="80" value="${esc(ed.name||'')}"></div>
+    <div class="field"><label for="ptE">Email</label><input id="ptE" type="email" maxlength="120" value="${esc(ed.email||'')}"></div>
+    <div class="field"><label for="ptC">Промокод</label><input id="ptC" required maxlength="30" pattern="[A-Za-z0-9_\-]{2,30}" placeholder="ANNA10" value="${esc(ed.code||'')}" style="text-transform:uppercase"></div>
+    <div class="field"><label for="ptO">Нотатка</label><input id="ptO" maxlength="200" placeholder="Instagram @…, умови співпраці" value="${esc(ed.note||'')}"></div></div>
+    <div class="acts" style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn go sm" type="submit">Зберегти</button><button class="btn ghost sm" type="button" data-pt-cancel>Скасувати</button>${PT_EDIT!=='new'?`<button class="btn ghost sm" type="button" data-pt-del style="margin-left:auto">Видалити</button>`:''}</div>
+    ${PT_EDIT!=='new'&&ed.code?`<p class="bal-n">Зміна промокоду не переносить уже зареєстрованих людей — вони залишаться зі старим кодом.</p>`:''}</form>`:''}
+  <div class="panel">${D.partners.length?`<div class="tw"><table><thead><tr><th>Партнер</th><th>Email</th><th>Промокод</th><th>Реєстрацій</th><th></th></tr></thead><tbody>${D.partners.map(row).join('')}</tbody></table></div>`:'<p class="empty">Партнерів ще немає. Натисніть «Додати партнера», вигадайте йому промокод — і передайте посилання.</p>'}</div>
+  ${stray.length?`<div class="panel card"><h3>Невідомі промокоди</h3><p class="bal-n" style="margin:0 0 10px">Люди ввели код, якого немає серед партнерів (або його змінили).</p><table class="mini"><tbody>${stray.map(u=>`<tr data-u="${u.id}" style="cursor:pointer"><td>${esc(u.email)}</td><td><code>${esc(u.promo)}</code></td><td class="num">${fmtD(u.created_at)}</td></tr>`).join('')}</tbody></table></div>`:''}`;
+}
+function bindPartners(){
+  const nw=$('[data-pt-new]'); if(nw) nw.onclick=()=>{ PT_EDIT='new'; go('partners'); };
+  document.querySelectorAll('[data-pt-tog]').forEach(r=>r.onclick=e=>{ if(e.target.closest('button')) return; const id=r.dataset.ptTog; PT_OPEN.has(id)?PT_OPEN.delete(id):PT_OPEN.add(id); go('partners'); });
+  document.querySelectorAll('[data-pt-edit]').forEach(b=>b.onclick=()=>{ PT_EDIT=b.dataset.ptEdit; go('partners'); window.scrollTo({top:0,behavior:'smooth'}); });
+  document.querySelectorAll('[data-pt-copy]').forEach(b=>b.onclick=async()=>{ try{ await navigator.clipboard.writeText(ptLink(b.dataset.ptCopy)); toast('Посилання партнера скопійовано.'); }catch(_){ toast(ptLink(b.dataset.ptCopy)); } });
+  const f=$('#ptF'); if(!f) return;
+  f.querySelector('[data-pt-cancel]').onclick=()=>{ PT_EDIT=null; go('partners'); };
+  f.onsubmit=async e=>{ e.preventDefault();
+    const v={name:$('#ptN').value.trim(),email:$('#ptE').value.trim().toLowerCase()||null,code:$('#ptC').value.trim().toUpperCase(),note:$('#ptO').value.trim()||null};
+    if(!/^[A-Z0-9_\-]{2,30}$/.test(v.code)) return toast('Промокод: 2–30 латинських літер, цифр, «-» або «_».');
+    if(D.partners.some(x=>x.code.toUpperCase()===v.code&&x.id!==PT_EDIT)) return toast('Такий промокод уже є.');
+    const q=PT_EDIT==='new'?SB.from('partners').insert(v):SB.from('partners').update(v).eq('id',PT_EDIT);
+    const {error}=await q; if(error) return toast('Не вдалося зберегти: '+error.message);
+    await logA(PT_EDIT==='new'?'додано партнера':'змінено партнера',null,v); PT_EDIT=null; await load(); go('partners'); toast('Збережено.'); };
+  const dl=f.querySelector('[data-pt-del]'); if(dl) dl.onclick=async()=>{ if(!dl.dataset.sure){ dl.dataset.sure='1'; dl.textContent='Точно видалити?'; dl.classList.add('bad'); return; }
+    const x=D.partners.find(p=>p.id===PT_EDIT); const {error}=await SB.from('partners').delete().eq('id',PT_EDIT); if(error) return toast('Не вдалося видалити: '+error.message);
+    await logA('видалено партнера',null,x&&{name:x.name,code:x.code}); PT_EDIT=null; await load(); go('partners'); toast('Партнера видалено.'); };
+}
 function bindView(){
-  bindPost(); bindDocs(); bindMail(); bindAn();
+  bindPost(); bindDocs(); bindMail(); bindAn(); bindPartners();
   { const nb=$('[data-post-new]'); if(nb) nb.onclick=()=>{ EDIT='new'; go('post'); }; document.querySelectorAll('[data-post-edit]').forEach(b=>b.onclick=()=>{ EDIT=+b.dataset.postEdit; go('post'); window.scrollTo({top:0}); }); }
   { const f=$('#tpF'); if(f) f.onsubmit=async e=>{ e.preventDefault(); const usdv=Math.round(parseFloat($('#tpU').value)*100)/100; if(!usdv) return toast('Вкажіть суму (для коригування — з мінусом).');
       const t={d:$('#tpD').value,usd:usdv,note:$('#tpN').value.trim()}; if(await saveTopups([...D.topups,t],'поповнення балансу ШІ',t)) toast('Поповнення додано.'); }; }
