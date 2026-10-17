@@ -35,11 +35,12 @@ async function getSub(token, uid) {
   const a = await r.json(); return a && a[0] ? a[0] : null;
 }
 /* decides which allowance pays for this request: plan → free → pack */
-async function allowance(token, uid) {
+async function allowance(token, uid, needPaid) {
   const day = new Date(); day.setUTCHours(0, 0, 0, 0);
   if (await countUse(token, uid, { since: day }) >= DAILY_CAP) return { ok: false, code: 'daily_limit' };
   const sub = (await getSub(token, uid)) || { plan: 'free', packs: 0 };
   const paid = (sub.plan === 'plus' || sub.plan === 'pro') && sub.paid_until && new Date(sub.paid_until) > new Date();
+  if (needPaid && !paid) return { ok: false, code: 'need_plan', plan: 'free' };
   if (paid) {
     const used = await countUse(token, uid, { since: new Date(Date.now() - 30 * 864e5), source: 'plan' });
     if (used < QUOTA[sub.plan]) return { ok: true, source: 'plan', left: QUOTA[sub.plan] - used - 1, plan: sub.plan };
@@ -89,8 +90,9 @@ module.exports = async (req, res) => {
   if (!user) return fail(res, 401, 'login');
 
   let al;
-  try { al = await allowance(token, user.id); } catch (e) { return fail(res, 500, 'usage', { detail: String(e.message || e) }); }
-  if (!al.ok) return fail(res, al.code === 'daily_limit' ? 429 : 402, al.code, { plan: al.plan });
+  const body0 = req.body || {}, task = ['tarot', 'chat', 'report', 'year'].includes(body0.task) ? body0.task : 'tarot';
+  try { al = await allowance(token, user.id, task === 'report' || task === 'year'); } catch (e) { return fail(res, 500, 'usage', { detail: String(e.message || e) }); }
+  if (!al.ok) return fail(res, al.code === 'daily_limit' ? 429 : al.code === 'need_plan' ? 403 : 402, al.code, { plan: al.plan });
 
   const body = req.body || {};
   const json = body.mode === 'json';
@@ -110,7 +112,7 @@ module.exports = async (req, res) => {
   const upstream = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: MODEL, max_tokens: json ? 1200 : 2400, messages, stream: !json })
+    body: JSON.stringify({ model: MODEL, max_tokens: json ? 1200 : (task === 'report' || task === 'year') ? 8000 : task === 'chat' ? 2000 : 2400, messages, stream: !json })
   }).catch(() => null);
   if (!upstream) return fail(res, 502, 'network');
   if (!upstream.ok) {
@@ -122,7 +124,7 @@ module.exports = async (req, res) => {
     return fail(res, upstream.status === 429 ? 429 : 502, code);
   }
 
-  await logUse(token, user.id, json ? 'photo' : (messages.length > 1 ? 'follow' : 'reading'), al.source).catch(() => {});
+  await logUse(token, user.id, json ? 'photo' : task === 'tarot' ? (messages.length > 1 ? 'follow' : 'reading') : task, al.source).catch(() => {});
   res.setHeader('X-Ai-Left', String(Math.max(0, al.left)));
   res.setHeader('X-Ai-Plan', al.plan);
 

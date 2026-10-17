@@ -21,6 +21,7 @@ create policy "admins read" on public.admins for select using (public.is_admin()
 
 -- 2. Дата реєстрації в user_data + доступ адміна до даних користувачів
 alter table public.user_data add column if not exists created_at timestamptz default now();
+alter table public.user_data add column if not exists reports jsonb default '{}'::jsonb;
 drop policy if exists "admin read users" on public.user_data;
 drop policy if exists "admin delete users" on public.user_data;
 create policy "admin read users" on public.user_data for select using (public.is_admin());

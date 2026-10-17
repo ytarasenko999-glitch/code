@@ -1862,6 +1862,36 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
 .sw input:checked+i::after{transform:translateX(18px);background:#fff}
 .sw input:disabled+i{opacity:.5}
 .sub-note{margin-top:14px;line-height:1.55}
+
+/* AI on the matrix */
+.aim{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:18px 4px 4px;padding-top:18px;border-top:1px solid var(--hair)}
+.aim-y{grid-template-columns:1fr;margin:4px 0 14px;padding:0 0 14px;border-top:0;border-bottom:1px solid var(--hair)}
+.aim-i{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}
+.aim-b{height:48px!important;padding:0 22px!important;flex:0 0 auto!important;gap:10px}
+.aim-b::after{display:none!important}
+.aim-tag{font-style:normal;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.btn.go .aim-tag{background:rgba(255,255,255,.2);color:#fff}
+.aim-h{margin:0;font-size:12.5px;line-height:1.5;color:var(--muted);max-width:46ch}
+.aim-box{width:min(820px,100%)}
+.aim-body{display:flex;flex-direction:column;gap:14px}
+.aim-chat{display:flex;flex-direction:column;gap:12px;max-height:56svh;overflow:auto;padding-right:4px}
+.aim-intro{color:var(--muted);margin:0}
+.aim-q{align-self:flex-end;max-width:85%;padding:12px 16px;border-radius:20px 20px 6px 20px;background:var(--accent-soft);font-size:14.5px}
+.aim-a{padding:4px 2px}
+.aim-sg{display:flex;flex-wrap:wrap;gap:8px}
+.aim-sg button{border:1px solid var(--line);background:none;border-radius:999px;padding:8px 14px;font:inherit;font-size:13px;color:var(--fg);cursor:pointer;text-align:left}
+.aim-sg button:hover{border-color:var(--accent)}
+.aim-f{display:flex;gap:10px;align-items:flex-end}
+.aim-f textarea{flex:1;min-height:52px;padding:14px 16px;border-radius:20px;border:1px solid transparent;background:var(--surface-2);font:inherit;font-size:15px;color:var(--fg);resize:vertical}
+.aim-f textarea:focus{outline:none;border-color:var(--accent);background:var(--surface-solid)}
+.aim-f .btn{height:52px!important;flex:0 0 auto!important}
+.aim-meta{margin:0;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.aim-doc{font-size:15px;line-height:1.72}
+.aim-acts{display:flex;gap:10px;flex-wrap:wrap}
+.aim-acts .btn{flex:0 0 auto!important}
+.aim-err{padding:12px 16px;border-radius:16px;background:color-mix(in srgb,var(--p-red) 10%,transparent);color:var(--fg);font-size:14px}
+.aim-gate{padding:8px 0}.aim-gate p{margin:0 0 12px;line-height:1.6}.aim-gate .btn{flex:0 0 auto!important}
+@media (max-width:640px){.aim{grid-template-columns:1fr}.aim-chat{max-height:52svh}.aim-f{flex-direction:column;align-items:stretch}}
 </style>
 </head>
 <body>
@@ -3025,6 +3055,26 @@ function combos(list){
 const UL=arr=>`<ul class="bl">${arr.filter(Boolean).map(x=>`<li>${cap(String(x).replace(/\.$/,''))}</li>`).join('')}</ul>`;
 const LST=(v,f,n)=>ARC[v][f].replace(/\.$/,'').split(', ').slice(0,n);
 const uniq=a=>[...new Set(a)];
+/* ---------- no copy-paste: when one arcana stands in several positions, each place gets its own part of the text ---------- */
+const share=(arr,k,n)=>{ if(!Array.isArray(arr)||n<2) return arr; const per=Math.max(1,Math.ceil(arr.length/n)), part=arr.slice(k*per,k*per+per); return part.length?part:[arr[k%arr.length]]; };
+const occ=list=>{ const c={},tot={}; list.forEach(v=>tot[v]=(tot[v]||0)+1); return list.map(v=>{ const k=c[v]||0; c[v]=k+1; return [k,tot[v]]; }); };
+const nrmT=t=>String(t||'').replace(/\s+/g,' ').trim().toLowerCase();
+function dedupeDOM(root,seen){
+  seen=seen||new Set();
+  root.querySelectorAll('li,p').forEach(el=>{
+    if(el.closest('.note,.chips,.ynav,.qs-go')||el.querySelector('button')) return;
+    const k=nrmT(el.textContent); if(k.length<28) return;
+    if(!seen.has(k)){ seen.add(k); return; }
+    const list=el.parentElement; el.remove();
+    if(list&&/^(UL|OL)$/.test(list.tagName)&&!list.children.length) list.remove();
+  });
+  /* headings left without content, then empty boxes */
+  root.querySelectorAll('h4,h5').forEach(h=>{ let n=h.nextElementSibling; if(!n||/^(H3|H4|H5)$/.test(n.tagName)) h.remove(); });
+  root.querySelectorAll('.pp,.pos-box,.blk,.pblk,.two>div,.pm,.scn').forEach(b=>{ if(!b.querySelector('li,p,table,img,.phd')) b.remove(); });
+  return seen;
+}
+const dedupeHTML=h=>{ const t=document.createElement('template'); t.innerHTML=h; dedupeDOM(t.content); const d=document.createElement('div'); d.appendChild(t.content); return d.innerHTML; };
+
 function spheres(P, g, name){
   const A=ARC, who=name||_t("Ви");
   const sp=[];
@@ -3307,9 +3357,10 @@ function render(){
   let left;
   if(STATE.view==='matrix') left=`<div class="panel mx fade" id="left"><div class="mx-zoom-row"><button class="zoom-b" id="zoomB" type="button" aria-pressed="${!!STATE.zoom}">${STATE.zoom?_t("⤡ Зменшити схему"):_t("⤢ Збільшити схему")}</button></div><div class="mx-sc${STATE.zoom?' z':''}">${svgMatrix(P,selSet(),false,isPair())}</div>
       <div class="legend"><span>${_t("<i style=\"--c:var(--p-violet)\"></i>Сахасрара")}</span><span>${_t("<i style=\"--c:var(--p-blue)\"></i>Аджна")}</span><span>${_t("<i style=\"--c:var(--p-green)\"></i>Анахата")}</span><span>${_t("<i style=\"--c:var(--p-gold)\"></i>Маніпура")}</span><span>${_t("<i style=\"--c:var(--p-rose)\"></i>Свадхістана")}</span><span>${_t("<i style=\"--c:var(--p-red)\"></i>Муладхара")}</span><span>${_t("<i style=\"--c:var(--surface-solid);box-shadow:inset 0 0 0 1px var(--line)\"></i>Інші позиції")}</span>${isPair()?'':_t("<span><b class=\"ring-k\">10</b>вік на колі</span>")}</div></div>`;
-  else if(STATE.view==='years') left=`<div class="panel yl fade" id="left">${yearsList()}</div>`;
+  else if(STATE.view==='years') left=`<div class="panel yl fade" id="left">${aiYearBtn()}${yearsList()}</div>`;
   else if(STATE.view==='today') left=`<div class="panel tdp fade" id="left">${todayPanel()}</div>`;
   else left=`<div class="panel cl fade" id="left">${catGrid()}</div>`;
+  if(STATE.view==='matrix') left=left.replace(/<\/div>\s*$/,aiBlock()+'</div>');
   $('#result').innerHTML=head+`<div class="grid">${left}<aside class="panel side" id="side"></aside></div>`+(P&&STATE.view==='matrix'&&!isPair()?chakraSection():'');
   document.querySelectorAll('.tabs [data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
   document.querySelectorAll('.codes [data-go]').forEach(b=>b.addEventListener('click',()=>{ if(STATE.view!=='matrix'){ setView('matrix'); } openDet(parseGo(b.dataset.go)); }));
@@ -3756,7 +3807,8 @@ function yearDetail(a){
   const {P,d,m,y}=STATE, t=P.YEARS[a], o=(a+40)%80, pr=yearProg(a), tx=progText(pr), As=t.map(v=>ARC[v]);
   const names=[`${_f("Енергія року · вік {0}",[a])}`,`${_f("Протилежна точка · вік {0}",[o])}`,_t("Підсумок і урок року")];
   const notes=[_t("Головна подія й тема року."),_t("Фон і виклик: як тема року відгукується в протилежній сфері."),_t("До чого рік приведе, якщо пройти його усвідомлено.")];
-  const blocks=t.map((v,i)=>`<div class="role"><div class="role-h">${chipVal(v)}<span class="role-n">${names[i]}</span></div><p>${cap(YR[v])}. ${notes[i]}</p><div class="scn"><div class="pp"><h4>${_t("Імовірні сценарії в плюсі")}</h4>${UL(ARC[v].yp)}</div><div class="pp minus"><h4>${_t("Імовірні сценарії в мінусі")}</h4>${UL(ARC[v].ym)}</div><div class="pp work"><h4>${_t("Як пропрацювати")}</h4>${UL(ARC[v].yw)}</div></div></div>`).join('');
+  const O=occ(t);
+  const blocks=t.map((v,i)=>`<div class="role"><div class="role-h">${chipVal(v)}<span class="role-n">${names[i]}</span></div><p>${O[i][0]?_f("Та сама енергія {0} тут звучить удруге — вже як {1}: {2}.",[ARC[v].n,[_t("головна тема"),_t("фон і виклик"),_t("підсумок року")][i],lc(i===2?(ARC[v].task||ARC[v].d):(ARC[v].work&&ARC[v].work.p||ARC[v].d))]):`${cap(YR[v])}. ${notes[i]}`}</p><div class="scn"><div class="pp"><h4>${_t("Імовірні сценарії в плюсі")}</h4>${UL(share(ARC[v].yp,...O[i]))}</div><div class="pp minus"><h4>${_t("Імовірні сценарії в мінусі")}</h4>${UL(share(ARC[v].ym,...O[i]))}</div><div class="pp work"><h4>${_t("Як пропрацювати")}</h4>${UL(share(ARC[v].yw,...O[i]))}</div></div></div>`).join('');
   return `<div class="det fade">${topBlock(a,a===curAge()?'var(--accent)':'var(--p-blue)',`${_f("Вік {0}{1}",[a,a===curAge()?_t(" · зараз"):''])}`,`${d} ${MONTHS[m-1]} ${y+a} — ${d} ${MONTHS[m-1]} ${y+a+1}`)}
     <button class="prow${pr.named?' named':''} yp" data-go="prog:Y${a}"><span class="pcode">${t.join('-')}</span><span class="acc-t"><strong>${pr.named?`«${pr.named.n}»`:_t("Програма року")}</strong><small>${_t("Відкрити окремо")}</small></span>${CHEV}</button>
     <div class="ynav"><button class="btn ghost sm" data-go="year:${(a+79)%80}" data-rep="1">${_f("← {0} р.",[(a+79)%80])}</button><button class="btn ghost sm" data-go="year:${(a+1)%80}" data-rep="1">${_f("{0} р. →",[(a+1)%80])}</button></div>
@@ -3764,10 +3816,10 @@ function yearDetail(a){
     <h4>${_t("Як проживається рік")}</h4><p>${ARC[t[0]].live}</p>
     <div class="pos-box soft"><h4>${_t("Ви впізнаєте цей рік, якщо…")}</h4>${UL(ARC[t[0]].rec.slice(0,4))}</div>
     <h4>${_t("Три аркани року")}</h4>${blocks}
-    <h4>${_t("Причинно-наслідкові зв’язки року")}</h4><ul class="cz">${As.map(x=>x.cause[0]).concat([As[0].cause[1]]).map(c=>{const p=c.split(' — ');return `<li><span>${p[0]}</span><i aria-hidden="true">→</i><span>${p.slice(1).join(' — ')}</span></li>`}).join('')}</ul>
+    <h4>${_t("Причинно-наслідкові зв’язки року")}</h4><ul class="cz">${uniq(t.map((v,i)=>ARC[v].cause[O[i][0]%ARC[v].cause.length]).concat([As[0].cause[1]])).map(c=>{const p=c.split(' — ');return `<li><span>${p[0]}</span><i aria-hidden="true">→</i><span>${p.slice(1).join(' — ')}</span></li>`}).join('')}</ul>
     <div class="pm"><div class="pp"><h4>${_t("У плюсі")}</h4><p>${tx.p}</p></div><div class="pp minus"><h4>${_t("У мінусі")}</h4><p>${tx.m}</p></div></div>
     <h4>${_t("Як проявляється")}</h4><p>${tx.h}</p>
-    <div class="blk2"><div><h4>${_t("Що робити")}</h4>${UL(As.map(x=>x.how[0]))}</div><div><h4>${_t("Чого уникати")}</h4>${UL(As.map(x=>x.m.split(', ')[0]))}</div></div>
+    <div class="blk2"><div><h4>${_t("Що робити")}</h4>${UL(uniq(t.map((v,i)=>ARC[v].how[O[i][0]%ARC[v].how.length])))}</div><div><h4>${_t("Чого уникати")}</h4>${UL(uniq(t.map((v,i)=>{const mm=ARC[v].m.split(', ');return mm[O[i][0]%mm.length];})))}</div></div>
     <h4>${_t("Як покращити ситуацію")}</h4>${fixList(ARC[t[0]])}
     <div class="pos-box"><h4>${_t("Як прожити рік")}</h4><p>${tx.w}</p></div>
     <h4>${_t("Питання на рік")}</h4>${qListT(ARC[t[0]],ARC[t[0]].n)}
@@ -3794,7 +3846,8 @@ function accordion(){
       </div></div></div></li>`).join('')}</ul>`;
 }
 const isSheet=()=>innerWidth<=820;
-const detHTML=d=>!d?accordion():d.type==='tcat'?tcatDetail(d.id):d.type==='arc'?arcDetail(d.id):d.type==='prog'?progDetail(d.k):d.type==='year'?yearDetail(d.age):d.type==='day'?dayDetail(d.key):catDetail(d.v);
+const detHTML=d=>d?dedupeHTML(detHTML0(d)):accordion();
+const detHTML0=d=>!d?accordion():d.type==='tcat'?tcatDetail(d.id):d.type==='arc'?arcDetail(d.id):d.type==='prog'?progDetail(d.k):d.type==='year'?yearDetail(d.age):d.type==='day'?dayDetail(d.key):catDetail(d.v);
 function sheetOpen(html,onClose){
   const sh=$('#msheet'), body=$('#msBody'), head=$('#msHead'); body.innerHTML=html;
   head.innerHTML=''; const dt=body.querySelector('.det-top'); if(dt) head.appendChild(dt);
@@ -4046,8 +4099,16 @@ function pdfBlocks(png){
   }
   B.push(`<div class="psec"><div class="pk">${_t("[ основні енергії ]")}</div><h2>${pair?_t("Енергії союзу"):_t("Ваші головні енергії")}</h2></div>`);
   const list=LST0;
+  const seenV=new Set();
   list.forEach(([id,t],n)=>{
     const v=P[id], a=A[v];
+    if(seenV.has(v)){
+      B.push(`<div class="pblk" data-anchor="en-${id}"><div class="phd">${pNum(v,chipCol(id))}<div><div class="pk">${String(n+1).padStart(2,'0')} · ${t}</div><h3>${a.n}</h3></div></div>
+        <p class="plead">${posText(id,v,g)}</p><p class="pmuted">${_f("Енергія {0} вже трапилася у вашій матриці вище — тут розбираємо, що вона додає саме в позиції «{1}».",[a.n,t.split(' · ')[0]])}</p></div>`);
+      B.push(`<div class="pblk">${a.deep?`<h4>${_t("Прихований сценарій")}</h4>${pUL(a.deep)}`:''}${a.how?`<h4>${_t("Як вивести в плюс")}</h4>${pUL(a.how)}`:''}${a.q?`<h4>${_t("Питання для себе")}</h4>${pUL(a.q.slice(0,3))}`:''}</div>`);
+      return;
+    }
+    seenV.add(v);
     B.push(`<div class="pblk" data-anchor="en-${id}"><div class="phd">${pNum(v,chipCol(id))}<div><div class="pk">${String(n+1).padStart(2,'0')} · ${t}</div><h3>${a.n}</h3></div></div>
       <p class="plead">${posText(id,v,g)}</p><p>${a.d}</p></div>`);
     B.push(`<div class="pblk"><h4>${_t("Як проживається")}</h4><p>${a.live}</p><h4>${_t("Ви впізнаєте себе, якщо…")}</h4>${pUL(a.rec)}</div>`);
@@ -4161,6 +4222,7 @@ async function renderPdf(dl,theme,setStatus){
     let BL=pdfBlocks(png);
     /* phone pages are short: the table of contents gets its own block after the cover */
     if(MOBP) BL=BL.flatMap(b=>{ const k=b.indexOf('<div class="ptoc">'); return k>0?[b.slice(0,k)+'</div>','<div class="pc">'+b.slice(k)]:[b]; });
+    { const seenT=new Set(); BL=BL.map(b=>{ if(b==='__break') return b; const t=document.createElement('template'); t.innerHTML=b; dedupeDOM(t.content,seenT); const d=document.createElement('div'); d.appendChild(t.content); return d.innerHTML; }).filter(b=>b==='__break'||/<(p|li|table|img|h1|h2|h3)\b/.test(b)); }
     for(const b of BL){
       if(b==='__break'){ if(body.children.length) body=newPage(); continue; }
       const w=document.createElement('div'); w.innerHTML=b; await place(w.firstElementChild);
@@ -4569,6 +4631,164 @@ function subPane(){
 }
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-plans]'); if(b){ e.preventDefault(); openPlans(); } });
 const IC_PLAN=`<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5l2.4 5 5.4.7-4 3.8 1 5.4-4.8-2.6-4.8 2.6 1-5.4-4-3.8 5.4-.7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+
+/* ---------- paid AI on the matrix: personal reading, "ask your matrix", the year month by month ---------- */
+const AIM_KEY=()=>`${STATE.name||''}|${STATE.d}.${STATE.m}.${STATE.y}|${STATE.g||'f'}`;
+function aiStore(){ try{ return JSON.parse(localStorage.getItem('code-ai-reports')||'{}')||{}; }catch(_){ return {}; } }
+function aiSave(o){ try{ localStorage.setItem('code-ai-reports',JSON.stringify(o)); }catch(_){} if(typeof window.codeCloudPush==='function') window.codeCloudPush(); }
+const MONTH_UK=['січень','лютий','березень','квітень','травень','червень','липень','серпень','вересень','жовтень','листопад','грудень'];
+function mxContext(){
+  const P=STATE.P, g=STATE.g||'f', a=curAge(), nmx=v=>`${v} ${ARC[v].n} (${MX_EN[v]}; ${ARC[v].kw.slice(0,3).join(', ')})`;
+  const ids=Object.keys(POS).filter(id=>P[id]!=null);
+  const pos=ids.map(id=>`- ${id} · ${POS[id][0]}: ${nmx(P[id])}`).join('\n');
+  const pr=progs().map(p=>`- ${p.t}: ${p.vals.join('-')}${p.named?` «${p.named.n}»`:''}`).join('\n');
+  const {rows,total}=chakraRows(P);
+  const ch=rows.map((x,i)=>`- ${CHAK[i].n} (${CHAK[i].t}): фізика ${x.ph}, енергія ${x.en}, емоції ${x.em}`).join('\n')+`\n- Енергополе: ${total.ph}/${total.en}/${total.em}`;
+  const yrs=[a,(a+1)%80,(a+2)%80].map(k=>`- вік ${k}: ${P.YEARS[k].join('-')} (${ARC[P.YEARS[k][0]].n})`).join('\n');
+  const tail=[P.D2,P.D1,P.D], tn=findNamed(tail,false);
+  const counts={}; ids.forEach(id=>counts[P[id]]=(counts[P[id]]||0)+1);
+  const rep=Object.entries(counts).filter(([,n])=>n>2).sort((x,y)=>y[1]-x[1]).slice(0,6).map(([v,n])=>`${v} ${ARC[v].n} ×${n}`).join(', ');
+  return `PERSON: ${STATE.name||'(без імені)'}, ${g==='m'?'чоловік':'жінка'}, народження ${STATE.d}.${STATE.m}.${STATE.y}, зараз ${a} років.
+DESTINY MATRIX (Natalia Ladini method; numbers are Major Arcana 1–22):
+Positions:
+${pos}
+Karmic tail: ${tail.join('-')}${tn?` «${tn.n}»`:''}
+Programs (lines of the matrix):
+${pr}
+Health map (chakras):
+${ch}
+Year programs (age ring):
+${yrs}
+Energies repeating most in this matrix: ${rep||'—'}`;
+}
+const AIM_RULES=L=>`Write in ${L.name}, addressing the person ${L.reg}; use grammatical forms matching their gender. Be specific to THIS matrix: name the positions and numbers you rely on and explain how the energies interact (e.g. how the centre shapes the way talents are used, how the karmic tail colours money or love). Never paste generic dictionary definitions of an arcana. When the same arcana appears in several positions, explain what it does differently in EACH place — never repeat the same sentence twice. Concrete life situations, behaviours and steps, not vague esotericism. No fatalism, no medical, legal or financial diagnoses or guarantees; the matrix is a tool for self-reflection. Use Markdown headings (##) and short paragraphs, bullet lists where they help.`;
+function aimReportPrompt(){
+  const L=TP_LANG[LANG]||TP_LANG.en;
+  return `You are CODE’s senior Destiny Matrix analyst (Natalia Ladini method) — deep, warm, practical, psychologically literate.
+${mxContext()}
+
+TASK: write a PERSONAL, in-depth reading of this whole matrix — the kind of analysis a person would gladly pay for. It must feel like it was written about this one person, connecting the dots between positions, not a list of separate descriptions.
+Structure (use these ## headings, translated into ${L.name}):
+1. Ваш портрет — who this person is at the core: centre + personality + talents as one picture; how others see them vs. who they are inside.
+2. Головна сила і як її використати — the strongest combination in the matrix and where it pays off most.
+3. Сценарії, що повторюються — karmic tail and the key programs: how they actually show up in life (situations, reactions, choices), what triggers them, how to break the loop.
+4. Гроші й реалізація — the money channel and material line: which ways of earning fit, what blocks money, 3 concrete moves.
+5. Стосунки й кохання — love line and partner image: what they look for, what they repeat, what helps.
+6. Рід — father’s and mother’s lines: what resource and what task the family gives.
+7. Тіло й ресурс — the weakest chakra areas and how to restore energy (no medical claims).
+8. Призначення — personal (to 40), social (40–60), spiritual: what to grow into.
+9. Цей рік і два наступні — what the year programs ask for and how they connect to the matrix.
+10. Ваш план на 90 днів — 7 concrete, doable steps, each tied to a position.
+11. Питання для себе — 5 deep questions.
+Length: about 2500–3500 words. ${AIM_RULES(L)}`;
+}
+function aimChatPrompt(){
+  const L=TP_LANG[LANG]||TP_LANG.en;
+  return `You are CODE’s Destiny Matrix consultant (Natalia Ladini method). The person asks questions about their life; answer them THROUGH their matrix below.
+${mxContext()}
+
+How to answer: start with a direct answer to the question in 2–3 sentences; then explain which positions/programs of the matrix show this and why; then give practical steps. 250–500 words unless the question needs more. If the question is outside what a matrix can say, still help with what the matrix shows (tendencies, resources, risks) without refusing. ${AIM_RULES(L)}
+${TP_FU_RULE(L)}`;
+}
+function aimMonths(){
+  const now=new Date(), out=[];
+  for(let i=0;i<12;i++){
+    const dt=new Date(now.getFullYear(),now.getMonth()+i,15), age=ageAt(dt), t=STATE.P.YEARS[age];
+    const uni=r(dt.getMonth()+1+r(ds(dt.getFullYear()))), pers=r(t[0]+uni), em=r(STATE.P.E+uni);
+    out.push({dt,age,t,uni,pers,em,label:`${MONTH_UK[dt.getMonth()]} ${dt.getFullYear()}`});
+  }
+  return out;
+}
+function aimYearPrompt(){
+  const L=TP_LANG[LANG]||TP_LANG.en, M=aimMonths();
+  const lines=M.map(x=>`- ${x.label}: year program (age ${x.age}) ${x.t.join('-')}; month energy of the calendar ${x.uni} ${ARC[x.uni].n}; personal month (year energy + month) ${x.pers} ${ARC[x.pers].n}; month vs. centre ${x.em} ${ARC[x.em].n}`).join('\n');
+  return `You are CODE’s Destiny Matrix forecaster (Natalia Ladini method), careful and practical.
+${mxContext()}
+
+THE NEXT 12 MONTHS (computed for this person; the year program switches on the birthday):
+${lines}
+
+TASK: write a month-by-month forecast for these 12 months that is genuinely useful and NOT a repetition of general arcana texts.
+Structure:
+## Загальна лінія року — the arc of the next 12 months for this person: main theme, what the year is building, how it connects to their karmic tail and centre.
+## Найкращі періоди — for starting new things, money, love, rest (name the months and why).
+## Періоди уваги — where to slow down and what exactly to watch.
+Then one ## heading per month (“Січень 2027” etc.) with: Тема місяця (1–2 sentences); Що вдасться легше; Де бути уважнішою/уважнішим; Фокус: робота й гроші / стосунки / тіло — one concrete line each; Одна дія місяця. Months with the same energies must still read differently: build on what came before, show progression through the year.
+## Підсумок — what the person will have by the end of these 12 months if they live them consciously.
+Describe tendencies and probabilities, never certain events; the future is many-sided and depends on choices. Length: about 2500–3500 words. ${AIM_RULES(L)}`;
+}
+async function aimRun(task,turns,onText,signal){
+  const s=await tpGetSample(); if(!s) throw Object.assign(new Error('nosample'),{code:'not_configured'});
+  return s(turns,{cache:false,signal,task,onText:({text})=>onText(text)});
+}
+const aimPaid=()=>{ if(!(window.CODE_SB)) return true; const sb=USER&&USER.sub; return !!(sb&&(sb.plan==='plus'||sb.plan==='pro')&&sb.paid_until&&new Date(sb.paid_until)>new Date()); };
+function aiBlock(){
+  if(isPair()) return '';
+  return `<div class="aim">
+    <div class="aim-i"><button class="btn go aim-b" type="button" data-aim="chat"><span>${_t("Запитай свою матрицю")}</span></button><p class="aim-h">${_t("Поставте будь-яке питання про себе — ШІ розбере його через вашу матрицю долі: характер, таланти, гроші, стосунки, кармічні завдання.")}</p></div>
+    <div class="aim-i"><button class="btn ghost aim-b" type="button" data-aim="report"><span>${_t("Персональний розбір від ШІ")}</span><em class="aim-tag">Plus</em></button><p class="aim-h">${_t("Цілісний глибокий розбір усієї матриці: як ваші енергії впливають одна на одну, сценарії, що повторюються, гроші, стосунки, рід і план на 90 днів.")}</p></div>
+  </div>`;
+}
+const aiYearBtn=()=>isPair()?'':`<div class="aim aim-y"><div class="aim-i"><button class="btn ghost aim-b" type="button" data-aim="year"><span>${_t("Прогноз на 12 місяців")}</span><em class="aim-tag">Plus</em></button><p class="aim-h">${_t("Персональний прогноз по місяцях: загальна лінія року, найкращі періоди й періоди уваги, тема, фокус і одна дія на кожен місяць.")}</p></div></div>`;
+function aimOpen(kind){
+  if(!STATE||!STATE.P) return;
+  const key=AIM_KEY(), st=aiStore(), rec=st[key]||{}, ctlBox={c:null};
+  const title={chat:_t("Запитай свою матрицю"),report:_t("Персональний розбір матриці"),year:_t("Прогноз на 12 місяців")}[kind];
+  const d=document.createElement('div'); d.className='tf-ov aim-ov'; d.setAttribute('role','dialog'); d.setAttribute('aria-modal','true'); d.setAttribute('aria-labelledby','aimT');
+  d.innerHTML=`<div class="tf-bg"></div><div class="tf-box aim-box"><button class="x" type="button" data-tf="x" aria-label="${_t("Закрити")}">${IC_X}</button>
+    <div class="tf-h"><div><p class="pk">[ ${esc(STATE.name||_t("Ваша матриця"))} · ${STATE.d}.${STATE.m}.${STATE.y} ]</p><h3 id="aimT">${title}</h3></div></div><div class="aim-body"></div></div>`;
+  document.body.appendChild(d); document.documentElement.classList.add('mdl-on'); requestAnimationFrame(()=>d.classList.add('in'));
+  const body=d.querySelector('.aim-body');
+  const close=()=>{ if(ctlBox.c) ctlBox.c.abort(); d.classList.remove('in'); document.documentElement.classList.remove('mdl-on'); setTimeout(()=>d.remove(),240); document.removeEventListener('keydown',onKey,true); };
+  const onKey=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopImmediatePropagation(); close(); } };
+  document.addEventListener('keydown',onKey,true);
+  d.addEventListener('click',e=>{ if(e.target.closest('[data-tf=x]')||e.target.classList.contains('tf-bg')) close(); });
+  const errBox=m=>`<div class="aim-err">${m}</div>`;
+  const gate=()=>{ body.innerHTML=`<div class="aim-gate"><p>${kind==='report'?_t("Персональний розбір — це глибокий аналіз усієї вашої матриці, написаний саме про вас: зв’язки між енергіями, сценарії, гроші, стосунки, рід, призначення і план на 90 днів."):_t("Прогноз на 12 місяців — персональна розкладка наступного року по місяцях з урахуванням вашої матриці та програм років.")}</p><p class="muted">${_t("Доступно в тарифах Plus і Pro.")}</p><button class="btn go" type="button" data-plans>${_t("Обрати тариф")}</button></div>`; };
+  if(kind==='chat'){
+    const hist=(rec.chat||[]).slice(-20); let turns=[]; hist.forEach(m=>{ turns.push({role:'user',content:m.q}); turns.push({role:'assistant',content:m.a}); });
+    const SUG=[_t("Яка професія мені найбільше підходить?"),_t("Що заважає мені заробляти більше?"),_t("Чому в стосунках у мене повторюється один сценарій?"),_t("На що звернути увагу цього року?")];
+    let sug=SUG;
+    const draw=()=>{ body.innerHTML=`<div class="aim-chat">${hist.length?hist.map(m=>`<div class="aim-q">${esc(m.q)}</div><div class="aim-a tp-ans">${tpMd(m.a)}</div>`).join(''):`<p class="aim-intro">${_t("Питайте про що завгодно: роботу, гроші, стосунки, рішення, які зараз перед вами. Відповідь спиратиметься на позиції саме вашої матриці.")}</p>`}</div>
+      <div class="tp-sg aim-sg">${sug.map(q=>`<button type="button" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>
+      <form class="aim-f"><textarea id="aimIn" rows="2" maxlength="600" placeholder="${_t("Ваше питання до матриці…")}"></textarea><button class="btn go sm" type="submit">${_t("Запитати")}</button></form><div id="aimE"></div>`;
+      const ch=body.querySelector('.aim-chat'); ch.scrollTop=ch.scrollHeight; };
+    draw();
+    const ask=async q=>{ q=q.trim(); if(!q||ctlBox.c) return;
+      const m={q,a:''}; hist.push(m); draw();
+      const last=()=>{ const a=body.querySelectorAll('.aim-a'); return a[a.length-1]; };
+      const all=[];
+      hist.forEach((x,i)=>{ all.push({role:'user',content:i?x.q:aimChatPrompt()+`\n\nQUESTION: ${x.q}`}); if(i<hist.length-1) all.push({role:'assistant',content:x.a||'—'}); });
+      const ctl=new AbortController(); ctlBox.c=ctl;
+      try{ const res=await aimRun('chat',all,t=>{ m.a=t; const a=last(); if(a) a.innerHTML=tpMd(t); },ctl.signal);
+        m.a=res.text; sug=(tpFuParse(res.text)||SUG).slice(0,3); const s2=aiStore(); s2[key]=s2[key]||{}; s2[key].chat=hist.map(x=>({q:x.q,a:x.a})); aiSave(s2); draw(); }
+      catch(e){ hist.pop(); draw(); body.querySelector('#aimE').innerHTML=errBox(tpErr(e&&e.code)); }
+      finally{ ctlBox.c=null; } };
+    body.addEventListener('click',e=>{ const b=e.target.closest('[data-q]'); if(b) ask(b.dataset.q); });
+    body.addEventListener('submit',e=>{ e.preventDefault(); const t=body.querySelector('#aimIn'); const v=t.value; t.value=''; ask(v); });
+    body.addEventListener('keydown',e=>{ if(e.target.id==='aimIn'&&e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); body.querySelector('.aim-f').requestSubmit(); } });
+    return;
+  }
+  const saved=kind==='report'?rec.report:(rec.year&&rec.year.from===`${new Date().getFullYear()}-${new Date().getMonth()}`?rec.year:null);
+  const show=(txt,ts,busy)=>{ body.innerHTML=`${ts?`<p class="aim-meta">${_f("Створено {0}",[new Date(ts).toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'})])}</p>`:''}<div class="tp-ans aim-doc">${txt?tpMd(txt):`<p class="muted">${_t("Готуємо розбір — це займе 1–2 хвилини. Можна читати, поки текст з’являється.")}</p>`}</div>
+    ${busy?'':`<div class="aim-acts"><button class="btn ghost sm" type="button" data-aim-copy>${_t("Скопіювати текст")}</button><button class="btn ghost sm" type="button" data-aim-redo>${_t("Оновити розбір")}</button></div>`}`; };
+  const run=async()=>{
+    if(!aimPaid()){ gate(); return; }
+    show('',0,true); const ctl=new AbortController(); ctlBox.c=ctl;
+    try{ const res=await aimRun(kind,[{role:'user',content:kind==='report'?aimReportPrompt():aimYearPrompt()}],t=>{ const el=body.querySelector('.aim-doc'); if(el) el.innerHTML=tpMd(t); },ctl.signal);
+      const s2=aiStore(); s2[key]=s2[key]||{}; const now=Date.now();
+      if(kind==='report') s2[key].report={text:res.text,ts:now}; else s2[key].year={text:res.text,ts:now,from:`${new Date().getFullYear()}-${new Date().getMonth()}`};
+      aiSave(s2); show(res.text,now,false); }
+    catch(e){ if(e&&e.code==='need_plan'){ gate(); return; } if(!(e&&e.code==='cancelled')) body.innerHTML=errBox(tpErr(e&&e.code))+`<div class="aim-acts"><button class="btn ghost sm" type="button" data-aim-redo>${_t("Спробувати ще раз")}</button></div>`; }
+    finally{ ctlBox.c=null; } };
+  body.addEventListener('click',async e=>{
+    if(e.target.closest('[data-aim-redo]')) run();
+    if(e.target.closest('[data-aim-copy]')){ const t=(aiStore()[key]||{})[kind==='report'?'report':'year']; try{ await navigator.clipboard.writeText(tpStrip(t&&t.text||'')); toast(_t("Текст скопійовано.")); }catch(_){} }
+  });
+  if(saved) show(saved.text,saved.ts,false); else run();
+}
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-aim]'); if(b){ e.preventDefault(); aimOpen(b.dataset.aim); } });
+
 function cabinetHTML(){
   const p=USER.profile||{};
   return `<div class="cab fade">
@@ -6088,14 +6308,14 @@ function moreProg(k){
   return {num:pr.vals.join('-'),col:pr.named?'var(--accent)':pr.karmic?'var(--p-red)':'var(--p-blue)',title:pr.named?`«${pr.named.n}»`:`${_f("Програма {0}",[pr.vals.join('-')])}`,sub:`${pr.t}${pair?_t(" · сумісність"):''}`,S,code:true};
 }
 function moreYear(a){
-  const P=STATE.P, t=P.YEARS[a], As=t.map(v=>ARC[v]), pr=yearProg(a), tx=progText(pr), S=[];
+  const P=STATE.P, t=P.YEARS[a], As=t.map(v=>ARC[v]), pr=yearProg(a), tx=progText(pr), S=[], O=occ(t);
   const prev=P.YEARS[(a+79)%80], next=P.YEARS[(a+1)%80];
   S.push(sec(_t("Коротко"),`<p class="lead-m">${cap(YR[t[0]])}.</p><p>${As[0].live}</p>`));
-  S.push(sec(_t("Як рік розгортається"),[[_t("Початок року"),0,_t("головна тема й перші події")],[_t("Середина року"),1,_t("виклик і протилежна сфера")],[_t("Завершення року"),2,_t("підсумок, до якого рік підводить")]].map(([h,i,n])=>`<div class="mini-prog"><b>${h} · ${t[i]} ${As[i].n}</b> <span>${n}</span><p>${cap(YR[t[i]])}.</p><div class="two-col"><div><h5 class="ok">${_t("Імовірно в плюсі")}</h5>${UL(As[i].yp)}</div><div><h5 class="no">${_t("Імовірно в мінусі")}</h5>${UL(As[i].ym)}</div></div></div>`).join('')));
-  S.push(sec(_t("Причини й наслідки року"),`<ul class="cz">${As.flatMap(x=>x.cause.slice(0,2)).map(c=>{const p=c.split(' — ');return `<li><span>${p[0]}</span><i aria-hidden="true">→</i><span>${p.slice(1).join(' — ')}</span></li>`}).join('')}</ul>`));
+  S.push(sec(_t("Як рік розгортається"),[[_t("Початок року"),0,_t("головна тема й перші події")],[_t("Середина року"),1,_t("виклик і протилежна сфера")],[_t("Завершення року"),2,_t("підсумок, до якого рік підводить")]].map(([h,i,n])=>`<div class="mini-prog"><b>${h} · ${t[i]} ${As[i].n}</b> <span>${n}</span><p>${O[i][0]?_f("Енергія {0} повторюється — у цій частині року вона розкривається через {1}.",[As[i].n,lc(i===2?(As[i].task||As[i].d):(As[i].work&&As[i].work.p||As[i].d))]):cap(YR[t[i]])+'.'}</p><div class="two-col"><div><h5 class="ok">${_t("Імовірно в плюсі")}</h5>${UL(share(As[i].yp,...O[i]))}</div><div><h5 class="no">${_t("Імовірно в мінусі")}</h5>${UL(share(As[i].ym,...O[i]))}</div></div></div>`).join('')));
+  S.push(sec(_t("Причини й наслідки року"),`<ul class="cz">${uniq(As.flatMap(x=>x.cause.slice(0,2))).map(c=>{const p=c.split(' — ');return `<li><span>${p[0]}</span><i aria-hidden="true">→</i><span>${p.slice(1).join(' — ')}</span></li>`}).join('')}</ul>`));
   S.push(sec(_t("Сфери року"),`<h5>${_t("Робота й гроші")}</h5><p>${_f("{0} У мінусі: {1}",[As[0].work.p,lc(As[0].work.m)])}</p><h5>${_t("Стосунки")}</h5><p>${cap(As[0].love)}. ${As[1].pr.c}</p><h5>${_t("Тіло й ресурс")}</h5><p>${As[0].hp}. ${As[0].body}</p>`));
   S.push(sec(_t("Зв’язок із сусідніми роками"),`<p>${_f("Ви заходите в цей рік із програми {0} ({1}) — те, що не завершилося там, продовжиться тут. Наступний рік — {2} ({3}): {4}. Цей рік — підготовка до нього.",[prev.join('-'),ARC[prev[0]].n,next.join('-'),ARC[next[0]].n,YR[next[0]]])}</p>`));
-  S.push(sec(_t("Як прожити рік"),`<p>${tx.w}</p>${UL(As.flatMap(x=>x.yw.slice(0,2)))}<h5>${_t("План на перші 21 день року")}</h5>${planList(As[0])}`));
+  S.push(sec(_t("Як прожити рік"),`<p>${tx.w}</p>${UL(uniq(As.flatMap(x=>x.yw.slice(0,2))))}<h5>${_t("План на перші 21 день року")}</h5>${planList(As[0])}`));
   S.push(sec(_t("Питання й опора"),`${qList(As[0])}${affBox(As[0])}`));
   return {num:a,col:a===curAge()?'var(--accent)':'var(--p-blue)',title:`${_f("Вік {0}{1}",[a,a===curAge()?_t(" · зараз"):''])}`,sub:`${_f("Програма року {0}",[t.join('-')])}`,S};
 }
@@ -6230,6 +6450,7 @@ function openMore(spec){
   m.querySelector('.mdl-num').outerHTML=`<div class="mdl-num det-num${D.code?' code':''}" style="--c:${D.col}">${D.num}</div>`;
   $('#mdlT').textContent=D.title; $('#mdlS').textContent=D.sub;
   $('#mdlToc').innerHTML=D.S.map((s,k)=>`<button type="button" data-sec="${k}"><b>${String(k+1).padStart(2,'0')}</b>${s.t}</button>`).join('');
+  setTimeout(()=>dedupeDOM($('#mdlBody')),0);
   $('#mdlBody').innerHTML=_f("{0}<p class=\"note\">Трактування — інструмент самопізнання за методом Матриці долі, а не прогноз чи діагноз.</p>",[D.S.map((s,k)=>`<section class="msec" id="msec${k}"><h3><b>${String(k+1).padStart(2,'0')}</b>${s.t}</h3>${s.html}</section>`).join('')]);
   MORE_PREV=document.activeElement;
   m.hidden=false; document.documentElement.classList.add('mdl-on');
@@ -6430,6 +6651,7 @@ async function hydrate(session){
   if(error) throw 'network';
   const localTarot=(()=>{ try{ return JSON.parse(localStorage.getItem('code-tarot')||'[]')||[]; }catch(_){ return []; } })();
   const localPeople=(()=>{ try{ return JSON.parse(localStorage.getItem('code-tarot-people')||'[]')||[]; }catch(_){ return []; } })();
+  const localRep=(()=>{ try{ return JSON.parse(localStorage.getItem('code-ai-reports')||'{}')||{}; }catch(_){ return {}; } })();
   if(!row){
     const meta=u.user_metadata||{};
     row={id:u.id,email:u.email,profile:emptyProfile(meta.name||meta.full_name||''),favs:[],hist:[],tarot:localTarot,people:localPeople};
@@ -6438,7 +6660,7 @@ async function hydrate(session){
     row.tarot=mergeById(row.tarot,localTarot).slice(0,30);
     row.people=(row.people&&row.people.length?row.people:localPeople);
   }
-  try{ localStorage.setItem('code-tarot',JSON.stringify(row.tarot||[])); localStorage.setItem('code-tarot-people',JSON.stringify(row.people||[])); }catch(_){}
+  try{ localStorage.setItem('code-tarot',JSON.stringify(row.tarot||[])); localStorage.setItem('code-tarot-people',JSON.stringify(row.people||[])); localStorage.setItem('code-ai-reports',JSON.stringify(Object.assign({},localRep,row.reports||{}))); }catch(_){}
   USER={email:u.email,profile:row.profile||emptyProfile(),favs:row.favs||[],hist:row.hist||[],uid:u.id};
   try{ const {data:sr}=await sb.from('subscriptions').select('plan,period,paid_until,auto_renew,packs').eq('user_id',u.id).maybeSingle(); USER.sub=sr||null; }catch(_){ USER.sub=null; }
   setAcctIcon();
@@ -6450,13 +6672,17 @@ function pushSoon(){
     if(!sb||!USER||!USER.uid) return;
     const tarot=(()=>{ try{ return JSON.parse(localStorage.getItem('code-tarot')||'[]')||[]; }catch(_){ return []; } })();
     const people=(()=>{ try{ return JSON.parse(localStorage.getItem('code-tarot-people')||'[]')||[]; }catch(_){ return []; } })();
-    await sb.from('user_data').upsert({id:USER.uid,email:USER.email,profile:USER.profile,favs:USER.favs||[],hist:USER.hist||[],tarot,people,updated_at:new Date().toISOString()});
+    const reports=(()=>{ try{ return JSON.parse(localStorage.getItem('code-ai-reports')||'{}')||{}; }catch(_){ return {}; } })();
+    const rowU={id:USER.uid,email:USER.email,profile:USER.profile,favs:USER.favs||[],hist:USER.hist||[],tarot,people,reports,updated_at:new Date().toISOString()};
+    let {error}=await sb.from('user_data').upsert(rowU);
+    if(error&&/reports/.test(error.message||'')){ delete rowU.reports; await sb.from('user_data').upsert(rowU); }
   },700);
 }
 
 /* replace the browser-only account functions */
 window.loadSession=function(){ setAcctIcon(); };
 window.persistUser=function(){ pushSoon(); return true; };
+window.codeCloudPush=()=>{ if(USER&&USER.uid) pushSoon(); };
 window.register=async function(email,pw,name){
   await ready; if(!sb) throw 'network';
   if(pw.length<6) throw 'weakpw';
@@ -6564,7 +6790,7 @@ async function aiCall(payload,signal){
   return r;
 }
 const aiSample=async(turns,opts={})=>{
-  const r=await aiCall({turns},opts.signal);
+  const r=await aiCall({turns,task:opts.task||'tarot'},opts.signal);
   const rd=r.body.getReader(), dec=new TextDecoder(); let buf='', text='', stop='';
   try{
     for(;;){ const {done,value}=await rd.read(); if(done) break; buf+=dec.decode(value,{stream:true});
@@ -6589,6 +6815,7 @@ if(!(window.claude&&window.claude.use)) TP_SAMPLE=aiSample;
 const _tpErr=window.tpErr;
 window.tpErr=function(c){
   if(c==='login') return 'Щоб отримати трактування, увійдіть або зареєструйтеся — це безкоштовно і займає хвилину.';
+  if(c==='need_plan'){ setTimeout(()=>typeof openPlans==='function'&&openPlans(),900); return 'Ця функція доступна в тарифах Plus і Pro.'; }
   if(c==='free_quota'){ setTimeout(()=>typeof openPlans==='function'&&openPlans(),900); return 'Безкоштовні трактування на цей тиждень закінчилися. Наступне з’явиться за кілька днів — або оберіть тариф, щоб питати карти без очікування.'; }
   if(c==='plan_quota'){ setTimeout(()=>typeof openPlans==='function'&&openPlans(),900); return 'Ліміт запитів вашого тарифу на цей місяць вичерпано. Можна докупити пакет або перейти на більший тариф.'; }
   if(c==='daily_limit') return 'Ви використали денний ліміт трактувань. Повертайтеся завтра — ліміт оновлюється щодня.';
