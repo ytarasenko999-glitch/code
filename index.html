@@ -1964,6 +1964,18 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
   .dn-in .dn.on em{background:var(--accent-soft);color:var(--accent)}
   .dash{gap:14px!important}
 }
+.sub-bal{margin:0 0 18px}
+.bal-h{display:flex;flex-direction:column;gap:3px;margin:0 0 12px}.bal-h b{font-weight:500;font-size:15px}.bal-h small{color:var(--muted);font-size:12.5px;line-height:1.45}
+.bal-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.bal-t{padding:16px 16px 14px;border-radius:18px;border:1px solid var(--line);display:flex;flex-direction:column;gap:4px;min-width:0}
+.bal-t.dim{opacity:.6}
+.bal-g>.bal-t:first-child{grid-column:1/-1}
+.bal-l{margin:0;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.bal-n{margin:2px 0 0;display:flex;align-items:baseline;gap:8px}.bal-n b{font-family:var(--font-display);font-weight:300;font-size:34px;line-height:1.05;letter-spacing:-.02em}.bal-n span{color:var(--muted);font-size:13px}
+.bal-c{margin:0;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.bal-skel{height:96px;border-radius:18px;background:var(--surface-2);animation:balPulse 1.4s ease-in-out infinite}
+@keyframes balPulse{50%{opacity:.45}}
+@media (max-width:520px){.bal-g{grid-template-columns:1fr 1fr}.bal-n b{font-size:28px}}
 .aim-gate{padding:8px 0}.aim-gate p{margin:0 0 12px;line-height:1.6}.aim-gate .btn{flex:0 0 auto!important}
 .aim-b{background:transparent!important;color:var(--fg)!important;border:1px solid var(--line)!important;box-shadow:none!important}
 .aim-b:hover{border-color:var(--accent)!important;color:var(--accent)!important}
@@ -4710,11 +4722,34 @@ function openPlans(start){
     if(e.target.closest('[data-pay]')){ toast('Оплата з’явиться найближчим часом — ми повідомимо вас листом.'); close(); }
   });
 }
+/* «Ваш залишок» in the cabinet: counted by the server with the same rules as the limits */
+const fmtDay=d=>new Date(d).toLocaleDateString('uk-UA',{day:'numeric',month:'long'});
+function balHTML(b){
+  const tile=(lab,left,total,cap,dim)=>`<div class="bal-t${dim?' dim':''}"><p class="bal-l">${lab}</p><p class="bal-n"><b>${left}</b>${total!=null?`<span>з ${total}</span>`:''}</p><p class="bal-c">${cap}</p></div>`;
+  const T=[], a=b.ai||{left:0,total:0};
+  const aiCap=a.kind==='month'?(a.left?(b.paid_until?`До ${fmtDay(b.paid_until)}`:'На 30 днів'):`Наступний запит з’явиться ${a.next?fmtDay(a.next):'незабаром'}`)
+    :a.kind==='start'?'Стартові безкоштовні. Потім — 1 запит щотижня'
+    :(a.left?'Безкоштовний запит цього тижня':`Наступний безкоштовний — ${a.next?fmtDay(a.next):'наступного тижня'}`);
+  T.push(tile('Запити до ШІ',a.left,a.total,aiCap));
+  if(b.pack&&b.pack.ai) T.push(tile('Пакетні запити',b.pack.ai,null,'Не згорають'));
+  const deep=(k,lab)=>{ const x=b[k], p=k==='report'&&b.pack?b.pack.report:0;
+    if(x) T.push(tile(lab,x.left,x.total,x.left?(b.paid_until?`До ${fmtDay(b.paid_until)}`:'На 30 днів'):`Наступний з’явиться ${x.next?fmtDay(x.next):'незабаром'}`));
+    if(p) T.push(tile(lab+' · пакет',p,null,'Не згорає'));
+    if(!x&&!p) T.push(tile(lab,'—',null,k==='report'?'Доступно в Plus, Pro або в Пакеті':'Доступно в Plus і Pro',true)); };
+  deep('report','Розбір матриці'); deep('year','Прогноз на 12 місяців');
+  return `<div class="bal-h"><b>Ваш залишок</b><small>Розпізнавання фото — без витрати запитів, до ${b.photo_day||20} фото на день</small></div><div class="bal-g">${T.join('')}</div>`;
+}
+async function fillBalance(){
+  const el=document.getElementById('subBal'); if(!el||typeof window.codeBalance!=='function') return;
+  try{ const b=await window.codeBalance(); if(el.isConnected) el.innerHTML=balHTML(b); }
+  catch(_){ if(el.isConnected) el.innerHTML='<p class="muted">Не вдалося отримати залишок. Оновіть сторінку трохи згодом.</p>'; }
+}
 function subPane(){
   const sb=USER&&USER.sub, active=sb&&(sb.plan==='plus'||sb.plan==='pro')&&sb.paid_until&&new Date(sb.paid_until)>new Date();
   const cur=PLANS.find(x=>x.id===(active?sb.plan:'free')), dt=active?new Date(sb.paid_until).toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'}):'';
   return `<div class="dm-h"><h2>Підписка</h2></div>
     <div class="sub-cur"><div><p class="pk">[ Поточний тариф ]</p><h3>${cur.n}</h3><p class="muted">${active?`Діє до ${dt}${sb.period==='y'?' · річна оплата':''}`:'Діє безстроково'}${sb&&sb.packs?` · пакетних запитів: ${sb.packs}`:''}${sb&&sb.pack_reports?` · пакетних розборів: ${sb.pack_reports}`:''}</p></div><button class="btn go aura" type="button" data-plans>${active?'Змінити тариф':'Обрати тариф'}</button></div>
+    ${window.CODE_SB&&USER?(setTimeout(fillBalance,0),'<div class="sub-bal" id="subBal"><div class="bal-g"><div class="bal-skel"></div><div class="bal-skel"></div><div class="bal-skel"></div></div></div>'):''}
     ${limHTML(cur).replace('class="pl-lim"','class="sub-f pl-lim"')}
     <div class="sub-blk"><div class="sub-row"><div><b>Автопродовження</b><small>${active?(sb.auto_renew?`Увімкнене: ${dt} доступ продовжиться автоматично. Вимкнути можна будь-коли.`:`Вимкнене: після ${dt} доступ повернеться до безкоштовного тарифу, нічого не спишеться.`):'Вимкнене. З’явиться, коли ви оформите Plus або Pro, — і лише якщо ви самі його увімкнете.'}</small></div><label class="sw"><input type="checkbox" disabled${active&&sb.auto_renew?' checked':''}><i></i></label></div></div>
     <div class="sub-blk"><b>Історія оплат</b><p class="muted">Оплат ще не було.</p></div>
@@ -6914,6 +6949,7 @@ new MutationObserver(()=>{ const h=document.querySelector('.sso [data-sso="Googl
 /* AI tarot reader on the hosted site: same interface as window.claude.use('sample'), served by /api/tarot */
 const aiToken=async()=>{ await ready; if(!sb) return null; const {data}=await sb.auth.getSession(); return data&&data.session?data.session.access_token:null; };
 const aiErr=(code,text)=>Object.assign(new Error(code),{code,text});
+window.codeBalance=async()=>{ const tok=await aiToken(); if(!tok) throw new Error('login'); const r=await fetch('/api/tarot',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+tok},body:JSON.stringify({mode:'balance'})}); if(!r.ok) throw new Error('bal_'+r.status); return r.json(); };
 async function aiCall(payload,signal){
   const tok=await aiToken(); if(!tok) throw aiErr('login');
   let r; try{ r=await fetch('/api/tarot',{method:'POST',signal,headers:{'content-type':'application/json',authorization:'Bearer '+tok},body:JSON.stringify(payload)}); }

@@ -71,6 +71,46 @@ async function allowance(token, uid, task) {
   if (packs > 0) { const usedP = await countUse(token, uid, { source: 'pack', pool: true }); if (usedP < packs) return { ok: true, source: 'pack', left: packs - usedP - 1, plan: sub.plan || 'free' }; }
   return { ok: false, code: paid ? 'plan_quota' : 'free_quota', plan: paid ? sub.plan : 'free' };
 }
+/* oldest usage inside a rolling window → when the next unit comes back */
+async function oldest(token, uid, { since, source, kind, pool }) {
+  let q = `${SB_URL}/rest/v1/ai_usage?select=created_at&user_id=eq.${uid}&order=created_at.asc&limit=1`;
+  if (since) q += `&created_at=gte.${encodeURIComponent(since.toISOString())}`;
+  if (source) q += `&source=eq.${source}`;
+  if (kind) q += `&kind=eq.${kind}`;
+  if (pool) q += `&${POOL}`;
+  const r = await fetch(q, { headers: H(token) }); if (!r.ok) return null;
+  const a = await r.json(); return a && a[0] ? new Date(a[0].created_at) : null;
+}
+const plusDays = (d, n) => d ? new Date(d.getTime() + n * 864e5).toISOString() : null;
+/* what the person has left right now — same rules as allowance() */
+async function balance(token, uid) {
+  const sub = (await getSub(token, uid)) || { plan: 'free', packs: 0, pack_reports: 0 };
+  const paid = (sub.plan === 'plus' || sub.plan === 'pro') && sub.paid_until && new Date(sub.paid_until) > new Date();
+  const month = new Date(Date.now() - 30 * 864e5), week = new Date(Date.now() - 7 * 864e5);
+  const out = { plan: paid ? sub.plan : 'free', paid_until: paid ? sub.paid_until : null, photo_day: PHOTO_DAY };
+  if (paid) {
+    const used = await countUse(token, uid, { since: month, source: 'plan', pool: true }), total = QUOTA[sub.plan];
+    out.ai = { kind: 'month', left: Math.max(0, total - used), total, next: used >= total ? plusDays(await oldest(token, uid, { since: month, source: 'plan', pool: true }), 30) : null };
+    for (const t of ['report', 'year']) {
+      const u = await countUse(token, uid, { since: month, source: 'plan', kind: t }), tt = DEEP[t][sub.plan] || 0;
+      out[t] = { left: Math.max(0, tt - u), total: tt, next: u >= tt ? plusDays(await oldest(token, uid, { since: month, source: 'plan', kind: t }), 30) : null };
+    }
+  } else {
+    const all = await countUse(token, uid, { source: 'free', pool: true });
+    if (all < FREE_START) out.ai = { kind: 'start', left: FREE_START - all, total: FREE_START, next: null };
+    else {
+      const w = await countUse(token, uid, { since: week, source: 'free', pool: true });
+      out.ai = { kind: 'week', left: Math.max(0, FREE_WEEK - w), total: FREE_WEEK, next: w >= FREE_WEEK ? plusDays(await oldest(token, uid, { since: week, source: 'free', pool: true }), 7) : null };
+    }
+    out.report = null; out.year = null;
+  }
+  const pA = sub.packs || 0, pR = sub.pack_reports || 0;
+  out.pack = {
+    ai: pA ? Math.max(0, pA - await countUse(token, uid, { source: 'pack', pool: true })) : 0,
+    report: pR ? Math.max(0, pR - await countUse(token, uid, { source: 'pack', kind: 'report' })) : 0
+  };
+  return out;
+}
 async function logUse(token, uid, kind, source) {
   await fetch(`${SB_URL}/rest/v1/ai_usage`, { method: 'POST', headers: { ...H(token), 'content-type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ user_id: uid, kind, source }) });
 }
@@ -97,14 +137,19 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') { res.statusCode = 204; return res.end(); }
   if (req.method !== 'POST') return fail(res, 405, 'method');
 
-  const KEY = process.env.ANTHROPIC_API_KEY;
-  if (!KEY) return fail(res, 503, 'not_configured');
-
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   if (!token) return fail(res, 401, 'login');
   let user;
   try { user = await sbUser(token); } catch (_) { return fail(res, 502, 'network'); }
   if (!user) return fail(res, 401, 'login');
+
+  if ((req.body || {}).mode === 'balance') {
+    try { const b = await balance(token, user.id); res.statusCode = 200; res.setHeader('content-type', 'application/json'); res.setHeader('cache-control', 'no-store'); return res.end(JSON.stringify(b)); }
+    catch (e) { return fail(res, 500, 'usage', { detail: String(e.message || e) }); }
+  }
+
+  const KEY = process.env.ANTHROPIC_API_KEY;
+  if (!KEY) return fail(res, 503, 'not_configured');
 
   let al;
   const body0 = req.body || {}, task = ['tarot', 'chat', 'report', 'year'].includes(body0.task) ? body0.task : 'tarot';
