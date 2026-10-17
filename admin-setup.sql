@@ -150,3 +150,16 @@ create index if not exists visits_created_idx on public.visits(created_at);
 alter table public.visits enable row level security;
 drop policy if exists visits_admin_read on public.visits;
 create policy visits_admin_read on public.visits for select using (public.is_admin());
+
+-- ===== partners & promo codes =====
+create table if not exists public.partners(
+  id uuid primary key default gen_random_uuid(), created_at timestamptz not null default now(),
+  name text not null, email text, code text not null unique, note text);
+alter table public.partners enable row level security;
+drop policy if exists partners_admin on public.partners;
+create policy partners_admin on public.partners for all using (public.is_admin()) with check (public.is_admin());
+alter table public.user_data add column if not exists promo text;
+create or replace function public.promo_ok(c text) returns boolean language sql security definer set search_path=public as $$
+  select exists(select 1 from public.partners where upper(code)=upper(trim(c)));
+$$;
+grant execute on function public.promo_ok(text) to anon, authenticated;
