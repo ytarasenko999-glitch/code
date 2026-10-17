@@ -63,6 +63,16 @@ main{min-width:0;display:flex;flex-direction:column;gap:18px}
 .top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;padding:6px 4px 0}
 .top h2{font-weight:200;font-size:clamp(28px,3.4vw,42px)}
 .top .acts{display:flex;gap:8px;flex-wrap:wrap}
+.an-chips{display:flex;gap:6px;flex-wrap:wrap}
+.an-list{display:flex;flex-direction:column;gap:9px}
+.an-r{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(60px,1fr) 44px 40px;gap:10px;align-items:center;font-size:13.5px}
+.an-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.an-b{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.an-b i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+.an-r b{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.an-r small{color:var(--muted);text-align:right;font-family:var(--font-mono);font-size:11px}
+.utm-out{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}
+.utm-out code{flex:1 1 300px;min-width:0;padding:11px 14px;border-radius:12px;background:var(--surface-2);font-family:var(--font-mono);font-size:12.5px;word-break:break-all}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
 .kpi{padding:18px 20px}
 .kpi small{display:block;font-size:10px;text-transform:uppercase;color:var(--muted)}
@@ -188,6 +198,7 @@ select.tb{max-width:240px}
     <div class="logo">CODE<sup>ADMIN</sup></div>
     <div class="who" id="who"></div>
     <button class="navb" data-v="overview">Огляд</button>
+    <button class="navb" data-v="an">Аналітика<em id="cAn"></em></button>
     <button class="navb" data-v="users">Користувачі<em id="cU"></em></button>
     <button class="navb" data-v="subs">Підписки<em id="cS"></em></button>
     <button class="navb" data-v="pays">Оплати<em id="cP"></em></button>
@@ -291,8 +302,8 @@ async function logA(action,target,details){ await SB.from('admin_log').insert({a
 
 /* ---------- views ---------- */
 function go(v){ VIEW=v; document.querySelectorAll('.navb').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); const m=$('#main');
-  m.innerHTML=v==='users'?vUsers():v==='subs'?vSubs():v==='pays'?vPays():v==='ai'?vAI():v==='log'?vLog():v==='admins'?vAdmins():v==='bal'?vBal():v==='blog'?vBlog():v==='post'?vPost():v==='docs'?vDocs():v==='mail'?vMail():vOverview(); bindView(); }
-document.querySelectorAll('.navb').forEach(b=>b.onclick=async()=>{ if(b.dataset.v==='blog') EDIT=null; if(b.dataset.v==='mail'){ MAIL=null; await loadMail(); } go(b.dataset.v); });
+  m.innerHTML=v==='users'?vUsers():v==='subs'?vSubs():v==='pays'?vPays():v==='ai'?vAI():v==='log'?vLog():v==='admins'?vAdmins():v==='bal'?vBal():v==='blog'?vBlog():v==='post'?vPost():v==='docs'?vDocs():v==='mail'?vMail():v==='an'?vAn():vOverview(); bindView(); }
+document.querySelectorAll('.navb').forEach(b=>b.onclick=async()=>{ if(b.dataset.v==='blog') EDIT=null; if(b.dataset.v==='mail'){ MAIL=null; await loadMail(); } if(b.dataset.v==='an') await loadAn(); go(b.dataset.v); });
 const head=(t,acts='')=>`<div class="top"><div><p class="pk">[ адмінпанель ]</p><h2>${t}</h2></div><div class="acts">${acts}<button class="btn ghost sm" data-act="reload">Оновити</button></div></div>`;
 
 function bars(days){
@@ -625,8 +636,64 @@ function vAdmins(){
     <form id="admF" class="adm-f"><div class="field"><label for="admE">Email Google-акаунта</label><input type="email" id="admE" required autocomplete="off" placeholder="name@gmail.com"></div><button class="btn go sm" type="submit">Додати адміна</button></form></div>
     <div class="panel">${D.admins.length?`<div class="tw"><table><thead><tr><th>Email</th><th>Статус</th><th></th></tr></thead><tbody>${D.admins.map(row).join('')}</tbody></table></div>`:'<p class="empty">Список порожній.</p>'}</div>`;
 }
+
+/* ---------- analytics: anonymous visits from /api/track ---------- */
+let AN={days:30,rows:[],err:null,loaded:0};
+const SRC_N={google:'Google',bing:'Bing',duckduckgo:'DuckDuckGo',yahoo:'Yahoo',ecosia:'Ecosia',tiktok:'TikTok',instagram:'Instagram',facebook:'Facebook',threads:'Threads',telegram:'Telegram',youtube:'YouTube',pinterest:'Pinterest',x:'X (Twitter)',viber:'Viber',whatsapp:'WhatsApp',linkedin:'LinkedIn',ai:'ШІ-чати (ChatGPT, Perplexity…)',email:'Email-розсилки',direct:'Прямі заходи'};
+const srcName=s=>SRC_N[s]||(String(s||'').startsWith('ref:')?String(s).slice(4):s||'—');
+const CC={UA:'Україна',PL:'Польща',DE:'Німеччина',US:'США',GB:'Велика Британія',CZ:'Чехія',IT:'Італія',ES:'Іспанія',FR:'Франція',CA:'Канада',NL:'Нідерланди',PT:'Португалія',AT:'Австрія',IE:'Ірландія',MD:'Молдова',RO:'Румунія',SK:'Словаччина',LT:'Литва',LV:'Латвія',EE:'Естонія',IL:'Ізраїль',TR:'Туреччина',GE:'Грузія',KZ:'Казахстан',AE:'ОАЕ',SE:'Швеція',NO:'Норвегія',FI:'Фінляндія',DK:'Данія',BE:'Бельгія',CH:'Швейцарія',HU:'Угорщина',BG:'Болгарія'};
+const DEV_N={mobile:'Телефон',desktop:'Комп’ютер',tablet:'Планшет'};
+async function loadAn(){
+  const from=new Date(Date.now()-(AN.days-1)*864e5); from.setHours(0,0,0,0);
+  const {data,error}=await SB.from('visits').select('created_at,sid,first,path,ref,src,medium,campaign,device,country').gte('created_at',from.toISOString()).order('created_at',{ascending:false}).limit(100000);
+  AN.rows=data||[]; AN.err=error&&error.message; AN.loaded=Date.now();
+  const el=$('#cAn'); if(el) el.textContent=AN.err?'':new Set(AN.rows.filter(r=>isoDay(r.created_at)===isoDay(Date.now())).map(r=>r.sid)).size||'';
+}
+function anTop(rows,keyFn,nameFn,limit=12){
+  const m={}; rows.forEach(r=>{ const k=keyFn(r); if(k==null||k==='') return; const o=m[k]=m[k]||{s:new Set(),n:0}; o.s.add(r.sid); o.n++; });
+  const tot=new Set(rows.map(r=>r.sid)).size||1;
+  const L=Object.entries(m).map(([k,o])=>({k,v:o.s.size,n:o.n})).sort((a,b)=>b.v-a.v||b.n-a.n).slice(0,limit), mx=L.length?L[0].v:1;
+  return L.length?`<div class="an-list">${L.map(x=>`<div class="an-r"><span class="an-n" title="${esc(nameFn?nameFn(x.k):x.k)}">${esc(nameFn?nameFn(x.k):x.k)}</span><span class="an-b"><i style="width:${Math.max(2,x.v/mx*100)}%"></i></span><b>${x.v}</b><small>${Math.round(x.v/tot*100)}%</small></div>`).join('')}</div>`:'<p class="empty">Поки немає даних.</p>';
+}
+function vAn(){
+  const R=AN.rows, uniq=a=>new Set(a.map(r=>r.sid)).size, today=isoDay(Date.now());
+  const days=[]; for(let i=AN.days-1;i>=0;i--) days.push(isoDay(Date.now()-i*864e5));
+  const byDay={}; days.forEach(d=>byDay[d]=new Set()); R.forEach(r=>{ const d=isoDay(r.created_at); if(byDay[d]) byDay[d].add(r.sid); });
+  const vals=days.map(d=>byDay[d].size), mx=Math.max(1,...vals);
+  const from=new Date(Date.now()-(AN.days-1)*864e5); from.setHours(0,0,0,0);
+  const regs=D.users.filter(u=>u.created_at&&new Date(u.created_at)>=from).length, vis=uniq(R);
+  const kpi=(t,v,s)=>`<div class="panel kpi"><small>${t}</small><b>${v}</b><span>${s||''}</span></div>`;
+  const chips=`<div class="an-chips">${[[1,'Сьогодні'],[7,'7 днів'],[30,'30 днів'],[90,'90 днів']].map(([d,t])=>`<button class="btn ${AN.days===d?'go':'ghost'} sm" type="button" data-an-days="${d}">${t}</button>`).join('')}</div>`;
+  if(AN.err) return head('Аналітика',chips)+`<div class="panel bal-warn bad">Не вдалося прочитати дані: ${esc(AN.err)}. ${/visits/.test(AN.err)?'Потрібно створити таблицю visits (SQL у admin-setup.sql).':''}</div>`;
+  return head('Аналітика',chips)+`
+  <div class="kpis">${kpi('Відвідувачі',vis,`${uniq(R.filter(r=>r.first))} нових`)}${kpi('Перегляди сторінок',R.length,vis?`≈ ${(R.length/vis).toFixed(1)} на відвідувача`:'')}${kpi('Сьогодні',uniq(R.filter(r=>isoDay(r.created_at)===today)),`${R.filter(r=>isoDay(r.created_at)===today).length} переглядів`)}${kpi('Реєстрації',regs,vis?`конверсія ${(regs/vis*100).toFixed(1)}%`:'')}</div>
+  ${AN.days>1?`<div class="panel card"><h3>Відвідувачі по днях</h3><div class="bars">${vals.map((v,i)=>`<i style="height:${Math.max(2,v/mx*100)}%" title="${days[i]}: ${v}"></i>`).join('')}</div><div class="bars-x"><span>${days[0].slice(5)}</span><span>макс. ${mx} / день</span><span>${days[days.length-1].slice(5)}</span></div></div>`:''}
+  <div class="grid2">
+    <div class="panel card"><h3>Джерела трафіку</h3>${anTop(R,r=>r.src&&r.src.startsWith('ref:')?'ref':r.src,k=>k==='ref'?'Інші сайти (посилання)':srcName(k),15)}<p class="bal-n">«Прямі заходи» — людина ввела адресу, відкрила із закладок або з застосунку, який не передає джерело. Щоб точно бачити TikTok, Instagram чи Telegram, ставте посилання з мітками (нижче).</p></div>
+    <div class="panel card"><h3>Сайти, з яких перейшли</h3>${anTop(R,r=>r.ref,null,15)}</div>
+    <div class="panel card"><h3>Кампанії (UTM-мітки)</h3>${anTop(R.filter(r=>r.campaign||r.medium),r=>[srcName(r.src),r.medium,r.campaign].filter(Boolean).join(' · '),null,15)}</div>
+    <div class="panel card"><h3>Сторінки входу</h3>${anTop(R,r=>r.path,k=>k==='/'?'Головна':k.startsWith('/blog/')?'Блог: '+k.slice(6):k==='/blog'?'Блог':k,15)}</div>
+    <div class="panel card"><h3>Країни</h3>${anTop(R,r=>r.country,k=>CC[k]||k,12)}</div>
+    <div class="panel card"><h3>Пристрої</h3>${anTop(R,r=>r.device,k=>DEV_N[k]||k,5)}</div>
+  </div>
+  <div class="panel card"><h3>Посилання з міткою джерела</h3><p class="bal-n" style="margin:0 0 12px">Для біо в TikTok чи Instagram, сторіс, Telegram-каналу, реклами — так ви точно побачите, звідки прийшли люди.</p>
+    <form id="utmF" class="adm-f"><div class="field" style="flex:1 1 160px"><label for="utS">Джерело</label><input id="utS" list="utSL" placeholder="tiktok" value="tiktok"><datalist id="utSL">${['tiktok','instagram','telegram','facebook','youtube','threads','pinterest','email','google'].map(x=>`<option value="${x}">`).join('')}</datalist></div>
+    <div class="field" style="flex:1 1 160px"><label for="utM">Тип</label><input id="utM" list="utML" placeholder="bio" value="bio"><datalist id="utML">${['bio','stories','post','reels','video','ads','channel','newsletter'].map(x=>`<option value="${x}">`).join('')}</datalist></div>
+    <div class="field" style="flex:1 1 180px"><label for="utC">Кампанія (необов’язково)</label><input id="utC" placeholder="october"></div>
+    <div class="field" style="flex:1 1 160px"><label for="utP">Сторінка</label><select id="utP"><option value="/">Головна</option><option value="/blog">Блог</option>${(D.posts||[]).filter(x=>x.published!==false).map(x=>`<option value="/blog/${esc(x.slug)}">Стаття: ${esc((x.h1||x.slug).slice(0,40))}</option>`).join('')}</select></div></form>
+    <div class="utm-out"><code id="utO"></code><button class="btn go sm" type="button" id="utCp">Копіювати</button></div></div>
+  <p class="bal-n">Дані анонімні: без імен, email і IP — лише випадковий ідентифікатор браузера, джерело, сторінка, пристрій і країна. Оновлено ${fmtDT(AN.loaded)}.</p>`;
+}
+function bindAn(){
+  document.querySelectorAll('[data-an-days]').forEach(b=>b.onclick=async()=>{ AN.days=+b.dataset.anDays; await loadAn(); go('an'); });
+  const o=$('#utO'); if(!o) return;
+  const sl=v=>v.trim().toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9_\-]/g,'');
+  const upd=()=>{ const q=new URLSearchParams(); const S=sl($('#utS').value),M=sl($('#utM').value),C=sl($('#utC').value); if(S) q.set('utm_source',S); if(M) q.set('utm_medium',M); if(C) q.set('utm_campaign',C); o.textContent='https://code-matrix.space'+$('#utP').value+(q.toString()?'?'+q:''); };
+  ['#utS','#utM','#utC','#utP'].forEach(id=>{ const e=$(id); e.oninput=upd; e.onchange=upd; }); upd();
+  $('#utCp').onclick=async()=>{ try{ await navigator.clipboard.writeText(o.textContent); toast('Посилання скопійовано.'); }catch(_){ toast('Не вдалося скопіювати.'); } };
+}
 function bindView(){
-  bindPost(); bindDocs(); bindMail();
+  bindPost(); bindDocs(); bindMail(); bindAn();
   { const nb=$('[data-post-new]'); if(nb) nb.onclick=()=>{ EDIT='new'; go('post'); }; document.querySelectorAll('[data-post-edit]').forEach(b=>b.onclick=()=>{ EDIT=+b.dataset.postEdit; go('post'); window.scrollTo({top:0}); }); }
   { const f=$('#tpF'); if(f) f.onsubmit=async e=>{ e.preventDefault(); const usdv=Math.round(parseFloat($('#tpU').value)*100)/100; if(!usdv) return toast('Вкажіть суму (для коригування — з мінусом).');
       const t={d:$('#tpD').value,usd:usdv,note:$('#tpN').value.trim()}; if(await saveTopups([...D.topups,t],'поповнення балансу ШІ',t)) toast('Поповнення додано.'); }; }

@@ -140,3 +140,13 @@ create table if not exists public.email_log (
 alter table public.email_log enable row level security;
 drop policy if exists "email log admin" on public.email_log;
 create policy "email log admin" on public.email_log for select using (public.is_admin());
+
+-- ===== analytics: anonymous visits (written by /api/track with the service key, readable by admins) =====
+create table if not exists public.visits(
+  id bigserial primary key, created_at timestamptz not null default now(),
+  sid text, first boolean default false, path text, ref text, src text, medium text, campaign text,
+  device text, country text, lang text);
+create index if not exists visits_created_idx on public.visits(created_at);
+alter table public.visits enable row level security;
+drop policy if exists visits_admin_read on public.visits;
+create policy visits_admin_read on public.visits for select using (public.is_admin());
