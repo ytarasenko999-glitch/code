@@ -5092,7 +5092,7 @@ function aiReader(r){
   const o=aimKeyInfo(r.k), title=r.kind==='report'?_t("Персональний розбір матриці"):_t("Прогноз на 12 місяців");
   const d=document.createElement('div'); d.className='tf-ov aim-ov'; d.setAttribute('role','dialog'); d.setAttribute('aria-modal','true'); d.setAttribute('aria-labelledby','aiRdT');
   d.innerHTML=`<div class="tf-bg"></div><div class="tf-box aim-box"><button class="x" type="button" data-tf="x" aria-label="${_t("Закрити")}">${IC_X}</button>
-    <div class="tf-h"><div><p class="pk">[ ${esc(o.name||_t("Ваша матриця"))} · ${o.d}.${o.m}.${o.y} ]</p><h3 id="aiRdT">${title}</h3></div></div>
+    <div class="tf-h"><div><p class="pk">[ ${esc(o.name||_t("Ваша матриця"))} · ${dotDate(o.d,o.m,o.y)} ]</p><h3 id="aiRdT">${title}</h3></div></div>
     <div class="aim-body"><p class="aim-meta">${r.ts?whenTxt(r.ts):''}</p><div class="aim-doc tp-md">${tpMd(r.text)}</div>
     <div class="aim-acts"><button class="btn ghost sm" type="button" data-rdc>${_t("Копіювати текст")}</button><button class="btn ghost sm" type="button" data-rdm>${_t("Відкрити матрицю")}</button></div></div></div>`;
   document.body.appendChild(d); document.documentElement.classList.add('mdl-on'); requestAnimationFrame(()=>d.classList.add('in'));
