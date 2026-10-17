@@ -5225,28 +5225,29 @@ Health map (chakras):
 ${ch}
 Year programs (age ring):
 ${yrs}
-Energies repeating most in this matrix: ${rep||'—'}`;
+Energies repeating most in this matrix: ${rep||'—'}${(()=>{ const seen=new Set(), kb=progs().filter(p=>p.named&&!seen.has(p.named.n)&&seen.add(p.named.n)).map(p=>`- ${p.t} ${p.vals.join('-')} «${p.named.n}»: plus — ${p.named.p} Minus — ${p.named.m} How it shows — ${p.named.h} Work — ${p.named.w}`); return kb.length?`\nCODE knowledge base on the named programs found in this matrix (use it as the factual basis, retell in your own words, never copy verbatim):\n${kb.join('\n')}`:''; })()}`;
 }
-const AIM_RULES=L=>`Write in ${L.name}, addressing the person ${L.reg}; use grammatical forms matching their gender. Be specific to THIS matrix: name the positions and numbers you rely on and explain how the energies interact (e.g. how the centre shapes the way talents are used, how the karmic tail colours money or love). Never paste generic dictionary definitions of an arcana. When the same arcana appears in several positions, explain what it does differently in EACH place — never repeat the same sentence twice. Concrete life situations, behaviours and steps, not vague esotericism. No fatalism, no medical, legal or financial diagnoses or guarantees; the matrix is a tool for self-reflection. Use Markdown headings (##) and short paragraphs, bullet lists where they help.`;
+const AIM_RULES=L=>`Write in ${L.name}, addressing the person ${L.reg}; use grammatical forms matching their gender. Be specific to THIS matrix: name the positions and numbers you rely on and explain how the energies interact (e.g. how the centre shapes the way talents are used, how the karmic tail colours money or love). Never paste generic dictionary definitions of an arcana. When the same arcana appears in several positions, explain what it does differently in EACH place — never repeat the same sentence twice. Concrete life situations, behaviours and steps, not vague esotericism. No fatalism, no medical, legal or financial diagnoses or guarantees; the matrix is a tool for self-reflection. Use Markdown headings (##) and short paragraphs, bullet lists where they help. Always finish the whole structure and end with a complete closing section — never stop mid-sentence.`;
 function aimReportPrompt(){
   const L=TP_LANG[LANG]||TP_LANG.en;
   return `You are CODE’s senior Destiny Matrix analyst (Natalia Ladini method) — deep, warm, practical, psychologically literate.
 ${mxContext()}
 
-TASK: write a PERSONAL, in-depth reading of this whole matrix — the kind of analysis a person would gladly pay for. It must feel like it was written about this one person, connecting the dots between positions, not a list of separate descriptions.
-Structure (use these ## headings, translated into ${L.name}):
-1. Ваш портрет — who this person is at the core: centre + personality + talents as one picture; how others see them vs. who they are inside.
-2. Головна сила і як її використати — the strongest combination in the matrix and where it pays off most.
-3. Сценарії, що повторюються — karmic tail and the key programs: how they actually show up in life (situations, reactions, choices), what triggers them, how to break the loop.
-4. Гроші й реалізація — the money channel and material line: which ways of earning fit, what blocks money, 3 concrete moves.
-5. Стосунки й кохання — love line and partner image: what they look for, what they repeat, what helps.
-6. Рід — father’s and mother’s lines: what resource and what task the family gives.
-7. Тіло й ресурс — the weakest chakra areas and how to restore energy (no medical claims).
-8. Призначення — personal (to 40), social (40–60), spiritual: what to grow into.
-9. Цей рік і два наступні — what the year programs ask for and how they connect to the matrix.
-10. Ваш план на 90 днів — 7 concrete, doable steps, each tied to a position.
-11. Питання для себе — 5 deep questions.
-Length: about 2500–3500 words. ${AIM_RULES(L)}`;
+TASK: write a PERSONAL, in-depth reading of this whole matrix — the kind of analysis a person would gladly pay for and come back to. It must feel written about this one person: connect the dots between positions, show cause and effect, give concrete examples of how it looks in everyday life (at work, with money, in a couple, with parents, when tired or under stress).
+Structure (use these ## headings, translated into ${L.name}; every section must be substantial — at least 2–4 paragraphs or a rich list):
+1. Ваш портрет — who this person is at the core: centre + personality + talents as one picture; how others see them vs. who they are inside; what they need to feel themselves.
+2. Як працює ваша матриця — the 3–4 key links between positions (e.g. centre ↔ money, tail ↔ love, talents ↔ purpose) and what each link means in practice.
+3. Три головні ресурси — the strongest energies/combinations, where each pays off most, how to switch it on on purpose.
+4. Сценарії, що повторюються — karmic tail and key programs (use the knowledge base above): typical situations, triggers, inner reactions, what the scenario costs, and how exactly to break the loop step by step.
+5. Гроші й реалізація — money channel and material line: suitable fields and formats of work (3–5 concrete examples), what blocks money, how they undervalue themselves, 3 concrete moves.
+6. Стосунки й кохання — love line, partner image: what attracts them, which partner is good for them and which repeats the old scenario, what to change in themselves.
+7. Рід — father’s and mother’s lines: resource and task from each side, typical family scenarios and how to transform them.
+8. Тіло й ресурс — weakest chakra areas, what drains and what restores energy, daily habits that fit this matrix (no medical claims).
+9. Призначення — personal (to 40), social (40–60), spiritual: what to grow into and signs they are on track.
+10. Цей рік і два наступні — what the year programs ask for, how they link to the rest of the matrix.
+11. Ваш план на 90 днів — 7–10 concrete, doable steps, each tied to a position, with how to check progress.
+12. Питання для себе — 5–7 deep questions for reflection.
+Length: about 3500–4500 words. ${AIM_RULES(L)}`;
 }
 function aimChatPrompt(){
   const L=TP_LANG[LANG]||TP_LANG.en;
@@ -5274,18 +5275,32 @@ ${mxContext()}
 THE NEXT 12 MONTHS (computed for this person; the year program switches on the birthday):
 ${lines}
 
-TASK: write a month-by-month forecast for these 12 months that is genuinely useful and NOT a repetition of general arcana texts.
-Structure:
-## Загальна лінія року — the arc of the next 12 months for this person: main theme, what the year is building, how it connects to their karmic tail and centre.
-## Найкращі періоди — for starting new things, money, love, rest (name the months and why).
-## Періоди уваги — where to slow down and what exactly to watch.
-Then one ## heading per month (“Січень 2027” etc.) with: Тема місяця (1–2 sentences); Що вдасться легше; Де бути уважнішою/уважнішим; Фокус: робота й гроші / стосунки / тіло — one concrete line each; Одна дія місяця. Months with the same energies must still read differently: build on what came before, show progression through the year.
+TASK: write a month-by-month forecast for these 12 months that is genuinely useful, rich and NOT a repetition of general arcana texts — a paid premium forecast the person will reread every month.
+Structure (headings translated into ${L.name}; every section substantial):
+## Загальна лінія року — the arc of the next 12 months: main theme, what the year is building, how it connects to the karmic tail, centre, money and love lines (name positions and numbers). 3–5 paragraphs.
+## Чому саме так у вашій матриці — which positions resonate with the year energies and what that changes in practice.
+## Квартали — four short blocks (months 1–3, 4–6, 7–9, 10–12): the focus of each quarter and how it leads to the next.
+## Найкращі періоди — for starting new things, money and career, love and relationships, rest and recovery: name the months and explain why.
+## Періоди уваги — where to slow down, what exactly to watch, how to soften it.
+Then one ## heading per month (“Січень 2027” etc.) with these bold labels, each 1–3 sentences: **Тема місяця**; **Що вдасться легше**; **Де бути уважнішою/уважнішим**; **Робота й гроші**; **Стосунки**; **Тіло й ресурс**; **Практика місяця** (one concrete exercise or action). Months with the same energies must still read differently: build on what came before, show progression through the year.
+## Ваш план на рік — 5–7 goals that fit this year’s energies, each with the best months for it.
 ## Підсумок — what the person will have by the end of these 12 months if they live them consciously.
-Describe tendencies and probabilities, never certain events; the future is many-sided and depends on choices. Length: about 2500–3500 words. ${AIM_RULES(L)}`;
+Describe tendencies and probabilities, never certain events; the future is many-sided and depends on choices. Length: about 3500–4500 words. ${AIM_RULES(L)}`;
 }
 async function aimRun(task,turns,onText,signal){
   const s=await tpGetSample(); if(!s) throw Object.assign(new Error('nosample'),{code:'not_configured'});
-  return s(turns,{cache:false,signal,task,onText:({text})=>onText(text)});
+  if(task!=='report'&&task!=='year') return s(turns,{cache:false,signal,task,onText:({text})=>onText(text)});
+  /* long paid readings: if the text stops early (length limit or a dropped connection), continue it seamlessly — continuations are free */
+  let full='', res=null, err=null;
+  try{ res=await s(turns,{cache:false,signal,task,onText:({text})=>onText(text)}); full=res.text; }
+  catch(e){ if(!(e&&e.code==='network'&&e.text&&e.text.length>400)) throw e; full=e.text; err=e; }
+  for(let n=0;n<3&&(err||(res&&res.complete===false));n++){
+    if(signal&&signal.aborted) break;
+    const base=full.replace(/\s+$/,''); err=null;
+    try{ res=await s([...turns,{role:'assistant',content:base}],{cache:false,signal,task:'cont',onText:({text})=>onText(base+text)}); full=base+res.text; }
+    catch(e){ if(e&&e.code==='network'&&e.text){ full=base+e.text; err=e; continue; } if(e&&(e.code==='need_plan'||e.code==='cancelled')) break; throw e; }
+  }
+  return {text:full};
 }
 const aimPaid=kind=>{ if(!(window.CODE_SB)) return true; const sb=USER&&USER.sub; if(!sb) return false; if((sb.plan==='plus'||sb.plan==='pro')&&sb.paid_until&&new Date(sb.paid_until)>new Date()) return true; return kind==='report'&&(sb.pack_reports||0)>0; };
 function aiBlock(){
@@ -7465,17 +7480,18 @@ async function aiCall(payload,signal){
 }
 const aiSample=async(turns,opts={})=>{
   const r=await aiCall({turns,task:opts.task||'tarot'},opts.signal);
-  const rd=r.body.getReader(), dec=new TextDecoder(); let buf='', text='', stop='';
+  const rd=r.body.getReader(), dec=new TextDecoder(); let buf='', text='', stop='', fin=false;
   try{
     for(;;){ const {done,value}=await rd.read(); if(done) break; buf+=dec.decode(value,{stream:true});
       let i; while((i=buf.indexOf('\n'))>=0){ const line=buf.slice(0,i).trim(); buf=buf.slice(i+1);
         if(!line.startsWith('data:')) continue; let ev; try{ ev=JSON.parse(line.slice(5)); }catch(_){ continue; }
         if(ev.type==='content_block_delta'&&ev.delta&&ev.delta.type==='text_delta'){ text+=ev.delta.text; opts.onText&&opts.onText({text}); }
         else if(ev.type==='message_delta'&&ev.delta&&ev.delta.stop_reason) stop=ev.delta.stop_reason;
+        else if(ev.type==='message_stop') fin=true;
         else if(ev.type==='error') throw aiErr(ev.error&&/overload/i.test(ev.error.type||'')?'rate_limited':'upstream',text); } }
   }catch(e){ if(e&&e.code) throw e; throw aiErr(opts.signal&&opts.signal.aborted?'cancelled':'network',text); }
   if(stop==='refusal'&&!text) throw aiErr('refused');
-  return {text};
+  return {text,stop,complete:fin&&stop!=='max_tokens'};
 };
 const shrink=file=>new Promise((res,rej)=>{ const im=new Image(), u=URL.createObjectURL(file); im.onload=()=>{ const k=Math.min(1,1600/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); c.getContext('2d').drawImage(im,0,0,c.width,c.height); URL.revokeObjectURL(u); res({type:'image/jpeg',data:c.toDataURL('image/jpeg',.85).split(',')[1]}); }; im.onerror=()=>{ URL.revokeObjectURL(u); rej(aiErr('image_rejected')); }; im.src=u; });
 aiSample.json=async(prompt,opts={})=>{

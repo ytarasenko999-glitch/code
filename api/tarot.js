@@ -9,7 +9,7 @@ const MODEL = process.env.AI_MODEL || 'claude-sonnet-5-5';
 const DAILY_CAP = parseInt(process.env.AI_DAILY_CAP || '60', 10);   // safety cap per user per day, any plan
 const QUOTA = { plus: parseInt(process.env.AI_PLUS || '100', 10), pro: parseInt(process.env.AI_PRO || '300', 10) }; // per 30 days
 const DEEP = { report: { plus: 1, pro: 10 }, year: { plus: 1, pro: 10 } }; // personal readings / 12-month forecasts per 30 days
-const POOL = 'kind=not.in.(report,year,photo)';
+const POOL = 'kind=not.in.(report,year,photo,cont)'; // «cont» = free continuation of a cut-off paid reading
 const PRICE_IN = parseFloat(process.env.AI_PRICE_IN || '2'), PRICE_OUT = parseFloat(process.env.AI_PRICE_OUT || '10'); // $ per million tokens (Sonnet 5.5)
 const costOf = (i, o) => Math.round(((i || 0) * PRICE_IN + (o || 0) * PRICE_OUT) / 1e6 * 1e6) / 1e6;
 const PHOTO_DAY = parseInt(process.env.AI_PHOTO_DAY || '20', 10); // photo recognition is free (part of the reading) but capped per day // tarot + ask-your-matrix share one request pool
@@ -49,6 +49,14 @@ async function allowance(token, uid, task) {
   const sub = (await getSub(token, uid)) || { plan: 'free', packs: 0 };
   const paid = (sub.plan === 'plus' || sub.plan === 'pro') && sub.paid_until && new Date(sub.paid_until) > new Date();
   const month = new Date(Date.now() - 30 * 864e5);
+  if (task === 'cont') {
+    /* continuing a long paid reading that was cut off: allowed only right after a paid report/forecast, not counted */
+    const recent = new Date(Date.now() - 45 * 60 * 1000);
+    const deep = (await countUse(token, uid, { since: recent, kind: 'report' })) + (await countUse(token, uid, { since: recent, kind: 'year' }));
+    const conts = await countUse(token, uid, { since: recent, kind: 'cont' });
+    if (deep > 0 && conts < deep * 3) return { ok: true, source: 'cont', left: 0, plan: sub.plan || 'free' };
+    return { ok: false, code: 'need_plan', plan: paid ? sub.plan : 'free' };
+  }
   if (task === 'report' || task === 'year') {
     if (paid) {
       const q = DEEP[task][sub.plan] || 0, used = await countUse(token, uid, { since: month, source: 'plan', kind: task });
@@ -120,15 +128,17 @@ async function logUse(token, uid, kind, source, tin, tout) {
   if (!r.ok && row.cost != null) { delete row.tokens_in; delete row.tokens_out; delete row.cost; r = await fetch(`${SB_URL}/rest/v1/ai_usage`, { method: 'POST', headers: { ...H(token), 'content-type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(row) }); }
 }
 
-function cleanTurns(turns) {
+function cleanTurns(turns, prefill) {
   if (!Array.isArray(turns) || !turns.length || turns.length > 40) return null;
   const out = [];
   for (const t of turns) {
     if (!t || (t.role !== 'user' && t.role !== 'assistant') || typeof t.content !== 'string') return null;
-    if (t.content.length > 30000) return null;
+    if (t.content.length > (t.role === 'assistant' ? 90000 : 30000)) return null;
     out.push({ role: t.role, content: t.content });
   }
-  return out[out.length - 1].role === 'user' ? out : null;
+  const last = out[out.length - 1];
+  if (last.role === 'assistant') { if (!prefill) return null; last.content = last.content.replace(/\s+$/, ''); }
+  return out;
 }
 
 module.exports = async (req, res) => {
@@ -157,7 +167,7 @@ module.exports = async (req, res) => {
   if (!KEY) return fail(res, 503, 'not_configured');
 
   let al;
-  const body0 = req.body || {}, task = ['tarot', 'chat', 'report', 'year'].includes(body0.task) ? body0.task : 'tarot';
+  const body0 = req.body || {}, task = ['tarot', 'chat', 'report', 'year', 'cont'].includes(body0.task) ? body0.task : 'tarot';
   try { al = await allowance(token, user.id, task); } catch (e) { return fail(res, 500, 'usage', { detail: String(e.message || e) }); }
   if (!al.ok) return fail(res, al.code === 'daily_limit' ? 429 : al.code === 'need_plan' ? 403 : 402, al.code, { plan: al.plan });
 
@@ -179,14 +189,14 @@ module.exports = async (req, res) => {
     content.push({ type: 'text', text: body.prompt + '\n\nReturn ONLY valid JSON, no prose, no code fences.' });
     messages = [{ role: 'user', content }];
   } else {
-    messages = cleanTurns(body.turns);
+    messages = cleanTurns(body.turns, task === 'cont');
     if (!messages) return fail(res, 400, 'bad_request');
   }
 
   const upstream = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: MODEL, max_tokens: json ? 1200 : (task === 'report' || task === 'year') ? 8000 : task === 'chat' ? 2000 : 2400, messages, stream: !json })
+    body: JSON.stringify({ model: MODEL, max_tokens: json ? 1200 : (task === 'report' || task === 'year' || task === 'cont') ? 12000 : task === 'chat' ? 2000 : 2400, messages, stream: !json })
   }).catch(() => null);
   if (!upstream) return fail(res, 502, 'network');
   if (!upstream.ok) {
