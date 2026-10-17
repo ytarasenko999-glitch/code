@@ -78,5 +78,18 @@
       "path": "/api/cron-emails",
       "schedule": "0 7 * * *"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/:path((?!api/).*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "code-matrix-test.vercel.app"
+        }
+      ],
+      "destination": "https://code-matrix.space/:path",
+      "permanent": true
+    }
   ]
 }

@@ -847,7 +847,7 @@ function openUser(id){
       await logA('дані користувача видалено',u,null); toast('Дані видалено.'); close(); await load(); go(VIEW); }; };
 }
 
-SB.auth.onAuthStateChange((ev)=>{ if(ev==='SIGNED_IN'&&$('#app').hidden) boot(); });
+SB.auth.onAuthStateChange((ev)=>{ if(ev==='SIGNED_IN') setTimeout(()=>{ if($('#app').hidden) boot(); },0); });
 boot();
 })();
 </script>

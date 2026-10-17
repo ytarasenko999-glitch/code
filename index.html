@@ -7173,7 +7173,9 @@ window.tpErr=function(c){
 USER=null; setAcctIcon();
 ready.then(async()=>{
   if(!sb) return;
-  sb.auth.onAuthStateChange(async(ev,session)=>{
+  /* never await Supabase calls inside the auth callback itself — supabase-js holds its auth lock while it runs, and a nested call deadlocks (sign-in "hangs", session looks lost); handle it on the next tick instead */
+  sb.auth.onAuthStateChange((ev,session)=>{ setTimeout(()=>onAuth(ev,session),0); });
+  const onAuth=async(ev,session)=>{
     if(ev==='PASSWORD_RECOVERY'){ await hydrate(session).catch(()=>{}); newPasswordDialog(); return; }
     if(ev==='SIGNED_IN'&&session&&(!USER||USER.uid!==session.user.id)){
       if(hydrating) return; hydrating=hydrate(session).catch(()=>null);
@@ -7184,7 +7186,7 @@ ready.then(async()=>{
       if(/access_token|type=/.test(location.hash)) history.replaceState(null,'',location.pathname+location.search);
     }
     if(ev==='SIGNED_OUT'&&USER){ USER=null; setAcctIcon(); }
-  });
+  };
   const {data}=await sb.auth.getSession();
   if(data&&data.session&&!USER){ const u=await hydrate(data.session).catch(()=>null); if(u){ if(profileReady(USER.profile)) fill(USER.profile); if(!$('#home').hidden) renderHome(); } }
 });
