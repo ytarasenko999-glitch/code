@@ -661,18 +661,19 @@ function vAn(){
   const byDay={}; days.forEach(d=>byDay[d]=new Set()); R.forEach(r=>{ const d=isoDay(r.created_at); if(byDay[d]) byDay[d].add(r.sid); });
   const vals=days.map(d=>byDay[d].size), mx=Math.max(1,...vals);
   const from=new Date(Date.now()-(AN.days-1)*864e5); from.setHours(0,0,0,0);
-  const regs=D.users.filter(u=>u.created_at&&new Date(u.created_at)>=from).length, vis=uniq(R);
+  const since=R.length?new Date(R[R.length-1].created_at):from, rFrom=since>from?since:from;
+  const regs=D.users.filter(u=>u.created_at&&new Date(u.created_at)>=rFrom).length, vis=uniq(R);
   const kpi=(t,v,s)=>`<div class="panel kpi"><small>${t}</small><b>${v}</b><span>${s||''}</span></div>`;
   const chips=`<div class="an-chips">${[[1,'Сьогодні'],[7,'7 днів'],[30,'30 днів'],[90,'90 днів']].map(([d,t])=>`<button class="btn ${AN.days===d?'go':'ghost'} sm" type="button" data-an-days="${d}">${t}</button>`).join('')}</div>`;
   if(AN.err) return head('Аналітика',chips)+`<div class="panel bal-warn bad">Не вдалося прочитати дані: ${esc(AN.err)}. ${/visits/.test(AN.err)?'Потрібно створити таблицю visits (SQL у admin-setup.sql).':''}</div>`;
   return head('Аналітика',chips)+`
-  <div class="kpis">${kpi('Відвідувачі',vis,`${uniq(R.filter(r=>r.first))} нових`)}${kpi('Перегляди сторінок',R.length,vis?`≈ ${(R.length/vis).toFixed(1)} на відвідувача`:'')}${kpi('Сьогодні',uniq(R.filter(r=>isoDay(r.created_at)===today)),`${R.filter(r=>isoDay(r.created_at)===today).length} переглядів`)}${kpi('Реєстрації',regs,vis?`конверсія ${(regs/vis*100).toFixed(1)}%`:'')}</div>
+  <div class="kpis">${kpi('Відвідувачі',vis,`${uniq(R.filter(r=>r.first))} нових`)}${kpi('Перегляди сторінок',R.length,vis?`≈ ${(R.length/vis).toFixed(1)} на відвідувача`:'')}${kpi('Сьогодні',uniq(R.filter(r=>isoDay(r.created_at)===today)),`${R.filter(r=>isoDay(r.created_at)===today).length} переглядів`)}${kpi('Реєстрації',regs,vis?`конверсія ${Math.min(100,regs/vis*100).toFixed(1)}%`:'')}</div>
   ${AN.days>1?`<div class="panel card"><h3>Відвідувачі по днях</h3><div class="bars">${vals.map((v,i)=>`<i style="height:${Math.max(2,v/mx*100)}%" title="${days[i]}: ${v}"></i>`).join('')}</div><div class="bars-x"><span>${days[0].slice(5)}</span><span>макс. ${mx} / день</span><span>${days[days.length-1].slice(5)}</span></div></div>`:''}
   <div class="grid2">
     <div class="panel card"><h3>Джерела трафіку</h3>${anTop(R,r=>r.src&&r.src.startsWith('ref:')?'ref':r.src,k=>k==='ref'?'Інші сайти (посилання)':srcName(k),15)}<p class="bal-n">«Прямі заходи» — людина ввела адресу, відкрила із закладок або з застосунку, який не передає джерело. Щоб точно бачити TikTok, Instagram чи Telegram, ставте посилання з мітками (нижче).</p></div>
     <div class="panel card"><h3>Сайти, з яких перейшли</h3>${anTop(R,r=>r.ref,null,15)}</div>
     <div class="panel card"><h3>Кампанії (UTM-мітки)</h3>${anTop(R.filter(r=>r.campaign||r.medium),r=>[srcName(r.src),r.medium,r.campaign].filter(Boolean).join(' · '),null,15)}</div>
-    <div class="panel card"><h3>Сторінки входу</h3>${anTop(R,r=>r.path,k=>k==='/'?'Головна':k.startsWith('/blog/')?'Блог: '+k.slice(6):k==='/blog'?'Блог':k,15)}</div>
+    <div class="panel card"><h3>Сторінки входу</h3>${anTop(R,r=>r.path,k=>({'/':'Головна','/blog':'Блог','/?go=tarot':'Таро','/?go=acct':'Кабінет','/?go=guide':'Шпаргалка','/?go=cat':'Довідник арканів','/?go=pair':'Сумісність','/?go=years':'Прогноз по роках'})[k]||(k.startsWith('/blog/')?'Блог: '+k.slice(6):k),15)}</div>
     <div class="panel card"><h3>Країни</h3>${anTop(R,r=>r.country,k=>CC[k]||k,12)}</div>
     <div class="panel card"><h3>Пристрої</h3>${anTop(R,r=>r.device,k=>DEV_N[k]||k,5)}</div>
   </div>
