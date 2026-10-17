@@ -8,6 +8,8 @@ const SB_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_v2wRmfGkiVW7fF6w
 const MODEL = process.env.AI_MODEL || 'claude-sonnet-5-5';
 const DAILY_CAP = parseInt(process.env.AI_DAILY_CAP || '60', 10);   // safety cap per user per day, any plan
 const QUOTA = { plus: parseInt(process.env.AI_PLUS || '100', 10), pro: parseInt(process.env.AI_PRO || '300', 10) }; // per 30 days
+const DEEP = { report: { plus: 1, pro: 10 }, year: { plus: 1, pro: 10 } }; // personal readings / 12-month forecasts per 30 days
+const POOL = 'kind=not.in.(report,year)'; // tarot + ask-your-matrix share one request pool
 const FREE_START = parseInt(process.env.AI_FREE_START || '3', 10), FREE_WEEK = parseInt(process.env.AI_FREE_WEEK || '1', 10);
 const ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://code-matrix-test.vercel.app').split(',').map(s => s.trim());
 
@@ -20,8 +22,10 @@ async function sbUser(token) {
   return u && u.id ? u : null;
 }
 const H = token => ({ apikey: SB_KEY, Authorization: `Bearer ${token}` });
-async function countUse(token, uid, { since, source } = {}) {
+async function countUse(token, uid, { since, source, kind, pool } = {}) {
   let q = `${SB_URL}/rest/v1/ai_usage?select=id&user_id=eq.${uid}`;
+  if (kind) q += `&kind=eq.${kind}`;
+  if (pool) q += `&${POOL}`;
   if (since) q += `&created_at=gte.${encodeURIComponent(since.toISOString())}`;
   if (source) q += `&source=eq.${source}`;
   const r = await fetch(q, { headers: { ...H(token), Prefer: 'count=exact', Range: '0-0' } });
@@ -30,28 +34,40 @@ async function countUse(token, uid, { since, source } = {}) {
   return parseInt(cr.split('/')[1] || '0', 10) || 0;
 }
 async function getSub(token, uid) {
-  const r = await fetch(`${SB_URL}/rest/v1/subscriptions?select=plan,paid_until,packs&user_id=eq.${uid}`, { headers: H(token) });
+  const r = await fetch(`${SB_URL}/rest/v1/subscriptions?select=*&user_id=eq.${uid}`, { headers: H(token) });
   if (!r.ok) return null;
   const a = await r.json(); return a && a[0] ? a[0] : null;
 }
-/* decides which allowance pays for this request: plan → free → pack */
-async function allowance(token, uid, needPaid) {
+/* decides which allowance pays for this request.
+   tarot / chat: plan → free → pack requests.  report / year: plan's monthly deep quota → pack readings (report only). */
+async function allowance(token, uid, task) {
   const day = new Date(); day.setUTCHours(0, 0, 0, 0);
   if (await countUse(token, uid, { since: day }) >= DAILY_CAP) return { ok: false, code: 'daily_limit' };
   const sub = (await getSub(token, uid)) || { plan: 'free', packs: 0 };
   const paid = (sub.plan === 'plus' || sub.plan === 'pro') && sub.paid_until && new Date(sub.paid_until) > new Date();
-  if (needPaid && !paid) return { ok: false, code: 'need_plan', plan: 'free' };
+  const month = new Date(Date.now() - 30 * 864e5);
+  if (task === 'report' || task === 'year') {
+    if (paid) {
+      const q = DEEP[task][sub.plan] || 0, used = await countUse(token, uid, { since: month, source: 'plan', kind: task });
+      if (used < q) return { ok: true, source: 'plan', left: q - used - 1, plan: sub.plan };
+    }
+    if (task === 'report' && (sub.pack_reports || 0) > 0) {
+      const usedP = await countUse(token, uid, { source: 'pack', kind: 'report' });
+      if (usedP < sub.pack_reports) return { ok: true, source: 'pack', left: sub.pack_reports - usedP - 1, plan: sub.plan || 'free' };
+    }
+    return { ok: false, code: paid ? 'report_quota' : 'need_plan', plan: paid ? sub.plan : 'free' };
+  }
   if (paid) {
-    const used = await countUse(token, uid, { since: new Date(Date.now() - 30 * 864e5), source: 'plan' });
+    const used = await countUse(token, uid, { since: month, source: 'plan', pool: true });
     if (used < QUOTA[sub.plan]) return { ok: true, source: 'plan', left: QUOTA[sub.plan] - used - 1, plan: sub.plan };
   } else {
-    const all = await countUse(token, uid, { source: 'free' });
+    const all = await countUse(token, uid, { source: 'free', pool: true });
     if (all < FREE_START) return { ok: true, source: 'free', left: FREE_START - all - 1, plan: 'free' };
-    const week = await countUse(token, uid, { since: new Date(Date.now() - 7 * 864e5), source: 'free' });
+    const week = await countUse(token, uid, { since: new Date(Date.now() - 7 * 864e5), source: 'free', pool: true });
     if (week < FREE_WEEK) return { ok: true, source: 'free', left: 0, plan: 'free' };
   }
   const packs = sub.packs || 0;
-  if (packs > 0) { const usedP = await countUse(token, uid, { source: 'pack' }); if (usedP < packs) return { ok: true, source: 'pack', left: packs - usedP - 1, plan: sub.plan || 'free' }; }
+  if (packs > 0) { const usedP = await countUse(token, uid, { source: 'pack', pool: true }); if (usedP < packs) return { ok: true, source: 'pack', left: packs - usedP - 1, plan: sub.plan || 'free' }; }
   return { ok: false, code: paid ? 'plan_quota' : 'free_quota', plan: paid ? sub.plan : 'free' };
 }
 async function logUse(token, uid, kind, source) {
@@ -91,7 +107,7 @@ module.exports = async (req, res) => {
 
   let al;
   const body0 = req.body || {}, task = ['tarot', 'chat', 'report', 'year'].includes(body0.task) ? body0.task : 'tarot';
-  try { al = await allowance(token, user.id, task === 'report' || task === 'year'); } catch (e) { return fail(res, 500, 'usage', { detail: String(e.message || e) }); }
+  try { al = await allowance(token, user.id, task); } catch (e) { return fail(res, 500, 'usage', { detail: String(e.message || e) }); }
   if (!al.ok) return fail(res, al.code === 'daily_limit' ? 429 : al.code === 'need_plan' ? 403 : 402, al.code, { plan: al.plan });
 
   const body = req.body || {};

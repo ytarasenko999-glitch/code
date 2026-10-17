@@ -266,12 +266,12 @@ function vUsers(){
   return head('Користувачі',`<button class="btn ghost sm" data-act="csvU">CSV</button>`)+`<div class="panel tools"><input type="search" id="q" placeholder="Пошук за email або ім’ям" value="${esc(Q)}"><span class="mono" style="font-size:11px;color:var(--muted)">${list.length} з ${D.users.length}</span></div><div class="panel">${usersTable(list)}</div>`;
 }
 function vSubs(){
-  const all=Object.values(D.subs).filter(s=>s.plan!=='free'||s.packs);
-  const f={active:s=>active(s),soon:s=>active(s)&&daysLeft(s)<=3,expired:s=>s.plan!=='free'&&!active(s),auto:s=>active(s)&&s.auto_renew,packs:s=>s.packs>0}[SUBF];
+  const all=Object.values(D.subs).filter(s=>s.plan!=='free'||s.packs||s.pack_reports);
+  const f={active:s=>active(s),soon:s=>active(s)&&daysLeft(s)<=3,expired:s=>s.plan!=='free'&&!active(s),auto:s=>active(s)&&s.auto_renew,packs:s=>s.packs>0||s.pack_reports>0}[SUBF];
   const list=all.filter(f).sort((a,b)=>new Date(a.paid_until||0)-new Date(b.paid_until||0));
-  const ch=(k,t)=>`<button class="chip${SUBF===k?' on':''}" data-f="${k}">${t} · ${all.filter({active:s=>active(s),soon:s=>active(s)&&daysLeft(s)<=3,expired:s=>s.plan!=='free'&&!active(s),auto:s=>active(s)&&s.auto_renew,packs:s=>s.packs>0}[k]).length}</button>`;
+  const ch=(k,t)=>`<button class="chip${SUBF===k?' on':''}" data-f="${k}">${t} · ${all.filter({active:s=>active(s),soon:s=>active(s)&&daysLeft(s)<=3,expired:s=>s.plan!=='free'&&!active(s),auto:s=>active(s)&&s.auto_renew,packs:s=>s.packs>0||s.pack_reports>0}[k]).length}</button>`;
   return head('Підписки')+`<div class="panel tools"><div class="chips">${ch('active','Активні')}${ch('soon','Закінчуються ≤3 дні')}${ch('expired','Прострочені')}${ch('auto','З автопродовженням')}${ch('packs','З пакетами')}</div></div>
-    <div class="panel">${list.length?`<div class="tw"><table><thead><tr><th>Користувач</th><th>Тариф</th><th>Період</th><th>Початок</th><th>Діє до</th><th>Статус</th><th>Авто</th><th>Пакети</th><th>Нотатка</th></tr></thead><tbody>${list.map(s=>{const u=userById(s.user_id)||{email:s.email};return `<tr data-u="${s.user_id}"><td>${esc(u.email)}<small>${esc(nameOf(u))}</small></td><td>${badge(s.plan==='free'?'free':s.plan)}</td><td>${s.period==='y'?'рік':'місяць'}</td><td class="num">${fmtD(s.started_at)}</td><td class="num">${fmtD(s.paid_until)}</td><td>${statusBadge(s)}</td><td>${s.auto_renew?'так':'—'}</td><td class="num">${s.packs||0}</td><td><small>${esc(s.note||'')}</small></td></tr>`;}).join('')}</tbody></table></div>`:'<p class="empty">Тут поки порожньо.</p>'}</div>`;
+    <div class="panel">${list.length?`<div class="tw"><table><thead><tr><th>Користувач</th><th>Тариф</th><th>Період</th><th>Початок</th><th>Діє до</th><th>Статус</th><th>Авто</th><th>Пакет: запити</th><th>Пакет: розбори</th><th>Нотатка</th></tr></thead><tbody>${list.map(s=>{const u=userById(s.user_id)||{email:s.email};return `<tr data-u="${s.user_id}"><td>${esc(u.email)}<small>${esc(nameOf(u))}</small></td><td>${badge(s.plan==='free'?'free':s.plan)}</td><td>${s.period==='y'?'рік':'місяць'}</td><td class="num">${fmtD(s.started_at)}</td><td class="num">${fmtD(s.paid_until)}</td><td>${statusBadge(s)}</td><td>${s.auto_renew?'так':'—'}</td><td class="num">${s.packs||0}</td><td class="num">${s.pack_reports||0}</td><td><small>${esc(s.note||'')}</small></td></tr>`;}).join('')}</tbody></table></div>`:'<p class="empty">Тут поки порожньо.</p>'}</div>`;
 }
 function vPays(){
   const sum=k=>D.pays.filter(p=>p.kind===k).reduce((a,p)=>a+p.amount,0);
@@ -305,7 +305,7 @@ function csv(name,rows){ const t='﻿'+rows.map(r=>r.map(v=>`"${String(v==null?'
 
 /* ---------- user card ---------- */
 function openUser(id){
-  const u=userById(id)||{id,email:(D.subs[id]||{}).email||'',profile:{}}, s=D.subs[id]||{user_id:id,plan:'free',period:'m',paid_until:null,auto_renew:false,packs:0,note:''};
+  const u=userById(id)||{id,email:(D.subs[id]||{}).email||'',profile:{}}, s=D.subs[id]||{user_id:id,plan:'free',period:'m',paid_until:null,auto_renew:false,packs:0,pack_reports:0,note:''};
   const pays=D.pays.filter(p=>p.user_id===id), ai=D.ai.filter(x=>x.user_id===id), pr=u.profile||{};
   const dateVal=s.paid_until?isoDay(s.paid_until):'';
   const bg=document.createElement('div'); bg.className='dr-bg'; const d=document.createElement('aside'); d.className='dr'; d.setAttribute('role','dialog'); d.setAttribute('aria-modal','true');
@@ -319,11 +319,11 @@ function openUser(id){
         <div class="field"><label for="sPlan">Тариф</label><select id="sPlan"><option value="free"${s.plan==='free'?' selected':''}>Free</option><option value="plus"${s.plan==='plus'?' selected':''}>Plus · 199 грн</option><option value="pro"${s.plan==='pro'?' selected':''}>Pro · 549 грн</option></select></div>
         <div class="field"><label for="sPer">Період</label><select id="sPer"><option value="m"${s.period!=='y'?' selected':''}>Місяць</option><option value="y"${s.period==='y'?' selected':''}>Рік</option></select></div>
         <div class="field"><label for="sUntil">Діє до</label><input type="date" id="sUntil" value="${dateVal}"></div>
-        <div class="field"><label for="sPacks">Пакетних трактувань</label><input type="number" id="sPacks" min="0" step="1" value="${s.packs||0}"></div>
+        <div class="field"><label for="sPacks">Пакетних запитів до ШІ</label><input type="number" id="sPacks" min="0" step="1" value="${s.packs||0}"></div><div class="field"><label for="sPackR">Пакетних розборів матриці</label><input type="number" id="sPackR" min="0" step="1" value="${s.pack_reports||0}"></div>
         <label class="chk full"><input type="checkbox" id="sAuto"${s.auto_renew?' checked':''}> Автопродовження (лише за згодою користувача)</label>
         <div class="field full"><label for="sNote">Нотатка (бачите лише ви)</label><textarea id="sNote">${esc(s.note||'')}</textarea></div>
       </div>
-      <div class="row"><button class="btn ghost sm" data-q="m">+30 днів</button><button class="btn ghost sm" data-q="y">+1 рік</button><button class="btn ghost sm" data-q="p10">+10 пакетних</button><button class="btn ghost sm" data-q="noauto">Вимкнути автопродовження</button><button class="btn bad sm" data-q="cancel">Скасувати зараз</button></div>
+      <div class="row"><button class="btn ghost sm" data-q="m">+30 днів</button><button class="btn ghost sm" data-q="y">+1 рік</button><button class="btn ghost sm" data-q="p10">+ Пакет (10 запитів + 1 розбір)</button><button class="btn ghost sm" data-q="r1">+1 розбір</button><button class="btn ghost sm" data-q="noauto">Вимкнути автопродовження</button><button class="btn bad sm" data-q="cancel">Скасувати зараз</button></div>
       <div class="row"><button class="btn" id="sSave">Зберегти підписку</button></div>
     </div>
 
@@ -347,17 +347,18 @@ function openUser(id){
   const base=()=>{ const v=until.value?new Date(until.value+'T23:59:00'):null; return v&&v>new Date()?v:new Date(); };
   d.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{ const q=b.dataset.q;
     if(q==='m'||q==='y'){ const x=base(); if(q==='m') x.setDate(x.getDate()+30); else x.setFullYear(x.getFullYear()+1); until.value=isoDay(x); if(d.querySelector('#sPlan').value==='free') d.querySelector('#sPlan').value='plus'; d.querySelector('#sPer').value=q; }
-    if(q==='p10') d.querySelector('#sPacks').value=(+d.querySelector('#sPacks').value||0)+10;
+    if(q==='p10'){ d.querySelector('#sPacks').value=(+d.querySelector('#sPacks').value||0)+10; d.querySelector('#sPackR').value=(+d.querySelector('#sPackR').value||0)+1; }
+    if(q==='r1') d.querySelector('#sPackR').value=(+d.querySelector('#sPackR').value||0)+1;
     if(q==='noauto') d.querySelector('#sAuto').checked=false;
     if(q==='cancel'){ d.querySelector('#sPlan').value='free'; d.querySelector('#sAuto').checked=false; until.value=isoDay(new Date()); }
     toast('Змінено у формі — натисніть «Зберегти підписку».'); });
   d.querySelector('#sSave').onclick=async e=>{ const b=e.currentTarget; b.disabled=true;
     const plan=d.querySelector('#sPlan').value, per=d.querySelector('#sPer').value, uv=until.value;
-    const row={user_id:id,email:u.email,plan,period:per,paid_until:uv?new Date(uv+'T23:59:00').toISOString():null,auto_renew:d.querySelector('#sAuto').checked,packs:Math.max(0,parseInt(d.querySelector('#sPacks').value||'0',10)),note:d.querySelector('#sNote').value.trim()||null,updated_at:new Date().toISOString(),started_at:s.started_at||(plan!=='free'?new Date().toISOString():null)};
+    const row={user_id:id,email:u.email,plan,period:per,paid_until:uv?new Date(uv+'T23:59:00').toISOString():null,auto_renew:d.querySelector('#sAuto').checked,packs:Math.max(0,parseInt(d.querySelector('#sPacks').value||'0',10)),pack_reports:Math.max(0,parseInt(d.querySelector('#sPackR').value||'0',10)),note:d.querySelector('#sNote').value.trim()||null,updated_at:new Date().toISOString(),started_at:s.started_at||(plan!=='free'?new Date().toISOString():null)};
     if(plan!=='free'&&!row.paid_until){ toast('Вкажіть дату «Діє до».'); b.disabled=false; return; }
     const {error}=await SB.from('subscriptions').upsert(row);
     if(error){ toast('Не вдалося зберегти: '+error.message); b.disabled=false; return; }
-    await logA('підписка змінена',u,{from:{plan:s.plan,until:s.paid_until?isoDay(s.paid_until):null,auto:s.auto_renew,packs:s.packs},to:{plan,until:uv||null,auto:row.auto_renew,packs:row.packs}});
+    await logA('підписка змінена',u,{from:{plan:s.plan,until:s.paid_until?isoDay(s.paid_until):null,auto:s.auto_renew,packs:s.packs,reports:s.pack_reports||0},to:{plan,until:uv||null,auto:row.auto_renew,packs:row.packs,reports:row.pack_reports}});
     D.subs[id]=row; toast('Підписку збережено.'); close(); await load(); go(VIEW); };
   d.querySelector('#pAdd').onclick=async e=>{ const b=e.currentTarget, amt=parseInt(d.querySelector('#pAmt').value||'0',10), kind=d.querySelector('#pKind').value;
     if(!(amt>0)){ toast('Вкажіть суму.'); return; } b.disabled=true;

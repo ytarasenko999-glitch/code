@@ -1834,6 +1834,12 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
 .pl-pr{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .pl-pr b{font-family:var(--font-display);font-weight:300;font-size:30px;letter-spacing:-.02em}
 .pl-pr span{color:var(--muted);font-size:13px}
+.pl-lim{margin:0 0 14px;display:flex;flex-direction:column;border-top:1px solid var(--hair)}
+.pl-lim>div{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid var(--hair)}
+.pl-lim dt{font-size:12.5px;line-height:1.35;color:var(--muted);min-width:0}
+.pl-lim dd{margin:0;font-size:13px;font-weight:500;text-align:right;white-space:nowrap;color:var(--fg)}
+.pl-lim .no dd{color:var(--muted);font-weight:400}
+.sub-f.pl-lim{max-width:560px}
 .pl-sub{margin:2px 0 14px;font-size:12px;color:var(--accent);min-height:1.4em}
 .pl ul{list-style:none;margin:0 0 16px;padding:0;display:flex;flex-direction:column;gap:7px;flex:1}
 .pl li{position:relative;padding-left:20px;font-size:13.5px;line-height:1.45}
@@ -4605,29 +4611,31 @@ function tpOpenSaved(x){
 
 /* ---------- tariffs (UAH) & subscription — payment itself is not connected yet ---------- */
 const PLANS=[
-  {id:'free',n:'Безкоштовний',m:0,y:0,tag:'',d:'Щоб познайомитися з CODE',f:['Матриця, сумісність, прогноз по роках','Довідник арканів і шпаргалка','PDF з вашою матрицею','3 трактування Таро після реєстрації','+1 трактування щотижня']},
-  {id:'plus',n:'Plus',m:199,y:1790,tag:'Популярний',d:'Для себе — питати карти, коли потрібно',f:['100 запитів до трактувальника на місяць','Уточнювальні питання до розкладів','Розпізнавання розкладу з фото','Врахування вашої матриці долі','«Запитай свою матрицю» — з тих самих запитів','Усе з безкоштовного тарифу']},
-  {id:'pro',n:'Pro',m:549,y:4990,tag:'Для тарологів',d:'Робоче місце для консультацій',f:['300 запитів на місяць','База клієнтів з їхніми матрицями','Розклад для клієнта в один клік','Тон відповіді «для мене» / «для клієнта»','PDF без логотипу CODE — з вашим ім’ям, для клієнтів','Шаблони консультацій'],soon:'Частина інструментів Pro з’явиться поступово'},
-  {id:'pack',n:'Пакет',m:79,y:0,tag:'Без підписки',d:'10 трактувань — використайте, коли зручно',f:['10 трактувань Таро','Не згорають через місяць','Разова оплата']}
+  {id:'free',n:'Безкоштовний',m:0,y:0,tag:'',d:'Щоб познайомитися з CODE',lim:{ai:'3 + 1 щотижня',rep:'—',yr:'—',wl:'—'},f:['Довідник арканів і шпаргалка','Розбір кожної позиції та сфери життя']},
+  {id:'plus',n:'Plus',m:199,y:1790,tag:'Популярний',d:'Для себе — питати карти й матрицю, коли потрібно',lim:{ai:'100 на місяць',rep:'1 на місяць',yr:'1 на місяць',wl:'—'},f:['Уточнення до розкладів і розпізнавання фото','Трактування з урахуванням вашої матриці']},
+  {id:'pro',n:'Pro',m:549,y:4990,tag:'Для тарологів',d:'Робоче місце для консультацій',lim:{ai:'300 на місяць',rep:'10 на місяць',yr:'10 на місяць',wl:'Так'},f:['Розбори й прогнози для клієнтів — будь-які дати','База клієнтів з їхніми матрицями','Тон відповіді «для мене» / «для клієнта»','Шаблони консультацій'],soon:'Частина інструментів Pro з’явиться поступово'},
+  {id:'pack',n:'Пакет',m:149,y:0,tag:'Без підписки',d:'Спробувати платні функції без підписки',lim:{ai:'10 запитів',rep:'1 розбір',yr:'—',wl:'—'},f:['Не згорає — використайте, коли зручно','Разова оплата']}
 ];
+const PLAN_LIM=[['all','Матриця, сумісність, роки, PDF'],['ai','Запити до ШІ: Таро і «Запитай свою матрицю»'],['rep','Персональний розбір матриці'],['yr','Прогноз на 12 місяців'],['wl','PDF без логотипу CODE']];
+const limHTML=p=>`<dl class="pl-lim">${PLAN_LIM.map(([k,t])=>{ const v=k==='all'?'Без ліміту':p.lim[k]; return `<div class="${v==='—'?'no':''}"><dt>${t}</dt><dd>${v}</dd></div>`; }).join('')}</dl>`;
 let PLAN_PER='m';
 const uah=n=>`${String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ')} грн`;
 function plansHTML(){
   const card=p=>{
     const yr=PLAN_PER==='y'&&p.y, price=p.id==='free'?'0 грн':p.id==='pack'?uah(p.m):yr?uah(p.y):uah(p.m), per=p.id==='free'?'назавжди':p.id==='pack'?'разово':yr?'на рік':'на місяць';
-    const sub=yr?`≈ ${uah(Math.round(p.y/12))} на місяць · вигода ${Math.round((1-p.y/(p.m*12))*100)}%`:p.id==='pack'?'≈ 8 грн за трактування':'';
+    const sub=yr?`≈ ${uah(Math.round(p.y/12))} на місяць · вигода ${Math.round((1-p.y/(p.m*12))*100)}%`:p.id==='pack'?'1 розбір матриці + 10 запитів до ШІ':'';
     return `<article class="pl${p.id==='plus'?' hot':''}" data-p="${p.id}">
       <div class="pl-h"><h4>${p.n}</h4>${p.tag?`<span class="pl-tag">${p.tag}</span>`:''}</div>
       <p class="pl-d">${p.d}</p>
       <div class="pl-pr"><b>${price}</b><span>${per}</span></div><p class="pl-sub">${sub||'&nbsp;'}</p>
-      <ul>${p.f.map(x=>`<li>${x}</li>`).join('')}</ul>${p.soon?`<p class="pl-soon">${p.soon}</p>`:''}
+      ${limHTML(p)}<ul>${p.f.map(x=>`<li>${x}</li>`).join('')}</ul>${p.soon?`<p class="pl-soon">${p.soon}</p>`:''}
       ${p.id==='free'?`<button class="btn ghost sm" type="button" disabled>${USER?'Ваш поточний тариф':'Доступно після реєстрації'}</button>`:`<button class="btn ${p.id==='plus'?'go':'ghost'} sm" type="button" data-buy="${p.id}">${p.id==='pack'?'Купити пакет':'Оформити'}</button>`}
     </article>`;
   };
   return `<div class="tf-h"><div><p class="pk">[ Тарифи ]</p><h3 id="tfT">Оберіть свій формат</h3><p class="tf-s">Ціни в гривнях. Оплата разова — продовжувати автоматично чи ні, вирішуєте ви.</p></div>
     <div class="tf-per" role="tablist" aria-label="Період оплати"><button type="button" role="tab" aria-selected="${PLAN_PER==='m'}" data-per="m">Місяць</button><button type="button" role="tab" aria-selected="${PLAN_PER==='y'}" data-per="y">Рік <em>−25%</em></button></div></div>
     <div class="tf-g">${PLANS.map(card).join('')}</div>
-    <p class="tf-note">Запит — це одне трактування розкладу, одне уточнення або одне розпізнавання фото. Невикористані запити не переносяться на наступний місяць.</p>`;
+    <p class="tf-note">Запит — це одне трактування розкладу, одне уточнення, одне розпізнавання фото або одне питання до матриці. Персональний розбір і прогноз рахуються окремо й не витрачають запити; «Оновити розбір» створює новий розбір. Невикористане за місяць не переноситься, а пакет не згорає.</p>`;
 }
 function checkoutHTML(id){
   const p=PLANS.find(x=>x.id===id), yr=PLAN_PER==='y'&&p.y, price=p.id==='pack'?p.m:yr?p.y:p.m;
@@ -4636,7 +4644,7 @@ function checkoutHTML(id){
   return `<div class="tf-h"><div><p class="pk">[ Оформлення ]</p><h3 id="tfT">${p.n}${p.id==='pack'?'':yr?' · рік':' · місяць'}</h3></div></div>
     <div class="co">
       <div class="co-row"><span>Сума</span><b>${uah(price)}</b></div>
-      ${p.id==='pack'?`<div class="co-row"><span>Що отримаєте</span><b>10 трактувань без терміну дії</b></div>`:`<div class="co-row"><span>Доступ діятиме до</span><b>${dt}</b></div>`}
+      ${p.id==='pack'?`<div class="co-row"><span>Що отримаєте</span><b>10 запитів до ШІ + 1 розбір матриці, без терміну дії</b></div>`:`<div class="co-row"><span>Доступ діятиме до</span><b>${dt}</b></div>`}
       ${p.id==='pack'?'':`<label class="agree co-auto"><input type="checkbox" id="coAuto"><span class="box" aria-hidden="true"></span><span>Автоматично продовжувати ${yr?'щороку':'щомісяця'}</span></label>
       <p class="co-hint" id="coHint">Без автопродовження: після ${dt} доступ просто повернеться до безкоштовного тарифу, нічого не спишеться. За 3 дні ми нагадаємо.</p>`}
       <p class="co-legal">Натискаючи «Оплатити», ви погоджуєтеся з <a href="/terms.html" target="_blank" rel="noopener">умовами</a>. Оплата карткою через захищений платіжний сервіс.</p>
@@ -4667,8 +4675,8 @@ function subPane(){
   const sb=USER&&USER.sub, active=sb&&(sb.plan==='plus'||sb.plan==='pro')&&sb.paid_until&&new Date(sb.paid_until)>new Date();
   const cur=PLANS.find(x=>x.id===(active?sb.plan:'free')), dt=active?new Date(sb.paid_until).toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'}):'';
   return `<div class="dm-h"><h2>Підписка</h2></div>
-    <div class="sub-cur"><div><p class="pk">[ Поточний тариф ]</p><h3>${cur.n}</h3><p class="muted">${active?`Діє до ${dt}${sb.period==='y'?' · річна оплата':''}`:'Діє безстроково'}${sb&&sb.packs?` · пакетних трактувань: ${sb.packs}`:''}</p></div><button class="btn go sm" type="button" data-plans>${active?'Змінити тариф':'Обрати тариф'}</button></div>
-    <ul class="sub-f">${cur.f.map(x=>`<li>${x}</li>`).join('')}</ul>
+    <div class="sub-cur"><div><p class="pk">[ Поточний тариф ]</p><h3>${cur.n}</h3><p class="muted">${active?`Діє до ${dt}${sb.period==='y'?' · річна оплата':''}`:'Діє безстроково'}${sb&&sb.packs?` · пакетних запитів: ${sb.packs}`:''}${sb&&sb.pack_reports?` · пакетних розборів: ${sb.pack_reports}`:''}</p></div><button class="btn go sm" type="button" data-plans>${active?'Змінити тариф':'Обрати тариф'}</button></div>
+    ${limHTML(cur).replace('class="pl-lim"','class="sub-f pl-lim"')}
     <div class="sub-blk"><div class="sub-row"><div><b>Автопродовження</b><small>${active?(sb.auto_renew?`Увімкнене: ${dt} доступ продовжиться автоматично. Вимкнути можна будь-коли.`:`Вимкнене: після ${dt} доступ повернеться до безкоштовного тарифу, нічого не спишеться.`):'Вимкнене. З’явиться, коли ви оформите Plus або Pro, — і лише якщо ви самі його увімкнете.'}</small></div><label class="sw"><input type="checkbox" disabled${active&&sb.auto_renew?' checked':''}><i></i></label></div></div>
     <div class="sub-blk"><b>Історія оплат</b><p class="muted">Оплат ще не було.</p></div>
     <p class="muted sub-note">Оплата разова: доступ діє місяць або рік і нічого не списується без вашої згоди. Питання щодо оплат — <a class="mail-l" href="mailto:code.matrix.support@gmail.com?subject=CODE%20оплата" target="_blank" rel="noopener">code.matrix.support@gmail.com</a></p>`;
@@ -4765,7 +4773,7 @@ async function aimRun(task,turns,onText,signal){
   const s=await tpGetSample(); if(!s) throw Object.assign(new Error('nosample'),{code:'not_configured'});
   return s(turns,{cache:false,signal,task,onText:({text})=>onText(text)});
 }
-const aimPaid=()=>{ if(!(window.CODE_SB)) return true; const sb=USER&&USER.sub; return !!(sb&&(sb.plan==='plus'||sb.plan==='pro')&&sb.paid_until&&new Date(sb.paid_until)>new Date()); };
+const aimPaid=kind=>{ if(!(window.CODE_SB)) return true; const sb=USER&&USER.sub; if(!sb) return false; if((sb.plan==='plus'||sb.plan==='pro')&&sb.paid_until&&new Date(sb.paid_until)>new Date()) return true; return kind==='report'&&(sb.pack_reports||0)>0; };
 function aiBlock(){
   if(isPair()) return '';
   return `<div class="aim"><div class="aim-i"><button class="btn ghost aim-b" type="button" data-aim="report">${AI_IC}<span>${_t("Персональний розбір від ШІ")}</span><em class="aim-tag">Plus</em></button><p class="aim-h">${_t("Цілісний глибокий розбір усієї матриці: як ваші енергії впливають одна на одну, сценарії, що повторюються, гроші, стосунки, рід і план на 90 днів.")}</p></div></div>`;
@@ -4822,7 +4830,7 @@ function aimOpen(kind,spec){
   document.addEventListener('keydown',onKey,true);
   d.addEventListener('click',e=>{ if(e.target.closest('[data-tf=x]')||e.target.classList.contains('tf-bg')) close(); });
   const errBox=m=>`<div class="aim-err">${m}</div>`;
-  const gate=()=>{ body.innerHTML=`<div class="aim-gate"><p>${kind==='report'?_t("Персональний розбір — це глибокий аналіз усієї вашої матриці, написаний саме про вас: зв’язки між енергіями, сценарії, гроші, стосунки, рід, призначення і план на 90 днів."):_t("Прогноз на 12 місяців — персональна розкладка наступного року по місяцях з урахуванням вашої матриці та програм років.")}</p><p class="muted">${_t("Доступно в тарифах Plus і Pro.")}</p><button class="btn go aura" type="button" data-plans>${_t("Обрати тариф")}</button></div>`; };
+  const gate=()=>{ body.innerHTML=`<div class="aim-gate"><p>${kind==='report'?_t("Персональний розбір — це глибокий аналіз усієї вашої матриці, написаний саме про вас: зв’язки між енергіями, сценарії, гроші, стосунки, рід, призначення і план на 90 днів."):_t("Прогноз на 12 місяців — персональна розкладка наступного року по місяцях з урахуванням вашої матриці та програм років.")}</p><p class="muted">${kind=='report'?_t("Доступно в тарифах Plus і Pro або разово — у Пакеті."):_t("Доступно в тарифах Plus і Pro.")}</p><button class="btn go aura" type="button" data-plans>${_t("Обрати тариф")}</button></div>`; };
   if(kind==='chat'){
     const hist=(rec.chat||[]).slice(-20); let turns=[]; hist.forEach(m=>{ turns.push({role:'user',content:m.q}); turns.push({role:'assistant',content:m.a}); });
     const SUG=[_t("Яка професія мені найбільше підходить?"),_t("Що заважає мені заробляти більше?"),_t("Чому в стосунках у мене повторюється один сценарій?"),_t("На що звернути увагу цього року?")];
@@ -4849,15 +4857,15 @@ function aimOpen(kind,spec){
   }
   const saved=kind==='report'?rec.report:(rec.year&&rec.year.from===`${new Date().getFullYear()}-${new Date().getMonth()}`?rec.year:null);
   const show=(txt,ts,busy)=>{ body.innerHTML=`${ts?`<p class="aim-meta">${_f("Створено {0}",[new Date(ts).toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'})])}</p>`:''}<div class="tp-ans aim-doc">${txt?tpMd(txt):`<p class="muted">${_t("Готуємо розбір — це займе 1–2 хвилини. Можна читати, поки текст з’являється.")}</p>`}</div>
-    ${busy?'':`<div class="aim-acts"><button class="btn ghost sm" type="button" data-aim-copy>${_t("Скопіювати текст")}</button><button class="btn ghost sm" type="button" data-aim-redo>${_t("Оновити розбір")}</button></div>`}`; };
+    ${busy?'':`<div class="aim-acts"><button class="btn ghost sm" type="button" data-aim-copy>${_t("Скопіювати текст")}</button><button class="btn ghost sm" type="button" data-aim-redo>${_t("Оновити розбір")}</button></div>${window.CODE_SB?`<p class="aim-h">${_t("Оновлення створює новий розбір і рахується в ліміті тарифу.")}</p>`:''}`}`; };
   const run=async()=>{
-    if(!aimPaid()){ gate(); return; }
+    if(!aimPaid(kind)){ gate(); return; }
     show('',0,true); const ctl=new AbortController(); ctlBox.c=ctl;
     try{ const res=await aimRun(kind,[{role:'user',content:kind==='report'?aimReportPrompt():aimYearPrompt()}],t=>{ const el=body.querySelector('.aim-doc'); if(el) el.innerHTML=tpMd(t); },ctl.signal);
       const s2=aiStore(); s2[key]=s2[key]||{}; const now=Date.now();
       if(kind==='report') s2[key].report={text:res.text,ts:now}; else s2[key].year={text:res.text,ts:now,from:`${new Date().getFullYear()}-${new Date().getMonth()}`};
       aiSave(s2); show(res.text,now,false); }
-    catch(e){ if(e&&e.code==='need_plan'){ gate(); return; } if(!(e&&e.code==='cancelled')) body.innerHTML=errBox(tpErr(e&&e.code))+`<div class="aim-acts"><button class="btn ghost sm" type="button" data-aim-redo>${_t("Спробувати ще раз")}</button></div>`; }
+    catch(e){ if(e&&e.code==='need_plan'){ gate(); return; } if(e&&e.code==='report_quota'){ body.innerHTML=`<div class="aim-gate"><p>${kind==='report'?_t("Ліміт персональних розборів на цей місяць вичерпано. Збережені розбори залишаються з вами."):_t("Ліміт прогнозів на цей місяць вичерпано. Збережений прогноз залишається з вами.")}</p><p class="muted">${_t("Більше розборів — у тарифі Pro")}${kind==='report'?_t(" або в Пакеті"):''}.</p><button class="btn go aura" type="button" data-plans>${_t("Обрати тариф")}</button></div>`; return; } if(!(e&&e.code==='cancelled')) body.innerHTML=errBox(tpErr(e&&e.code))+`<div class="aim-acts"><button class="btn ghost sm" type="button" data-aim-redo>${_t("Спробувати ще раз")}</button></div>`; }
     finally{ ctlBox.c=null; } };
   body.addEventListener('click',async e=>{
     if(e.target.closest('[data-aim-redo]')) run();
@@ -6741,7 +6749,7 @@ async function hydrate(session){
   }
   try{ localStorage.setItem('code-tarot',JSON.stringify(row.tarot||[])); localStorage.setItem('code-tarot-people',JSON.stringify(row.people||[])); localStorage.setItem('code-ai-reports',JSON.stringify(Object.assign({},localRep,row.reports||{}))); }catch(_){}
   USER={email:u.email,profile:row.profile||emptyProfile(),favs:row.favs||[],hist:row.hist||[],uid:u.id};
-  try{ const {data:sr}=await sb.from('subscriptions').select('plan,period,paid_until,auto_renew,packs').eq('user_id',u.id).maybeSingle(); USER.sub=sr||null; }catch(_){ USER.sub=null; }
+  try{ const {data:sr}=await sb.from('subscriptions').select('*').eq('user_id',u.id).maybeSingle(); USER.sub=sr||null; }catch(_){ USER.sub=null; }
   setAcctIcon();
   return USER;
 }

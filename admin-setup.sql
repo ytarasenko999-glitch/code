@@ -37,9 +37,11 @@ create table if not exists public.subscriptions (
   paid_until timestamptz,
   auto_renew boolean not null default false,
   packs integer not null default 0,
+  pack_reports integer not null default 0,
   note text,
   updated_at timestamptz not null default now()
 );
+alter table public.subscriptions add column if not exists pack_reports integer not null default 0;
 alter table public.subscriptions enable row level security;
 drop policy if exists "sub own read" on public.subscriptions;
 drop policy if exists "sub admin all" on public.subscriptions;
