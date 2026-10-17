@@ -9,7 +9,8 @@ const MODEL = process.env.AI_MODEL || 'claude-sonnet-5-5';
 const DAILY_CAP = parseInt(process.env.AI_DAILY_CAP || '60', 10);   // safety cap per user per day, any plan
 const QUOTA = { plus: parseInt(process.env.AI_PLUS || '100', 10), pro: parseInt(process.env.AI_PRO || '300', 10) }; // per 30 days
 const DEEP = { report: { plus: 1, pro: 10 }, year: { plus: 1, pro: 10 } }; // personal readings / 12-month forecasts per 30 days
-const POOL = 'kind=not.in.(report,year)'; // tarot + ask-your-matrix share one request pool
+const POOL = 'kind=not.in.(report,year,photo)';
+const PHOTO_DAY = parseInt(process.env.AI_PHOTO_DAY || '20', 10); // photo recognition is free (part of the reading) but capped per day // tarot + ask-your-matrix share one request pool
 const FREE_START = parseInt(process.env.AI_FREE_START || '3', 10), FREE_WEEK = parseInt(process.env.AI_FREE_WEEK || '1', 10);
 const ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://code-matrix-test.vercel.app').split(',').map(s => s.trim());
 
@@ -112,6 +113,13 @@ module.exports = async (req, res) => {
 
   const body = req.body || {};
   const json = body.mode === 'json';
+  /* photo recognition does not spend a request: it only needs one left for the reading itself, plus a daily cap */
+  if (json) {
+    const day = new Date(); day.setUTCHours(0, 0, 0, 0);
+    let photos = 0; try { photos = await countUse(token, user.id, { since: day, kind: 'photo' }); } catch (_) {}
+    if (photos >= PHOTO_DAY) return fail(res, 429, 'photo_limit');
+    al = { ...al, source: 'photo', left: al.left + 1 };
+  }
   let messages;
   if (json) {
     const imgs = Array.isArray(body.images) ? body.images.slice(0, 2) : [];
