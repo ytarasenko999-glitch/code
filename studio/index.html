@@ -509,7 +509,7 @@ function bindDocs(){
 
 /* ---------- email templates ---------- */
 const tok=async()=>{ const {data}=await SB.auth.getSession(); return data&&data.session?data.session.access_token:''; };
-const api=async(body)=>{ const r=await fetch('/api/email',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+await tok()},body:JSON.stringify(body)}); let j={}; try{ j=await r.json(); }catch(_){} if(!r.ok) throw Object.assign(new Error(j.detail||j.code||('HTTP '+r.status)),{code:j.code}); return j; };
+const api=async(body)=>{ const pub=body.mode==='preview'||body.mode==='supabase'; const r=await fetch('/api/email',{method:'POST',headers:pub?{'content-type':'application/json'}:{'content-type':'application/json',authorization:'Bearer '+await tok()},body:JSON.stringify(body)}); let j={}; try{ j=await r.json(); }catch(_){} if(!r.ok) throw Object.assign(new Error(j.detail||j.code||('HTTP '+r.status)),{code:j.code}); return j; };
 async function loadMail(){
   try{ if(!MAILD){ const r=await fetch('/api/email?mode=defaults'); MAILD=await r.json(); } }catch(_){ MAILD={templates:[],vars:{}}; }
   const [st,sv,lg]=await Promise.all([api({mode:'status'}).catch(e=>({err:e.message})),SB.from('admin_settings').select('value').eq('key','emails').maybeSingle(),SB.from('email_log').select('*').order('created_at',{ascending:false}).limit(60)]);
