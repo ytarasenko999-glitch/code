@@ -126,3 +126,17 @@ create table if not exists public.admin_settings (
 alter table public.admin_settings enable row level security;
 drop policy if exists "settings admin" on public.admin_settings;
 create policy "settings admin" on public.admin_settings for all using (public.is_admin()) with check (public.is_admin());
+
+-- 8. Журнал відправлених листів (щоб кожен лист ішов один раз)
+create table if not exists public.email_log (
+  id bigserial primary key,
+  user_id uuid references auth.users on delete cascade,
+  email text,
+  kind text not null,
+  ref text not null default '',
+  created_at timestamptz not null default now(),
+  unique (user_id, kind, ref)
+);
+alter table public.email_log enable row level security;
+drop policy if exists "email log admin" on public.email_log;
+create policy "email log admin" on public.email_log for select using (public.is_admin());

@@ -7093,6 +7093,7 @@ ready.then(async()=>{
     if(ev==='SIGNED_IN'&&session&&(!USER||USER.uid!==session.user.id)){
       if(hydrating) return; hydrating=hydrate(session).catch(()=>null);
       const u=await hydrating; hydrating=null; if(!u) return;
+      try{ const cu=session.user; if(cu&&Date.now()-new Date(cu.created_at).getTime()<36e5*72&&!localStorage.getItem('code-welcome-'+cu.id)){ localStorage.setItem('code-welcome-'+cu.id,'1'); fetch('/api/email',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+session.access_token},body:JSON.stringify({mode:'welcome'})}).catch(()=>{}); } }catch(_){}
       if(profileReady(USER.profile)) fill(USER.profile);
       if(!$('#home').hidden){ HOME_MODE='cab'; CAB_TAB='data'; PF_EDIT=!profileReady(USER.profile); renderHome(); }
       if(/access_token|type=/.test(location.hash)) history.replaceState(null,'',location.pathname+location.search);

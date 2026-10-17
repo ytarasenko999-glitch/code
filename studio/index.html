@@ -97,6 +97,16 @@ td small{display:block;color:var(--muted);font-size:12px}
 .adm-p{padding:20px 22px;margin-bottom:14px}.adm-t{margin:0 0 14px;color:var(--muted);font-size:13.5px;line-height:1.55;max-width:70ch}
 .adm-f{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.adm-f .field{flex:1 1 260px}.adm-f .btn{height:42px}
 .btn.bad{border-color:var(--bad);color:var(--bad)}
+
+.clk{cursor:pointer}.clk:hover td{background:var(--surface-2)}
+.mail-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.badge.warn{color:#C9862A;background:color-mix(in srgb,#C9862A 12%,transparent)}
+.mail-steps{margin:12px 0 0;padding-left:20px;font-size:13.5px;line-height:1.6;color:var(--muted)}.mail-steps li{margin:0 0 8px}.mail-steps b{color:var(--fg)}.mail-steps a{color:var(--accent)}
+.mail-steps code,.bal-n code{font-family:var(--font-mono);font-size:11.5px;padding:1px 6px;border-radius:6px;background:var(--surface-2);color:var(--fg)}
+.mail-pv{width:100%;height:620px;border:0;border-radius:14px;background:#ECEFFA}
+.mail-subj{margin:0;font-size:13px;line-height:1.45}.mail-subj span{color:var(--muted)}
+.mail-on{display:flex;align-items:center;gap:8px;font-size:13.5px}
+.pe-side:has(.mail-pv){position:sticky;top:14px}
 .bl-th{display:block;width:72px;height:38px;border-radius:10px;object-fit:cover;background:var(--surface-2)}
 .bl-t{display:block;font-weight:600;font-size:14px;margin-bottom:2px}
 .pe{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start}
@@ -183,6 +193,7 @@ select.tb{max-width:240px}
     <button class="navb" data-v="bal">Баланс ШІ<em id="cB"></em></button>
     <button class="navb" data-v="log">Журнал дій</button>
     <button class="navb" data-v="blog">Блог<em id="cBl"></em></button>
+    <button class="navb" data-v="mail">Email-розсилки</button>
     <button class="navb" data-v="docs">Документація</button>
     <button class="navb" data-v="admins">Адміністратори<em id="cA"></em></button>
     <div class="sp"></div>
@@ -202,7 +213,7 @@ const fmtD=d=>d?new Date(d).toLocaleDateString('uk-UA',{day:'2-digit',month:'2-d
 const fmtDT=d=>d?new Date(d).toLocaleString('uk-UA',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
 const uah=n=>`${Math.round(n).toLocaleString('uk-UA')} грн`;
 const isoDay=d=>{const x=new Date(d);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');};
-let D={users:[],subs:{},pays:[],ai:[],log:[],admins:[],topups:[],spend:[],posts:[],docs:[]}, EDIT=null, DOC_EDIT=null, VIEW='overview', ME=null, SUBF='active', Q='';
+let D={users:[],subs:{},pays:[],ai:[],log:[],admins:[],topups:[],spend:[],posts:[],docs:[]}, EDIT=null, DOC_EDIT=null, MAIL=null, MAILD=null, VIEW='overview', ME=null, SUBF='active', Q='';
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('in');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('in'),2600);};
 
 /* ---------- auth gate ---------- */
@@ -278,8 +289,8 @@ async function logA(action,target,details){ await SB.from('admin_log').insert({a
 
 /* ---------- views ---------- */
 function go(v){ VIEW=v; document.querySelectorAll('.navb').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); const m=$('#main');
-  m.innerHTML=v==='users'?vUsers():v==='subs'?vSubs():v==='pays'?vPays():v==='ai'?vAI():v==='log'?vLog():v==='admins'?vAdmins():v==='bal'?vBal():v==='blog'?vBlog():v==='post'?vPost():v==='docs'?vDocs():vOverview(); bindView(); }
-document.querySelectorAll('.navb').forEach(b=>b.onclick=()=>{ if(b.dataset.v==='blog') EDIT=null; go(b.dataset.v); });
+  m.innerHTML=v==='users'?vUsers():v==='subs'?vSubs():v==='pays'?vPays():v==='ai'?vAI():v==='log'?vLog():v==='admins'?vAdmins():v==='bal'?vBal():v==='blog'?vBlog():v==='post'?vPost():v==='docs'?vDocs():v==='mail'?vMail():vOverview(); bindView(); }
+document.querySelectorAll('.navb').forEach(b=>b.onclick=async()=>{ if(b.dataset.v==='blog') EDIT=null; if(b.dataset.v==='mail'){ MAIL=null; await loadMail(); } go(b.dataset.v); });
 const head=(t,acts='')=>`<div class="top"><div><p class="pk">[ адмінпанель ]</p><h2>${t}</h2></div><div class="acts">${acts}<button class="btn ghost sm" data-act="reload">Оновити</button></div></div>`;
 
 function bars(days){
@@ -495,6 +506,79 @@ function bindDocs(){
   const dl=f.querySelector('[data-doc-del]'); if(dl) dl.onclick=()=>{ if(!dl.dataset.sure){ dl.dataset.sure='1'; dl.textContent='Точно?'; return; } saveDocs(D.docs.filter((_,i)=>i!==DOC_EDIT),'документація: видалено запис'); };
 }
 
+
+/* ---------- email templates ---------- */
+const tok=async()=>{ const {data}=await SB.auth.getSession(); return data&&data.session?data.session.access_token:''; };
+const api=async(body)=>{ const r=await fetch('/api/email',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+await tok()},body:JSON.stringify(body)}); let j={}; try{ j=await r.json(); }catch(_){} if(!r.ok) throw Object.assign(new Error(j.detail||j.code||('HTTP '+r.status)),{code:j.code}); return j; };
+async function loadMail(){
+  try{ if(!MAILD){ const r=await fetch('/api/email?mode=defaults'); MAILD=await r.json(); } }catch(_){ MAILD={templates:[],vars:{}}; }
+  const [st,sv,lg]=await Promise.all([api({mode:'status'}).catch(e=>({err:e.message})),SB.from('admin_settings').select('value').eq('key','emails').maybeSingle(),SB.from('email_log').select('*').order('created_at',{ascending:false}).limit(60)]);
+  D.mailStatus=st; D.mailSaved=sv&&sv.data&&Array.isArray(sv.data.value)?sv.data.value:[]; D.mailLog=lg&&lg.data||[]; D.mailLogErr=lg&&lg.error&&lg.error.message;
+}
+const mailAll=()=>(MAILD&&MAILD.templates||[]).map(d=>({...d,...(D.mailSaved.find(x=>x.id===d.id)||{})}));
+const MAILN={welcome:'Вітання',confirm:'Підтвердження email',reset:'Скидання пароля',paid_plan:'Оплата тарифу',paid_pack:'Оплата пакета',expiring_manual:'Закінчується (без автопродовження)',expiring_auto:'Закінчується (з автопродовженням)',renewed:'Продовжено автоматично',renew_failed:'Не вдалося продовжити',expired:'Підписка закінчилася'};
+function vMail(){
+  if(!MAILD) return head('Email-розсилки')+'<div class="load">Завантаження…</div>';
+  if(MAIL) return vMailEdit();
+  const st=D.mailStatus||{}, all=mailAll();
+  const chip=(ok,t)=>`<span class="badge ${ok?'ok':'warn'}">${t}</span>`;
+  const row=t=>`<tr data-mail="${t.id}" class="clk"><td><b>${esc(t.name)}</b><small>${esc(t.when)}</small></td><td><small>${esc(t.subject)}</small></td><td>${t.on===false?'<span class="badge">вимкнено</span>':t.group==='auth'?'<span class="badge">через Supabase</span>':'<span class="badge ok">увімкнено</span>'}</td><td style="text-align:right"><button class="btn ghost sm" data-mail="${t.id}">Редагувати</button></td></tr>`;
+  return head('Email-розсилки')+`
+  <div class="panel card mail-st"><h3>Стан відправки</h3>
+    <div class="mail-chips">${st.err?`<span class="badge warn">не вдалося перевірити: ${esc(st.err)}</span>`:`${chip(st.resend,st.resend?'Resend підключено':'Resend не підключено')} ${chip(st.own_domain,st.own_domain?'Відправник: '+esc(st.from):'Відправник: тестовий (resend.dev)')} ${chip(st.service,st.service?'Доступ до бази для розсилок є':'Немає службового ключа бази')} ${chip(st.cron,st.cron?'Щоденна перевірка захищена':'CRON_SECRET не задано')}`}</div>
+    ${st.resend&&st.service&&st.own_domain?'<p class="bal-n">Усе готово: листи відправляються автоматично.</p>':`<ol class="mail-steps">
+      <li><b>Resend</b> — створіть акаунт на <a href="https://resend.com" target="_blank" rel="noopener">resend.com</a> (вхід з code.matrix.support@gmail.com), API Keys → Create → у Vercel додайте змінну <code>RESEND_API_KEY</code>. Уже після цього можна надсилати тестові листи на пошту акаунта Resend.</li>
+      <li><b>Свій домен</b> — після купівлі домену: Resend → Domains → Add, внесіть DNS-записи, а у Vercel задайте <code>EMAIL_FROM</code> = <code>CODE &lt;hello@ваш-домен&gt;</code>. Без власного домену листи йдуть лише на вашу пошту.</li>
+      <li><b>Службовий ключ бази</b> — Supabase → Settings → API Keys → secret key → у Vercel змінна <code>SUPABASE_SERVICE_ROLE_KEY</code>. Потрібен для нагадувань про підписку й журналу листів.</li>
+      <li><b>Захист щоденної перевірки</b> — у Vercel змінна <code>CRON_SECRET</code> з будь-яким довгим випадковим текстом. Перевірка підписок запускається щодня о 10:00 за Києвом.</li>
+      <li>Після змін у Vercel — Deployments → Redeploy.</li></ol>`}
+  </div>
+  <div class="panel card"><h3>Автоматичні листи · надсилає CODE</h3><div class="tw"><table><thead><tr><th>Лист і коли надсилається</th><th>Тема</th><th>Статус</th><th></th></tr></thead><tbody>${all.filter(t=>t.group==='auto').map(row).join('')}</tbody></table></div>
+    <p class="bal-n">Листи про оплату й автопродовження почнуть надсилатися, щойно підключимо оплату WayForPay. Нагадування «закінчується» і «закінчилася» працюють уже зараз — для підписок, виданих в адмінці.</p></div>
+  <div class="panel card"><h3>Листи входу · надсилає Supabase</h3><div class="tw"><table><thead><tr><th>Лист і коли надсилається</th><th>Тема</th><th>Статус</th><th></th></tr></thead><tbody>${all.filter(t=>t.group==='auth').map(row).join('')}</tbody></table></div>
+    <p class="bal-n">Ці два листи відправляє сама система входу. Оформіть їх тут, натисніть «Скопіювати для Supabase» і вставте в Supabase → Authentication → Emails.</p></div>
+  <div class="panel card"><h3>Надіслані листи</h3>${D.mailLogErr?`<p class="bal-n bad">Журнал недоступний: ${esc(D.mailLogErr)} — потрібно виконати SQL для email_log.</p>`:D.mailLog.length?`<div class="tw"><table><thead><tr><th>Коли</th><th>Кому</th><th>Лист</th></tr></thead><tbody>${D.mailLog.map(l=>`<tr><td class="num">${fmtDT(l.created_at)}</td><td>${esc(l.email||'')}</td><td>${esc(MAILN[l.kind]||l.kind)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">Ще не було надісланих листів.</p>'}</div>`;
+}
+function vMailEdit(){
+  const t=mailAll().find(x=>x.id===MAIL); if(!t){ MAIL=null; return vMail(); }
+  const vars=MAILD.vars||{};
+  return head(esc(t.name),`<button class="btn ghost sm" data-mail-back>← До листів</button>`)+`
+  <form id="mailF" class="pe" autocomplete="off">
+   <div class="pe-main"><div class="panel pe-p">
+     <p class="bal-n" style="margin:0">${esc(t.when)}</p>
+     <label class="mail-on"><input type="checkbox" id="mOn"${t.on===false?'':' checked'}> Лист увімкнено</label>
+     <div class="field"><label for="mSub">Тема листа</label><input id="mSub" value="${esc(t.subject)}" maxlength="140"></div>
+     <div class="field"><label for="mPre">Прехедер — сірий текст поруч із темою у скриньці</label><input id="mPre" value="${esc(t.preheader||'')}" maxlength="140"></div>
+     <div class="field"><label for="mHead">Заголовок у листі</label><input id="mHead" value="${esc(t.heading)}" maxlength="140"></div>
+     <div class="field"><label for="mBody">Текст</label><textarea id="mBody" rows="12">${esc(t.body)}</textarea><small class="pe-h">Порожній рядок — новий абзац. «- » — пункт списку. **жирний**, [текст](посилання).</small></div>
+     <div class="doc-g" style="grid-template-columns:1fr 1fr"><div class="field"><label for="mBtn">Текст кнопки (порожньо — без кнопки)</label><input id="mBtn" value="${esc(t.button||'')}" maxlength="60"></div><div class="field"><label for="mUrl">Куди веде кнопка</label><input id="mUrl" value="${esc(t.url||'')}"${t.group==='auth'?' readonly title="Посилання підставляє Supabase"':''}></div></div>
+     <div class="field"><label>Змінні — натисніть, щоб вставити в текст</label><div class="pe-tb">${Object.entries(vars).filter(([k])=>t.group==='auth'?['name','action_url','site_url'].includes(k):k!=='action_url').map(([k,d])=>`<button type="button" class="tb" data-var="${k}" title="${esc(d)}">{{${k}}}</button>`).join('')}</div></div>
+     <div class="pe-acts"><button class="btn go" type="submit">Зберегти</button><button class="btn ghost" type="button" data-mail-reset>Повернути стандартний текст</button></div>
+   </div></div>
+   <div class="pe-side">
+     <div class="panel pe-p"><p class="pk">[ Попередній перегляд ]</p><p class="mail-subj"><b id="pvSub"></b><span id="pvPre"></span></p><iframe id="mailPv" class="mail-pv" title="Попередній перегляд листа"></iframe><small class="pe-h">У перегляді — приклад: ім’я Юлія, Plus, до 16 листопада.</small></div>
+     ${t.group==='auth'?`<div class="panel pe-p"><p class="pk">[ Для Supabase ]</p><p class="bal-n" style="margin:0">Supabase → Authentication → Emails → «${t.id==='reset'?'Reset password':'Confirm signup'}»: вставте тему і HTML, збережіть.</p><div class="pe-acts"><button class="btn ghost sm" type="button" data-copy="subj">Скопіювати тему</button><button class="btn ghost sm" type="button" data-copy="html">Скопіювати HTML</button></div><a class="btn ghost sm" href="https://supabase.com/dashboard/project/blwyzqxhzvjzhqkabesi/auth/templates" target="_blank" rel="noopener">Відкрити шаблони Supabase</a></div>`
+     :`<div class="panel pe-p"><p class="pk">[ Тестовий лист ]</p><div class="field"><label for="mTo">Кому</label><input id="mTo" type="email" value="${esc(ME&&ME.email||'')}"></div><button class="btn ghost sm" type="button" data-mail-test>Надіслати тест</button><small class="pe-h">${D.mailStatus&&D.mailStatus.resend?(D.mailStatus.own_domain?'Лист прийде з вашого домену.':'Поки домен не підключено, тест прийде лише на пошту, з якої зареєстровано акаунт Resend.'):'Запрацює після підключення Resend (див. «Стан відправки»).'}</small></div>`}
+   </div>
+  </form>`;
+}
+function mailForm(){ const t=mailAll().find(x=>x.id===MAIL); return {...t,on:$('#mOn').checked,subject:$('#mSub').value,preheader:$('#mPre').value,heading:$('#mHead').value,body:$('#mBody').value,button:$('#mBtn').value,url:$('#mUrl').value}; }
+async function mailPreview(){ const f=$('#mailF'); if(!f) return; const t=mailForm();
+  try{ const r=await api({mode:'preview',tpl:t}); const fr=$('#mailPv'); if(!fr) return; fr.srcdoc=r.html; $('#pvSub').textContent=r.subject; $('#pvPre').textContent=' — '+(t.preheader||''); }catch(_){} }
+async function saveMail(list,msg){ const {error}=await SB.from('admin_settings').upsert({key:'emails',value:list,updated_at:new Date().toISOString()}); if(error) return toast('Не вдалося зберегти: '+error.message); await logA('email-шаблон змінено',null,{id:MAIL}); await loadMail(); go('mail'); toast(msg); }
+function bindMail(){
+  document.querySelectorAll('#main [data-mail]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); MAIL=b.dataset.mail; go('mail'); window.scrollTo({top:0}); });
+  const back=$('[data-mail-back]'); if(back) back.onclick=()=>{ MAIL=null; go('mail'); };
+  const f=$('#mailF'); if(!f) return;
+  let tm; f.addEventListener('input',()=>{ clearTimeout(tm); tm=setTimeout(mailPreview,350); }); mailPreview();
+  let last=$('#mBody'); f.querySelectorAll('input,textarea').forEach(el=>el.addEventListener('focus',()=>{ if(el.type!=='checkbox') last=el; }));
+  f.querySelectorAll('[data-var]').forEach(b=>b.onclick=()=>{ const el=last||$('#mBody'); if(el.readOnly) return; const a=el.selectionStart??el.value.length; el.setRangeText(`{{${b.dataset.var}}}`,a,el.selectionEnd??a,'end'); el.focus(); el.dispatchEvent(new Event('input',{bubbles:true})); });
+  f.onsubmit=e=>{ e.preventDefault(); const t=mailForm(); const keep={id:t.id,on:t.on,subject:t.subject,preheader:t.preheader,heading:t.heading,body:t.body,button:t.button,url:t.url}; saveMail([...D.mailSaved.filter(x=>x.id!==t.id),keep],'Лист збережено.'); };
+  f.querySelector('[data-mail-reset]').onclick=e=>{ const b=e.currentTarget; if(!b.dataset.sure){ b.dataset.sure='1'; b.textContent='Точно? Ваші зміни зникнуть'; return; } saveMail(D.mailSaved.filter(x=>x.id!==MAIL),'Повернуто стандартний текст.'); };
+  const tb=f.querySelector('[data-mail-test]'); if(tb) tb.onclick=async()=>{ tb.disabled=true; try{ await api({mode:'test',tpl:mailForm(),to:$('#mTo').value}); toast('Тестовий лист надіслано. Перевірте пошту (і «Спам»).'); }catch(e){ toast(e.code==='not_configured'?'Спершу підключіть Resend — див. «Стан відправки».':'Не вдалося надіслати: '+e.message); } tb.disabled=false; };
+  f.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{ try{ const r=await api({mode:'supabase',tpl:mailForm()}); await navigator.clipboard.writeText(b.dataset.copy==='html'?r.html:r.subject); toast(b.dataset.copy==='html'?'HTML скопійовано — вставте в Supabase.':'Тему скопійовано.'); }catch(e){ toast('Не вдалося скопіювати: '+e.message); } });
+}
+
 const usd=n=>'$'+(Math.round((n||0)*100)/100).toFixed(2);
 const KIND={reading:'Трактування Таро',follow:'Уточнення до розкладу',chat:'«Запитай свою матрицю»',report:'Персональний розбір',year:'Прогноз на 12 місяців',photo:'Розпізнавання фото'};
 function balEst(){
@@ -540,7 +624,7 @@ function vAdmins(){
     <div class="panel">${D.admins.length?`<div class="tw"><table><thead><tr><th>Email</th><th>Статус</th><th></th></tr></thead><tbody>${D.admins.map(row).join('')}</tbody></table></div>`:'<p class="empty">Список порожній.</p>'}</div>`;
 }
 function bindView(){
-  bindPost(); bindDocs();
+  bindPost(); bindDocs(); bindMail();
   { const nb=$('[data-post-new]'); if(nb) nb.onclick=()=>{ EDIT='new'; go('post'); }; document.querySelectorAll('[data-post-edit]').forEach(b=>b.onclick=()=>{ EDIT=+b.dataset.postEdit; go('post'); window.scrollTo({top:0}); }); }
   { const f=$('#tpF'); if(f) f.onsubmit=async e=>{ e.preventDefault(); const usdv=Math.round(parseFloat($('#tpU').value)*100)/100; if(!usdv) return toast('Вкажіть суму (для коригування — з мінусом).');
       const t={d:$('#tpD').value,usd:usdv,note:$('#tpN').value.trim()}; if(await saveTopups([...D.topups,t],'поповнення балансу ШІ',t)) toast('Поповнення додано.'); }; }
