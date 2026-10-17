@@ -53,7 +53,11 @@ module.exports = async (req, res) => {
     }
 
     if (!(await isAdmin(token))) return json(res, 403, { code: 'admin_only' });
-    if (mode === 'status') return json(res, 200, { resend: !!process.env.RESEND_API_KEY, from: FROM, own_domain: !/resend\.dev/.test(FROM), service: !!SERVICE, cron: !!process.env.CRON_SECRET });
+    if (mode === 'status') {
+      let service_ok = null; if (SERVICE) { try { const r = await fetch(`${SB_URL}/rest/v1/email_log?select=id&limit=1`, { headers: HS() }); service_ok = r.status; } catch (_) { service_ok = 'network'; } }
+      const kind = !SERVICE ? '' : /^sb_secret_/.test(SERVICE) ? 'secret' : /^sb_publishable_/.test(SERVICE) ? 'publishable' : /^eyJ/.test(SERVICE) ? 'jwt' : 'other';
+      return json(res, 200, { resend: !!process.env.RESEND_API_KEY, from: FROM, own_domain: !/resend\.dev/.test(FROM), service: !!SERVICE && service_ok === 200, service_kind: kind, service_len: SERVICE.length, service_trim: SERVICE !== SERVICE.trim(), service_ok, cron: !!process.env.CRON_SECRET });
+    }
     if (mode === 'test') {
       const all = await templates(H(token)), tpl = b.tpl || all.find(t => t.id === b.id); if (!tpl) return json(res, 400, { code: 'no_template' });
       const to = String(b.to || u.email).trim(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return json(res, 400, { code: 'bad_email' });
