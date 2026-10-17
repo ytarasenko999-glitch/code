@@ -1930,6 +1930,15 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
 .pf-act .btn.aura{flex:1 1 100%!important}
 .pf-act .btn.ghost.wide{flex:1 1 100%!important;justify-content:center;height:52px}
 .empty .btn.aura{margin-top:18px!important}
+.aim-sgw{display:flex;flex-direction:column}
+.aim-sgl{margin:0 0 4px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.aim-sgl::before{content:"[ "}.aim-sgl::after{content:" ]"}
+.aim-sg{display:flex!important;flex-direction:column;gap:0!important;margin:0!important;padding:0!important;background:none!important;border-radius:0!important}
+.aim-sg button{display:flex!important;align-items:center;justify-content:space-between;gap:16px;width:100%;margin:0;padding:14px 2px!important;border:0!important;border-bottom:1px solid var(--hair)!important;border-radius:0!important;background:none!important;font:inherit;font-size:15px!important;line-height:1.45;text-align:left;color:var(--fg)!important;cursor:pointer;transition:color .2s}
+.aim-sg button::after{content:"";flex:0 0 30px;height:30px;border-radius:50%;border:1px solid var(--line);background:no-repeat center/12px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%238C7DFF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 9L9 3M4 3h5v5'/%3E%3C/svg%3E");transition:border-color .2s,transform .2s}
+.aim-sg button:hover{color:var(--accent)!important}
+.aim-sg button:hover::after{border-color:var(--accent);transform:translate(2px,-2px)}
+.aim-sg button:first-child{border-top:1px solid var(--hair)!important}
 .aim-gate{padding:8px 0}.aim-gate p{margin:0 0 12px;line-height:1.6}.aim-gate .btn{flex:0 0 auto!important}
 .aim-b{background:transparent!important;color:var(--fg)!important;border:1px solid var(--line)!important;box-shadow:none!important}
 .aim-b:hover{border-color:var(--accent)!important;color:var(--accent)!important}
@@ -4841,7 +4850,7 @@ function aimOpen(kind,spec){
     const SUG=[_t("Яка професія мені найбільше підходить?"),_t("Що заважає мені заробляти більше?"),_t("Чому в стосунках у мене повторюється один сценарій?"),_t("На що звернути увагу цього року?")];
     let sug=cx&&cx.sug.length?cx.sug:SUG;
     const draw=()=>{ body.innerHTML=`${cx?`<p class="aim-meta aim-cx">${_t("Розділ")}: ${esc(cx.label)}</p>`:''}<div class="aim-chat">${hist.length?hist.map(m=>`<div class="aim-q">${esc(m.q)}</div><div class="aim-a tp-ans">${tpMd(m.a)}</div>`).join(''):`<p class="aim-intro">${_t("Питайте про що завгодно: роботу, гроші, стосунки, рішення, які зараз перед вами. Відповідь спиратиметься на позиції саме вашої матриці.")}</p>`}</div>
-      <div class="tp-sg aim-sg">${sug.map(q=>`<button type="button" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>
+      <div class="aim-sgw"><p class="aim-sgl">${hist.length?_t("Можна запитати далі"):_t("Можна запитати")}</p><div class="aim-sg">${sug.map(q=>`<button type="button" data-q="${esc(q)}"><span>${esc(q)}</span></button>`).join('')}</div></div>
       <form class="aim-f"><textarea id="aimIn" rows="2" maxlength="600" placeholder="${_t("Ваше питання до матриці…")}"></textarea><button class="btn go sm" type="submit">${_t("Запитати")}</button></form><div id="aimE"></div>`;
       const ch=body.querySelector('.aim-chat'); ch.scrollTop=ch.scrollHeight; };
     draw();
