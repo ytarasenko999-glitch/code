@@ -444,7 +444,7 @@ function vPost(){
     <div class="panel pe-p">
       <p class="pk">[ Головне фото ]</p>
       <div class="pe-cov">${p.cover?`<img id="pCovImg" src="${esc(p.cover)}" alt="">`:'<img id="pCovImg" alt="" hidden><span id="pCovNo">Фото не додано</span>'}</div>
-      <div class="pe-row"><label class="btn ghost sm pe-up">Завантажити фото<input type="file" id="pFile" accept="image/jpeg,image/png,image/webp" hidden></label>${p.cover?'<button class="btn ghost sm" type="button" data-cov-del>Прибрати</button>':''}</div>
+      <div class="pe-row"><label class="btn ghost sm pe-up">Завантажити фото<input type="file" id="pFile" accept="image/*" hidden></label>${p.cover?'<button class="btn ghost sm" type="button" data-cov-del>Прибрати</button>':''}</div>
       <div class="field"><label for="pCover">Або посилання на фото</label><input id="pCover" value="${esc(p.cover||'')}" placeholder="https://… або /img/…"></div>
       <div class="field"><label for="pAlt">Опис фото (alt) для Google</label><input id="pAlt" value="${esc(p.cover_alt||'')}" maxlength="160"></div>
       <small class="pe-h">Найкраще — горизонтальне фото 1200×630, до 1 МБ.</small>
@@ -481,9 +481,17 @@ function bindPost(){
   const showCov=u=>{ img.hidden=!u; if(u) img.src=u; const no=$('#pCovNo'); if(no) no.hidden=!!u; };
   cov.oninput=()=>showCov(cov.value.trim());
   const del=f.querySelector('[data-cov-del]'); if(del) del.onclick=()=>{ cov.value=''; showCov(''); };
-  $('#pFile').onchange=async e=>{ const file=e.target.files[0]; if(!file) return; if(file.size>4*1024*1024) return toast('Фото завелике — до 4 МБ.');
-    const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,''), path=`${sl.value||'post'}-${Date.now()}.${ext}`;
-    toast('Завантажуємо фото…'); const {error}=await SB.storage.from('blog').upload(path,file,{upsert:true,contentType:file.type,cacheControl:'31536000'});
+  /* cover upload: shrink big photos in the browser (max 1600px, JPEG), then upload under a new unique name (no upsert — it needs an extra storage policy) */
+  const shrink=file=>new Promise(res=>{ if(!/^image\/(jpeg|png|webp|heic|heif|avif)$/i.test(file.type)&&!/\.(jpe?g|png|webp|heic|heif|avif)$/i.test(file.name)) return res(null);
+    const url=URL.createObjectURL(file), im=new Image();
+    im.onload=()=>{ const k=Math.min(1,1600/Math.max(im.naturalWidth,im.naturalHeight)), c=document.createElement('canvas'); c.width=Math.round(im.naturalWidth*k); c.height=Math.round(im.naturalHeight*k);
+      const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(im,0,0,c.width,c.height); URL.revokeObjectURL(url); c.toBlob(b=>res(b),'image/jpeg',.86); };
+    im.onerror=()=>{ URL.revokeObjectURL(url); res(file.size<=4*1024*1024&&/^image\/(jpeg|png|webp)$/.test(file.type)?file:null); }; im.src=url; });
+  $('#pFile').onchange=async e=>{ const file=e.target.files[0]; e.target.value=''; if(!file) return;
+    toast('Готуємо фото…'); const blob=await shrink(file);
+    if(!blob) return toast('Цей формат фото не підтримується. Збережіть його як JPG або PNG.');
+    const jpg=blob.type==='image/jpeg', path=`${(sl.value||'post').replace(/[^a-z0-9-]/g,'')||'post'}-${Date.now()}.${jpg?'jpg':(blob.type.split('/')[1]||'jpg')}`;
+    toast('Завантажуємо фото…'); const {error}=await SB.storage.from('blog').upload(path,blob,{upsert:false,contentType:blob.type||'image/jpeg',cacheControl:'31536000'});
     if(error) return toast('Не вдалося завантажити: '+error.message);
     const {data}=SB.storage.from('blog').getPublicUrl(path); cov.value=data.publicUrl; showCov(data.publicUrl); toast('Фото завантажено. Не забудьте зберегти статтю.'); };
   const back=$('[data-post-back]'); if(back) back.onclick=()=>{ EDIT=null; go('blog'); };
