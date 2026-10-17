@@ -1925,6 +1925,11 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
 .btn.aura:focus-visible{outline:2px solid var(--aura);outline-offset:3px}
 @media (prefers-reduced-motion:reduce){.btn.aura::before{animation:none}}
 .aim-gate .btn.aura{margin-top:8px}
+.sub-cur>div{flex:1 1 220px}
+.sub-cur .btn.aura{flex:1 1 100%!important;padding:0 24px!important}
+.pf-act .btn.aura{flex:1 1 100%!important}
+.pf-act .btn.ghost.wide{flex:1 1 100%!important;justify-content:center;height:52px}
+.empty .btn.aura{margin-top:18px!important}
 .aim-gate{padding:8px 0}.aim-gate p{margin:0 0 12px;line-height:1.6}.aim-gate .btn{flex:0 0 auto!important}
 .aim-b{background:transparent!important;color:var(--fg)!important;border:1px solid var(--line)!important;box-shadow:none!important}
 .aim-b:hover{border-color:var(--accent)!important;color:var(--accent)!important}
@@ -4584,7 +4589,7 @@ function dataPane(p){
         <div class="field"><label for="pfY">${T('year')}</label><select id="pfY"${dis}></select></div>
       </div>
       <div class="err" id="pfErr" role="alert" hidden></div>
-      ${PF_EDIT?`<div class="pf-act"><button class="btn go" type="submit">${T('cSave')}</button><button class="btn ghost" type="button" id="pfCancel">${T('cCancel')}</button></div>`:''}
+      ${PF_EDIT?`<div class="pf-act"><button class="btn go aura" type="submit">${T('cSave')}</button><button class="btn ghost wide" type="button" id="pfCancel">${T('cCancel')}</button></div>`:''}
     </form>
     <p class="pf-note">${T('cNote')}</p>`;
 }
@@ -4602,7 +4607,7 @@ function tarRow(x,i){
 function tarotPane(){
   const h=tpHist();
   return `<div class="dm-h"><h2>${_t("Мої розклади")}</h2>${h.length?`<button class="btn ghost sm" type="button" id="tarClear">${IC_DEL}<span>${_t("Видалити всі")}</span></button>`:''}</div>
-    ${h.length?`<div class="favs">${h.map(tarRow).join('')}</div>`:`<div class="empty"><p>${_t("Тут з’являться ваші розклади Таро з тлумаченнями.")}</p><p class="muted">${_t("Їх можна перечитувати й ставити картам уточнювальні питання.")}</p><button class="btn go sm" type="button" id="tarGo" style="margin-top:14px">${_t("Зробити розклад")}</button></div>`}`;
+    ${h.length?`<div class="favs">${h.map(tarRow).join('')}</div>`:`<div class="empty"><p>${_t("Тут з’являться ваші розклади Таро з тлумаченнями.")}</p><p class="muted">${_t("Їх можна перечитувати й ставити картам уточнювальні питання.")}</p><button class="btn go aura" type="button" id="tarGo">${_t("Зробити розклад")}</button></div>`}`;
 }
 function tpOpenSaved(x){
   TAR.read={...x,chat:x.chat||[],turns:(x.turns&&x.turns.length)?x.turns:[{role:'user',content:tpPrompt(x)},{role:'assistant',content:x.ans||'-'}]}; TAR.busy=false; TAR.q=x.q; TAR.sp=x.sp; TAR.slots=x.slots.map(c=>({id:c.id,r:!!c.r}));
@@ -4675,7 +4680,7 @@ function subPane(){
   const sb=USER&&USER.sub, active=sb&&(sb.plan==='plus'||sb.plan==='pro')&&sb.paid_until&&new Date(sb.paid_until)>new Date();
   const cur=PLANS.find(x=>x.id===(active?sb.plan:'free')), dt=active?new Date(sb.paid_until).toLocaleDateString('uk-UA',{day:'numeric',month:'long',year:'numeric'}):'';
   return `<div class="dm-h"><h2>Підписка</h2></div>
-    <div class="sub-cur"><div><p class="pk">[ Поточний тариф ]</p><h3>${cur.n}</h3><p class="muted">${active?`Діє до ${dt}${sb.period==='y'?' · річна оплата':''}`:'Діє безстроково'}${sb&&sb.packs?` · пакетних запитів: ${sb.packs}`:''}${sb&&sb.pack_reports?` · пакетних розборів: ${sb.pack_reports}`:''}</p></div><button class="btn go sm" type="button" data-plans>${active?'Змінити тариф':'Обрати тариф'}</button></div>
+    <div class="sub-cur"><div><p class="pk">[ Поточний тариф ]</p><h3>${cur.n}</h3><p class="muted">${active?`Діє до ${dt}${sb.period==='y'?' · річна оплата':''}`:'Діє безстроково'}${sb&&sb.packs?` · пакетних запитів: ${sb.packs}`:''}${sb&&sb.pack_reports?` · пакетних розборів: ${sb.pack_reports}`:''}</p></div><button class="btn go aura" type="button" data-plans>${active?'Змінити тариф':'Обрати тариф'}</button></div>
     ${limHTML(cur).replace('class="pl-lim"','class="sub-f pl-lim"')}
     <div class="sub-blk"><div class="sub-row"><div><b>Автопродовження</b><small>${active?(sb.auto_renew?`Увімкнене: ${dt} доступ продовжиться автоматично. Вимкнути можна будь-коли.`:`Вимкнене: після ${dt} доступ повернеться до безкоштовного тарифу, нічого не спишеться.`):'Вимкнене. З’явиться, коли ви оформите Plus або Pro, — і лише якщо ви самі його увімкнете.'}</small></div><label class="sw"><input type="checkbox" disabled${active&&sb.auto_renew?' checked':''}><i></i></label></div></div>
     <div class="sub-blk"><b>Історія оплат</b><p class="muted">Оплат ще не було.</p></div>
