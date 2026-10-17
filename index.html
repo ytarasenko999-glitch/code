@@ -2016,6 +2016,12 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
 .tf-box.narrow .co{max-width:none}
 .tf-box.narrow .co-acts{display:flex;gap:10px}.tf-box.narrow .co-acts .btn{flex:1 1 0!important}
 .tf-box.narrow .co-acts .btn.go{flex:1.6 1 0!important}
+/* launch: Ukrainian only — the language switch is hidden (translations stay in the code) */
+.dr-lang .langs{display:none!important}
+.dr-lang .dl-row{justify-content:flex-start!important}
+.dr-lang{padding-top:4px}
+.dr-lang .theme-sw{margin-left:0}
+.au-rem{margin:2px 0 4px}
 .aim-gate{padding:8px 0}.aim-gate p{margin:0 0 12px;line-height:1.6}.aim-gate .btn{flex:0 0 auto!important}
 .aim-b{background:transparent!important;color:var(--fg)!important;border:1px solid var(--line)!important;box-shadow:none!important}
 .aim-b:hover{border-color:var(--accent)!important;color:var(--accent)!important}
@@ -2218,7 +2224,8 @@ it:{solo:"Personale",pair:"Compatibilità",name:"Nome",namePh:"Il tuo nome",day:
  rMatrix:"Matrice",rYour:"La tua",rDestiny:"matrice del destino",rPair:"Compatibilità",tMatrix:"Matrice",tToday:"Oggi",tYears:"Per anno",tArc:"Arcani",tPair:"Matrice di coppia",rCenter:"Centro",rTail:"Coda karmica",rYear:"Quest’anno",rUnion:"Energia dell’unione",rKProg:"Programma karmico",rPurp:"Scopo della coppia",rDl:"Scarica il codice",rF:"donna",rM:"uomo",rAge:"anni",rOverlay:"sovrapposizione completa",bmAdd:"Aggiungi ai preferiti",bmDel:"Rimuovi dai preferiti",
  ftLead:"CODE — uno spazio per conoscersi. Tutto è energia — esplora la tua.",ftSec:"Sezioni",ftCalc:"Calcoli",ftMeth:"Metodo",ftM1:"Matrice del destino di Natalia Ladini",ftM2:"22 Arcani maggiori",ftM3:"Mappa della salute, programmi, anni",chData:"Modifica i dati",aAgree1:"Accetto l’",aAgree2:"informativa sulla privacy",aNeedAgree:"Accetta l’informativa sulla privacy.",aHelp:"Aiuto",aTerms:"Termini",aPriv:"Privacy",thOn:"Accendi la luce",thOff:"Spegni la luce",ckT:"Cookie",ckP:"Salviamo lingua, tema, account e i tuoi codici in questo browser perché il sito funzioni comodamente.",ckL:"Scopri di più",ckMin:"Solo necessari",ckAll:"Accetta",pdT:"Scarica il codice",pdS:"Scegli lo stile del PDF: chiaro o scuro, come il sito.",pdLight:"Chiaro",pdDark:"Scuro",pdLightS:"Per stampare e leggere di giorno",pdDarkS:"Cosmo profondo, come il sito",pdCancel:"Annulla",pdPrep:"Preparazione del PDF…",pdGo:"Scarica PDF",pdBuild:"Impaginazione…",pdPage:"Pagina",pdSave:"Salvataggio…",calcCode:"Calcola il codice",ftCopy:"Uno strumento di conoscenza di sé, non una previsione né una diagnosi",mTarot:"Lettura dei tarocchi",mGuide:"Guida alle posizioni",cHistT:"Cronologia",cClear:"Cancella cronologia",cHistEmpty:"Qui compariranno le matrici che hai visto.",cCleared:"Cronologia cancellata.",cDataT:"Dati personali",cSavedT:"Codici salvati",cEdit:"Modifica",cCancel:"Annulla",cPdf:"Scarica PDF",cDel:"Elimina",cSolo:"Personale",cPairT:"Compatibilità",cCenter:"centro",cTail:"coda",cFill:"Compila i tuoi dati personali per calcolare la tua matrice."}
 };
-let LANG=(()=>{try{const l=localStorage.getItem('code-lang');return l&&I18N[JSON.parse(l)]?JSON.parse(l):'uk'}catch(_){return 'uk'}})();
+const LANGS_HIDDEN=true;
+let LANG=(()=>{if(LANGS_HIDDEN) return 'uk';try{const l=localStorage.getItem('code-lang');return l&&I18N[JSON.parse(l)]?JSON.parse(l):'uk'}catch(_){return 'uk'}})();
 const T=(k,x)=>{const s=(I18N[LANG]&&I18N[LANG][k])||I18N.uk[k]||k;return x?s.replace('{x}',x):s;};
 const mName=m=>LANG==='uk'?MONTHS[m-1]:MONTHN_L[LANG][m-1];
 function applyStaticI18n(){
@@ -4398,21 +4405,24 @@ async function hashPw(pw,salt){
   catch(_){ let h=0; for(const c of salt+pw) h=(h*31+c.charCodeAt(0))|0; return 'x'+h; }
 }
 const accounts=()=>LS.get('code-acc',{});
-function loadSession(){ const e=LS.get('code-sess',null), a=accounts(); USER=e&&a[e]?{email:e,profile:a[e].profile||{},favs:a[e].favs||[],hist:a[e].hist||[]}:null; setAcctIcon(); }
+const remOn=()=>LS.get('code-remember',true)!==false;
+function setSess(email){ if(remOn()){ LS.set('code-sess',email); try{sessionStorage.removeItem('code-sess')}catch(_){} } else { LS.set('code-sess',null); try{sessionStorage.setItem('code-sess',JSON.stringify(email))}catch(_){} } }
+document.addEventListener('change',e=>{ if(e.target&&e.target.id==='auRem') LS.set('code-remember',!!e.target.checked); });
+function loadSession(){ let ss=null; try{ ss=JSON.parse(sessionStorage.getItem('code-sess')||'null'); }catch(_){} const e=LS.get('code-sess',null)||ss, a=accounts(); USER=e&&a[e]?{email:e,profile:a[e].profile||{},favs:a[e].favs||[],hist:a[e].hist||[]}:null; setAcctIcon(); }
 function persistUser(){ const a=accounts(); if(!a[USER.email]) return false; a[USER.email].profile=USER.profile; a[USER.email].favs=USER.favs; a[USER.email].hist=USER.hist||[]; return LS.set('code-acc',a); }
 async function register(email,pw,name){
   const a=accounts(); if(a[email]) throw 'exists';
   const salt=Math.random().toString(36).slice(2)+Date.now().toString(36);
   a[email]={salt,hash:await hashPw(pw,salt),profile:{name:name||'',d:0,m:0,y:0,g:'f'},favs:[],created:Date.now()};
   if(!LS.set('code-acc',a)) throw 'storage';
-  LS.set('code-sess',email); loadSession();
+  setSess(email); loadSession();
 }
 async function login(email,pw){
   const u=accounts()[email]; if(!u) throw 'nouser';
   if(await hashPw(pw,u.salt)!==u.hash) throw 'badpw';
-  LS.set('code-sess',email); loadSession();
+  setSess(email); loadSession();
 }
-function logout(){ LS.set('code-sess',null); USER=null; GUEST_START=true; HOME_MODE='start'; setAcctIcon(); AUTH_MODE='login'; renderHome(); if(STATE&&STATE.P&&!$('#result').hidden) render(); toast(_t("Ви вийшли з акаунта.")); }
+function logout(){ LS.set('code-sess',null); try{sessionStorage.removeItem('code-sess')}catch(_){} USER=null; GUEST_START=true; HOME_MODE='start'; setAcctIcon(); AUTH_MODE='login'; renderHome(); if(STATE&&STATE.P&&!$('#result').hidden) render(); toast(_t("Ви вийшли з акаунта.")); }
 const profileReady=p=>p&&p.d&&p.m&&p.y;
 function setAcctIcon(){
   const b=$('#acctBtn'); if(!b) return;
@@ -4471,6 +4481,7 @@ function authHTML(){
           ${L?'':`<div class="field"><label for="auName">${T('name')}</label><input id="auName" class="nm" autocomplete="given-name" autocapitalize="words" maxlength="40" placeholder="${T('namePh')}"></div>`}
           <div class="field"><label for="auEmail">${T('aEmail')}</label><input id="auEmail" type="email" autocomplete="email" inputmode="email" placeholder="you@email.com" required></div>
           <div class="field"><label for="auPw">${T('aPw')}</label><input id="auPw" type="password" autocomplete="${L?'current-password':'new-password'}" placeholder="${L?T('aPwLogin'):T('aPwReg')}" required>${L?'':`<small class="hint">${T('aPwHint')}</small>`}</div>
+          <label class="agree au-rem"><input type="checkbox" id="auRem"${remOn()?' checked':''}><span class="box" aria-hidden="true"></span><span>${_t("Запам’ятати мене на цьому пристрої")}</span></label>
           <div class="err" id="auErr" role="alert" hidden></div>
           <button class="btn go wide" type="submit">${L?T('aBtnLogin'):T('aBtnReg')}</button>
         </form>
@@ -6876,7 +6887,7 @@ const ready=new Promise(res=>{
   if(window.supabase&&window.supabase.createClient){ res(); return; }
   const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';
   s.onload=()=>res(); s.onerror=()=>res(); document.head.appendChild(s);
-}).then(()=>{ if(window.supabase&&window.supabase.createClient) sb=window.supabase.createClient(CFG.url,CFG.key,{auth:{lock:async(n,_t,fn)=>{ if(!navigator.locks) return fn(); const ac=new AbortController(), tm=setTimeout(()=>ac.abort(),3000); try{ return await navigator.locks.request(n,{signal:ac.signal},async()=>{ clearTimeout(tm); return fn(); }); }catch(e){ if(e&&e.name==='AbortError') return fn(); throw e; } },persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}); return sb; });
+}).then(()=>{ if(window.supabase&&window.supabase.createClient) sb=window.supabase.createClient(CFG.url,CFG.key,{auth:{storage:{getItem:k=>{ try{ return localStorage.getItem(k)??sessionStorage.getItem(k); }catch(_){ return null; } },setItem:(k,v)=>{ try{ const rem=JSON.parse(localStorage.getItem('code-remember')||'true')!==false; if(rem){ localStorage.setItem(k,v); sessionStorage.removeItem(k); } else { sessionStorage.setItem(k,v); localStorage.removeItem(k); } }catch(_){} },removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(_){} }},lock:async(n,_t,fn)=>{ if(!navigator.locks) return fn(); const ac=new AbortController(), tm=setTimeout(()=>ac.abort(),3000); try{ return await navigator.locks.request(n,{signal:ac.signal},async()=>{ clearTimeout(tm); return fn(); }); }catch(e){ if(e&&e.name==='AbortError') return fn(); throw e; } },persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}); return sb; });
 
 Object.assign(AUTH_ERR,{
   confirm:'Ми надіслали лист для підтвердження. Відкрийте його, натисніть посилання — і ви одразу опинитесь у кабінеті.',
