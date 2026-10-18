@@ -67,6 +67,19 @@ main{min-width:0;display:flex;flex-direction:column;gap:18px}
 .pt-chev{display:inline-block;width:12px;color:var(--muted)}
 .pt-row.on td{background:var(--surface-2)}
 .pt-sub>td{background:var(--surface-2);padding:6px 18px 16px!important}
+.i18-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:12px}
+.i18-l{border:1px solid var(--hair);border-radius:18px;padding:16px 18px;background:var(--surface-2)}
+.i18-h{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.i18-h strong{font-size:15px}
+.i18-tot,.i18-row{display:grid;grid-template-columns:1fr 44px auto;align-items:center;gap:8px}
+.i18-tot{min-width:150px}
+.i18-row{grid-template-columns:130px 1fr 44px 70px;font-size:12.5px;color:var(--muted);margin-top:6px}
+.i18-tot{grid-template-columns:90px 44px 0}
+.i18-tot small{display:none}
+.i18-bar{height:7px;border-radius:99px;background:var(--hair);overflow:hidden}
+.i18-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+.i18-row b,.i18-tot b{font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums}
+.i18-row small{font-family:var(--font-mono);font-size:10.5px;text-align:right}
 .an-chips{display:flex;gap:6px;flex-wrap:wrap}
 .an-list{display:flex;flex-direction:column;gap:9px}
 .an-r{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(60px,1fr) 44px 40px;gap:10px;align-items:center;font-size:13.5px}
@@ -213,6 +226,7 @@ select.tb{max-width:240px}
     <button class="navb" data-v="blog">Блог<em id="cBl"></em></button>
     <button class="navb" data-v="mail">Email-розсилки</button>
     <button class="navb" data-v="docs">Документація</button>
+    <button class="navb" data-v="set">Налаштування</button>
     <button class="navb" data-v="admins">Адміністратори<em id="cA"></em></button>
     <div class="sp"></div>
     <div class="side-acts"><button class="btn ghost sm" type="button" id="theme">Тема</button><button class="btn ghost sm" type="button" id="out">Вийти</button></div>
@@ -268,6 +282,8 @@ async function boot(){
   ME=s.user; if(location.hash.includes('access_token')) history.replaceState(null,'',location.pathname);
   $('#gate').hidden=true; $('#app').hidden=false; $('#who').textContent=ME.email;
   await load(); go(VIEW);
+  /* remember this sign-in (once per browser session) for «Налаштування → Входи в адмінку» */
+  try{ const k='code-adm-in-'+ME.id; if(!sessionStorage.getItem(k)){ sessionStorage.setItem(k,'1'); fetch('/api/admin-login',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+s.access_token},body:JSON.stringify({method:(ME.app_metadata&&ME.app_metadata.provider)||'',screen:`${screen.width}×${screen.height}`})}).catch(()=>{}); } }catch(_){}
 }
 
 /* ---------- data ---------- */
@@ -309,8 +325,8 @@ async function logA(action,target,details){ await SB.from('admin_log').insert({a
 
 /* ---------- views ---------- */
 function go(v){ VIEW=v; document.querySelectorAll('.navb').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); const m=$('#main');
-  m.innerHTML=v==='users'?vUsers():v==='subs'?vSubs():v==='pays'?vPays():v==='ai'?vAI():v==='log'?vLog():v==='admins'?vAdmins():v==='bal'?vBal():v==='blog'?vBlog():v==='post'?vPost():v==='docs'?vDocs():v==='mail'?vMail():v==='an'?vAn():v==='partners'?vPartners():vOverview(); bindView(); }
-document.querySelectorAll('.navb').forEach(b=>b.onclick=async()=>{ if(b.dataset.v==='blog') EDIT=null; if(b.dataset.v==='mail'){ MAIL=null; await loadMail(); } if(b.dataset.v==='an') await loadAn(); go(b.dataset.v); });
+  m.innerHTML=v==='users'?vUsers():v==='subs'?vSubs():v==='pays'?vPays():v==='ai'?vAI():v==='log'?vLog():v==='admins'?vAdmins():v==='bal'?vBal():v==='blog'?vBlog():v==='post'?vPost():v==='docs'?vDocs():v==='mail'?vMail():v==='an'?vAn():v==='partners'?vPartners():v==='set'?vSet():vOverview(); bindView(); }
+document.querySelectorAll('.navb').forEach(b=>b.onclick=async()=>{ if(b.dataset.v==='blog') EDIT=null; if(b.dataset.v==='mail'){ MAIL=null; await loadMail(); } if(b.dataset.v==='an') await loadAn(); if(b.dataset.v==='set') await loadSet(); go(b.dataset.v); });
 const head=(t,acts='')=>`<div class="top"><div><p class="pk">[ адмінпанель ]</p><h2>${t}</h2></div><div class="acts">${acts}<button class="btn ghost sm" data-act="reload">Оновити</button></div></div>`;
 
 function bars(days){
@@ -760,6 +776,38 @@ function bindPartners(){
   const dl=f.querySelector('[data-pt-del]'); if(dl) dl.onclick=async()=>{ if(!dl.dataset.sure){ dl.dataset.sure='1'; dl.textContent='Точно видалити?'; dl.classList.add('bad'); return; }
     const x=D.partners.find(p=>p.id===PT_EDIT); const {error}=await SB.from('partners').delete().eq('id',PT_EDIT); if(error) return toast('Не вдалося видалити: '+error.message);
     await logA('видалено партнера',null,x&&{name:x.name,code:x.code}); PT_EDIT=null; await load(); go('partners'); toast('Партнера видалено.'); };
+}
+
+/* ---------- settings: admin sign-ins + translation progress ---------- */
+let SET={logins:[],err:null,i18n:null};
+async function loadSet(){
+  const [l,j]=await Promise.all([SB.from('admin_settings').select('value').eq('key','logins').maybeSingle(),fetch('/i18n-stats.json?v='+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null)]);
+  SET.logins=l.data&&Array.isArray(l.data.value)?l.data.value:[]; SET.err=l.error&&l.error.message; SET.i18n=j;
+}
+const DEV_IC={desktop:'🖥',mobile:'📱',tablet:'📲'};
+function vSet(){
+  const L=SET.logins, me=(ME&&ME.email||'').toLowerCase();
+  const pct=(a,b)=>b?Math.round(a/b*100):0, bar=(a,b)=>`<span class="i18-bar"><i style="width:${pct(a,b)}%"></i></span><b>${pct(a,b)}%</b><small>${a} / ${b}</small>`;
+  const uniqDev=new Set(L.map(x=>`${x.email}|${x.os}|${x.browser}`)).size;
+  const J=SET.i18n;
+  return head('Налаштування')+`
+  <div class="panel card"><h3>Входи в адмінпанель</h3>
+    <p class="bal-n" style="margin:0 0 12px">Кожен вхід записується: хто, коли, з якого пристрою, браузера, IP-адреси й країни. Якщо бачите незнайомий пристрій чи країну — змініть пароль Google-акаунта й приберіть зайвого адміна в розділі «Адміністратори».</p>
+    ${SET.err?`<div class="bal-warn bad">Не вдалося прочитати журнал входів: ${esc(SET.err)}</div>`
+    :L.length?`<div class="kpis" style="margin-bottom:14px"><div class="panel kpi"><small>Входів записано</small><b>${L.length}</b><span>останні 300</span></div><div class="panel kpi"><small>Різних пристроїв</small><b>${uniqDev}</b><span>адмін + ОС + браузер</span></div><div class="panel kpi"><small>Останній вхід</small><b style="font-size:20px">${fmtDT(L[0].created_at)}</b><span>${esc(L[0].email||'')}</span></div><div class="panel kpi"><small>Країни</small><b style="font-size:20px">${[...new Set(L.map(x=>x.country).filter(Boolean))].map(c=>CC[c]||c).join(', ')||'—'}</b><span></span></div></div>
+      <div class="tw"><table><thead><tr><th>Коли</th><th>Хто</th><th>Пристрій</th><th>Звідки</th><th>Вхід</th></tr></thead><tbody>${L.map(x=>`<tr><td class="num">${fmtDT(x.created_at)}</td><td>${esc(x.email||'—')}${(x.email||'').toLowerCase()===me?' <span class="badge ok">ви</span>':''}</td><td>${DEV_IC[x.device]||''} ${esc(x.os||'')}<small>${esc(x.browser||'')}${x.screen?` · ${esc(x.screen)}`:''}</small></td><td>${esc([x.city,CC[x.country]||x.country].filter(Boolean).join(', ')||'—')}<small>${esc(x.ip||'')}</small></td><td><small>${x.method==='google'?'Google':x.method==='email'?'email і пароль':esc(x.method||'—')}</small></td></tr>`).join('')}</tbody></table></div>`
+    :'<p class="empty">Поки немає записів. Наступний вхід в адмінку з’явиться тут.</p>'}
+  </div>
+  <div class="panel card"><h3>Переклади сайту</h3>
+    <p class="bal-n" style="margin:0 0 14px">Основна мова — українська. Перемикач мов на сайті зараз прихований, переклади накопичуються. Перекладаємо разом із Claude у чаті: скажіть, яку мову й що саме перекласти, — після кожної партії ці цифри оновлюються.</p>
+    ${J?`<div class="i18-list">${J.langs.map(l=>{ const a=l.ui[0]+l.phrases[0]+l.content[0], b=l.ui[1]+l.phrases[1]+l.content[1];
+      return `<div class="i18-l"><div class="i18-h"><strong>${esc(l.name)}</strong><span class="i18-tot">${bar(a,b)}</span></div>
+        <div class="i18-row"><span>Інтерфейс</span>${bar(l.ui[0],l.ui[1])}</div>
+        <div class="i18-row"><span>Фрази й підказки</span>${bar(l.phrases[0],l.phrases[1])}</div>
+        <div class="i18-row"><span>Довідковий контент</span>${bar(l.content[0],l.content[1])}</div></div>`; }).join('')}</div>
+      <p class="bal-n">Інтерфейс — кнопки, меню, форми. Фрази — підказки й короткі тексти. Довідковий контент — описи арканів, позицій, програм. Оновлено ${fmtDT(J.updated)}.</p>`
+    :'<p class="empty">Не вдалося завантажити статистику перекладів.</p>'}
+  </div>`;
 }
 function bindView(){
   bindPost(); bindDocs(); bindMail(); bindAn(); bindPartners();

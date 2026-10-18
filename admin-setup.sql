@@ -163,3 +163,4 @@ create or replace function public.promo_ok(c text) returns boolean language sql 
   select exists(select 1 from public.partners where upper(code)=upper(trim(c)));
 $$;
 grant execute on function public.promo_ok(text) to anon, authenticated;
+
