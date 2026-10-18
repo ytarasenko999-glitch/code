@@ -3557,7 +3557,7 @@ function dedupeDOM(root,seen){
   });
   /* headings left without content, then empty boxes */
   root.querySelectorAll('h4,h5').forEach(h=>{ let n=h.nextElementSibling; if(!n||/^(H3|H4|H5)$/.test(n.tagName)) h.remove(); });
-  root.querySelectorAll('.pp,.pos-box,.blk,.pblk,.two>div,.pm,.scn').forEach(b=>{ if(!b.querySelector('li,p,table,img,.phd')) b.remove(); });
+  root.querySelectorAll('.pp,.pos-box,.blk,.pblk,.two>div,.pm,.scn').forEach(b=>{ if(!b.querySelector('li,p,table,img,.phd,.ptl')) b.remove(); });
   return seen;
 }
 const dedupeHTML=h=>{ const t=document.createElement('template'); t.innerHTML=h; dedupeDOM(t.content); const d=document.createElement('div'); d.appendChild(t.content); return d.innerHTML; };
@@ -4676,6 +4676,12 @@ async function downloadCode(btn,src){
   catch(e){ if(e&&e.code==='declined'){} else if(e&&e.code==='rate_limited') toast(_t("Вікно збереження вже відкрите.")); else toast(_t("Не вдалося сформувати PDF. Спробуйте ще раз.")); }
   finally{ ch.close(); btn.disabled=false; }
 }
+/* splits paragraph html between sentences, never inside a tag */
+function sentSplit(h){ const out=[]; let d=0,st=0; const re=/<(\/?)([a-z0-9]+)[^>]*?(\/?)>|[.!?…](?=\s|<\/)/gi; let m;
+  while((m=re.exec(h))){ if(m[2]){ if(/^(br|img|hr|wbr)$/i.test(m[2])||m[3]) continue; d+=m[1]?-1:1; continue; }
+    let e=re.lastIndex; const cl=h.slice(e).match(/^(<\/[a-z0-9]+>)*/i); if(d>0&&cl&&cl[0]){ const n=(cl[0].match(/<\//g)||[]).length; if(n>=d){ e+=cl[0].length; d=0; re.lastIndex=e; } }
+    if(d===0){ const piece=h.slice(st,e).trim(); if(piece) out.push(piece); st=e; } }
+  const tail=h.slice(st).trim(); if(tail) out.push(tail); return out; }
 /* PDF of a paid AI reading (personal reading or 12-month forecast): cover with the matrix + clickable contents, one block per ## section */
 function aiPdfSrc(kind,text,ts,who,img){
   const title=kind==='report'?_t("Персональний розбір"):_t("Прогноз на 12 місяців"), parts=[]; let cur={t:'',b:''};
@@ -4702,18 +4708,20 @@ async function renderPdf(dl,theme,setStatus,wl,src){
     const pages=[];
     const newPage=()=>{const p=document.createElement('div');p.className='pdf-page'+(theme==='light'?' light':'')+(MOBP?' mob':'');p.innerHTML=`<div class="pglow"></div><div class="pglow2"></div><div class="ph"><span data-go="cover">${BRAND}</span><span data-go="cover">${_f("{0} · зміст ↑",[src?src.head:isPair()?_t("Матриця сумісності"):_t("Матриця долі")])}</span></div><div class="pb"></div><div class="pf"></div>`;host.appendChild(p);pages.push(p);return p.querySelector('.pb');};
     let body=newPage();
-    const fits=()=>body.scrollHeight<=body.clientHeight+1;
-    const LIST=el=>el.matches&&el.matches('ul,.pz');
+    /* safety slack: html2canvas wraps text a bit taller than the browser (esp. iOS), so leave room or the last lines get clipped */
+    const SLACK=MOBP?40:24, fits=()=>{ const l=body.lastElementChild; if(!l) return true; const pbm=parseFloat(getComputedStyle(body).paddingBottom)||0; return l.offsetTop+l.offsetHeight<=body.clientHeight-pbm-SLACK; };
+    const LIST=el=>el.matches&&el.matches('ul,.pz,.ptoc-g');
     const HEAD=el=>el.matches&&el.matches('h3,h4,.phd,.pk');
     const free=()=>body.clientHeight-(body.lastElementChild?body.lastElementChild.offsetTop+body.lastElementChild.offsetHeight-body.offsetTop:0);
     async function place(el){
       body.appendChild(el);
       const imgs=[...el.querySelectorAll('img')]; await Promise.all(imgs.map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r})));
       if(fits()) return;
-      const splittable=el.classList.contains('pblk')&&!el.classList.contains('two')&&el.children.length>1;
+      const PSPL=x=>x&&x.tagName==='P'&&sentSplit(x.innerHTML).length>1;
+      const splittable=el.classList.contains('pblk')&&!el.classList.contains('two')&&(el.children.length>1||PSPL(el.firstElementChild));
       if(splittable){
         const rest=el.cloneNode(false); rest.classList.add('cont'); rest.removeAttribute('data-anchor');
-        while(!fits()&&el.children.length>1){
+        while(!fits()&&(el.children.length>1||PSPL(el.lastElementChild))){
           const last=el.lastElementChild;
           if(LIST(last)&&last.children.length>1){
             const lrest=last.cloneNode(false);
@@ -4722,6 +4730,12 @@ async function renderPdf(dl,theme,setStatus,wl,src){
             if(fits()) break;
             continue;
           }
+          /* a long paragraph is split between sentences instead of being cut off or jumping whole */
+          if(last.tagName==='P'){ const ss=sentSplit(last.innerHTML); if(ss.length>1){
+            const tail=[]; while(!fits()&&ss.length>1){ tail.unshift(ss.pop()); last.innerHTML=ss.join(' '); }
+            const p2=last.cloneNode(false); p2.innerHTML=tail.join(' '); rest.insertBefore(p2,rest.firstChild);
+            if(fits()||el.children.length===1) break; last.innerHTML=ss.join(' ')+' '+p2.innerHTML; p2.remove(); } }
+          if(el.children.length===1) break;
           rest.insertBefore(last,rest.firstChild);
         }
         while(el.children.length>1&&HEAD(el.lastElementChild)) rest.insertBefore(el.lastElementChild,rest.firstChild);
@@ -4731,12 +4745,14 @@ async function renderPdf(dl,theme,setStatus,wl,src){
         /* merge split lists back */
         el.querySelectorAll('ul+ul,.pz+.pz').forEach(x=>{ const prev=x.previousElementSibling; if(prev&&prev.tagName===x.tagName&&prev.className===x.className){ while(x.firstChild) prev.appendChild(x.firstChild); x.remove(); } });
       }
-      if(body.children.length>1){ body.removeChild(el); const prev=body; body=newPage(); const lc=prev.lastElementChild; if(lc&&lc.classList.contains('psec')&&prev.children.length>1) body.appendChild(lc); body.appendChild(el); }
+      if(body.children.length>1){ body.removeChild(el); const prev=body; body=newPage(); const lc=prev.lastElementChild; if(lc&&lc.classList.contains('psec')&&prev.children.length>1) body.appendChild(lc); await place(el); }
     }
     let BL=src?src.blocks(png):pdfBlocks(png); const TOCL=src?src.toc:pdfBlocks.toc;
     /* phone pages are short: the table of contents gets its own block after the cover */
-    if(MOBP) BL=BL.flatMap(b=>{ const k=b.indexOf('<div class="ptoc">'); return k>0?[b.slice(0,k)+'</div>','<div class="pc">'+b.slice(k)]:[b]; });
-    { const seenT=new Set(); BL=BL.map(b=>{ if(b==='__break') return b; const t=document.createElement('template'); t.innerHTML=b; dedupeDOM(t.content,seenT); const d=document.createElement('div'); d.appendChild(t.content); return d.innerHTML; }).filter(b=>b==='__break'||/<(p|li|table|img|h1|h2|h3)\b/.test(b)); }
+    if(MOBP) BL=BL.flatMap(b=>{ const k=b.indexOf('<div class="ptoc">'); return k>0?[b.slice(0,k)+'</div>','<div class="pblk ptoc">'+b.slice(k+18).replace(/<\/div>\s*$/,'')]:[b]; });
+    /* no tall picture on the cover (or a phone page) → no forced page break: contents and the first sections follow right away */
+    if(MOBP||!png){ const i=BL.indexOf('__break'); if(i>=0&&i<3) BL.splice(i,1); }
+    { const seenT=new Set(); BL=BL.map(b=>{ if(b==='__break') return b; const t=document.createElement('template'); t.innerHTML=b; dedupeDOM(t.content,seenT); const d=document.createElement('div'); d.appendChild(t.content); return d.innerHTML; }).filter(b=>b==='__break'||/<(p|li|table|img|h1|h2|h3)\b|class="ptl"/.test(b)); }
     for(const b of BL){
       if(b==='__break'){ if(body.children.length) body=newPage(); continue; }
       const w=document.createElement('div'); w.innerHTML=b; await place(w.firstElementChild);
