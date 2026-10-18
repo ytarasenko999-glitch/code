@@ -706,7 +706,7 @@ h1,h2,h3,.acc-t strong,.det-title h3,.sec-h h2,.td-date strong,.res-head h2,.foo
 .pgo-b em{font-style:normal;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pgo-b i{font-style:normal;color:var(--accent)}
 /* toast */
-.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);z-index:80;padding:12px 18px;border-radius:999px;background:var(--pop-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--hair);box-shadow:var(--shadow);font-size:13.5px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);z-index:150;padding:12px 18px;border-radius:999px;background:var(--pop-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--hair);box-shadow:var(--shadow);font-size:13.5px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
 .toast.in{opacity:1;transform:translate(-50%,0)}
 /* PDF sheets (rendered offscreen, literal colours for the rasteriser) */
 .pdf-host{position:fixed;left:-20000px;top:0;width:794px;pointer-events:none}
@@ -1394,7 +1394,7 @@ body.auth-on .foot{margin-top:0!important}
 @media (max-width:640px){.ck{flex-direction:column;align-items:stretch;gap:12px;padding:16px}.ck-acts .btn{flex:1}}
 
 /* PDF theme picker dialog */
-.pdlg{position:fixed;inset:0;z-index:96;display:flex;align-items:center;justify-content:center;padding:20px}
+.pdlg{position:fixed;inset:0;z-index:140;display:flex;align-items:center;justify-content:center;padding:20px}
 .pdlg-bg{position:absolute;inset:0;background:rgba(5,5,14,.42);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;transition:opacity .22s}
 .pdlg-box{position:relative;width:min(520px,100%);padding:30px 28px 24px;border-radius:30px;background:var(--pop-bg);backdrop-filter:saturate(180%) blur(40px);-webkit-backdrop-filter:saturate(180%) blur(40px);border:1px solid var(--hair);box-shadow:0 40px 90px -30px rgba(0,0,0,.55);opacity:0;transform:translateY(14px) scale(.98);transition:opacity .25s,transform .3s cubic-bezier(.2,.8,.2,1)}
 .pdlg.in .pdlg-bg,.pdlg.in .pdlg-box{opacity:1;transform:none}
@@ -5372,7 +5372,7 @@ function aimOpen(kind,spec){
   document.body.appendChild(d); document.documentElement.classList.add('mdl-on'); requestAnimationFrame(()=>{ d.classList.add('in'); const x=d.querySelector('[data-tf=x]'); if(x&&!matchMedia('(hover:none)').matches) x.focus({preventScroll:true}); });
   const body=d.querySelector('.aim-body');
   const close=()=>{ if(ctlBox.c) ctlBox.c.abort(); d.classList.remove('in'); if(!(document.getElementById('mdl')&&!document.getElementById('mdl').hidden)) document.documentElement.classList.remove('mdl-on'); setTimeout(()=>d.remove(),240); document.removeEventListener('keydown',onKey,true); };
-  const onKey=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopImmediatePropagation(); close(); } };
+  const onKey=e=>{ if(e.key==='Escape'&&!document.querySelector('.pdlg')){ e.preventDefault(); e.stopImmediatePropagation(); close(); } };
   document.addEventListener('keydown',onKey,true);
   d.addEventListener('click',e=>{ if(e.target.closest('[data-tf=x]')||e.target.classList.contains('tf-bg')) close(); });
   const errBox=m=>`<div class="aim-err">${m}</div>`;
@@ -5462,7 +5462,7 @@ function aiReader(r){
     <div class="aim-acts"><button class="btn ghost sm" type="button" data-rdc>${_t("Копіювати текст")}</button><button class="btn ghost sm" type="button" data-rdp>${_t("Завантажити PDF")}</button><button class="btn ghost sm" type="button" data-rdm>${_t("Відкрити матрицю")}</button></div></div></div>`;
   document.body.appendChild(d); document.documentElement.classList.add('mdl-on'); requestAnimationFrame(()=>d.classList.add('in'));
   const close=()=>{ d.classList.remove('in'); document.documentElement.classList.remove('mdl-on'); setTimeout(()=>d.remove(),240); document.removeEventListener('keydown',onKey,true); };
-  const onKey=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopImmediatePropagation(); close(); } };
+  const onKey=e=>{ if(e.key==='Escape'&&!document.querySelector('.pdlg')){ e.preventDefault(); e.stopImmediatePropagation(); close(); } };
   document.addEventListener('keydown',onKey,true);
   d.addEventListener('click',async e=>{
     if(e.target.closest('[data-tf=x]')||e.target.classList.contains('tf-bg')) return close();
