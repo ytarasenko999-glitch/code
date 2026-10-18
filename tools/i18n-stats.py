@@ -51,8 +51,11 @@ body=s
 for a,b in sorted([span1,span2,span3],reverse=True): body=body[:a]+body[b:]
 code=''.join(m.group(1) for m in re.finditer(r'<script(?![^>]*src)[^>]*>(.*?)</script>',body,re.S))
 phr=set(m.group(2) for m in re.finditer(r'_(t|f)\("((?:[^"\\]|\\.)*)"',code))
-phr={p.encode().decode('unicode_escape').encode('latin-1').decode('utf-8') if '\\u' in p else p for p in phr}
-lit=set(m.group(1) for m in re.finditer(r'"((?:[^"\\\n]|\\.){8,})"',code) if re.search('[а-яіїєґА-ЯІЇЄҐ]',m.group(1)) and ' ' in m.group(1))
+def _un(p):
+  try: return json.loads('"'+p+'"')
+  except Exception: return p
+phr={_un(p) for p in phr}
+lit=set(_un(m.group(1)) for m in re.finditer(r'"((?:[^"\\\n]|\\.){8,})"',code) if re.search('[а-яіїєґА-ЯІЇЄҐ]',m.group(1)) and ' ' in m.group(1) and not re.search(r'^[>)]|class=$|<[a-z]+ [^>]*$|\$\{',m.group(1)))
 content=lit-phr
 out={'updated':datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%MZ'),'base':'uk','langs':[]}
 for l in LANGS:
