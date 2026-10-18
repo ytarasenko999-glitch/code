@@ -1050,6 +1050,7 @@ body.on-start .fab{display:none!important}
 .ak-q{font-size:15px;line-height:1.4}
 .ak-it summary small{font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .ak-a{padding:2px 2px 16px;font-size:14.5px;line-height:1.6;color:var(--fg)}
+.rp-pdf{height:34px!important;padding:0 14px!important;font-size:11px!important}
 .rp-row .fav-open{grid-template-columns:40px minmax(0,1fr)}
 .rp-ic{grid-row:span 2;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:var(--accent,currentColor)}
 .rp-ic svg{width:19px;height:19px}
@@ -5406,7 +5407,7 @@ function aimOpen(kind,spec){
     show('',0,true); const ctl=new AbortController(); ctlBox.c=ctl;
     try{ const res=await aimRun(kind,[{role:'user',content:kind==='report'?aimReportPrompt():aimYearPrompt()}],t=>{ const el=body.querySelector('.aim-doc'); if(el) el.innerHTML=tpMd(t); },ctl.signal);
       const s2=aiStore(); s2[key]=s2[key]||{}; const now=Date.now();
-      if(kind==='report') s2[key].report={text:res.text,ts:now}; else s2[key].year={text:res.text,ts:now,from:`${new Date().getFullYear()}-${new Date().getMonth()}`};
+      if(kind==='report') s2[key].report={text:res.text,ts:now}; else { if(s2[key].year&&s2[key].year.text) s2[key].yearsOld=[s2[key].year,...(s2[key].yearsOld||[])].slice(0,12); s2[key].year={text:res.text,ts:now,from:`${new Date().getFullYear()}-${new Date().getMonth()}`}; }
       aiSave(s2); show(res.text,now,false); }
     catch(e){ if(e&&e.code==='need_plan'){ gate(); return; } if(e&&e.code==='report_quota'){ body.innerHTML=`<div class="aim-gate"><p>${kind==='report'?_t("Ліміт персональних розборів на цей місяць вичерпано. Збережені розбори залишаються з вами."):_t("Ліміт прогнозів на цей місяць вичерпано. Збережений прогноз залишається з вами.")}</p><p class="muted">${_t("Більше розборів — у тарифі Pro")}${kind==='report'?_t(" або в Пакеті"):''}.</p><button class="btn go aura" type="button" data-plans>${_t("Обрати тариф")}</button></div>`; return; } if(!(e&&e.code==='cancelled')) body.innerHTML=errBox(tpErr(e&&e.code))+`<div class="aim-acts"><button class="btn ghost sm" type="button" data-aim-redo>${_t("Спробувати ще раз")}</button></div>`; }
     finally{ ctlBox.c=null; } };
@@ -5426,7 +5427,7 @@ const IC_DOC=`<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M
 const aimKeyInfo=k=>{ const [name,dt,g]=String(k).split('|'), [d,m,y]=String(dt||'').split('.').map(Number); return {name:name||'',d,m,y,g:g||'f'}; };
 const aimKeyLabel=k=>{ const o=aimKeyInfo(k); return `${esc(o.name||_t("Без імені"))} <span class="fd">— ${o.d?dotDate(o.d,o.m,o.y):''}</span>`; };
 function aiChats(){ const st=aiStore(); return Object.keys(st).map(k=>{ const c=(st[k].chat||[]).filter(x=>x&&x.q&&x.a); return {k,c,ts:c.reduce((t,x)=>Math.max(t,x.ts||0),0)}; }).filter(x=>x.c.length).sort((a,b)=>b.ts-a.ts); }
-function aiReps(){ const st=aiStore(), out=[]; Object.keys(st).forEach(k=>{ ['report','year'].forEach(kind=>{ const r=st[k][kind]; if(r&&r.text) out.push({k,kind,text:r.text,ts:r.ts||0}); }); }); return out.sort((a,b)=>b.ts-a.ts); }
+function aiReps(only){ const st=aiStore(), out=[]; Object.keys(st).forEach(k=>{ ['report','year'].forEach(kind=>{ if(only&&only!==kind) return; const r=st[k][kind]; if(r&&r.text) out.push({k,kind,text:r.text,ts:r.ts||0}); }); if(!only||only==='year') (st[k].yearsOld||[]).forEach((r,i)=>{ if(r&&r.text) out.push({k,kind:'year',text:r.text,ts:r.ts||0,old:i}); }); }); return out.sort((a,b)=>b.ts-a.ts); }
 const aiAskCount=()=>aiChats().reduce((n,x)=>n+x.c.length,0);
 function asksPane(){
   const L=aiChats();
@@ -5436,12 +5437,12 @@ function asksPane(){
       ${g.c.slice().reverse().map(x=>`<details class="ak-it"><summary><span class="ak-q">${esc(x.q)}</span><small>${x.cx?esc(x.cx):_t("Уся матриця")}${x.ts?` · ${whenTxt(x.ts)}`:''}</small></summary><div class="ak-a tp-md">${tpMd(x.a)}</div></details>`).join('')}</section>`).join('')}</div>`
     :`<div class="empty"><p>${_t("Тут з’являться ваші питання до матриці та відповіді на них.")}</p><p class="muted">${_t("Поставити питання можна внизу будь-якого розділу розбору — кнопка «Запитай свою матрицю».")}</p><button class="btn go aura" type="button" data-akmine>${T('sMine')}</button></div>`}`;
 }
-function repsPane(){
-  const L=aiReps(), nm=k=>k==='report'?_t("Персональний розбір матриці"):_t("Прогноз на 12 місяців");
-  return `<div class="dm-h"><h2>${_t("Розбори матриці")}</h2></div>
-    ${L.length?`<div class="favs">${L.map((r,i)=>`<div class="fav rp-row"><button class="fav-open" type="button" data-rpo="${i}"><span class="rp-ic">${r.kind==='report'?IC_DOC:IC_CLOCK}</span><strong>${nm(r.kind)}</strong><small>${aimKeyLabel(r.k).replace(/<[^>]+>/g,'')}${r.ts?` · ${whenTxt(r.ts)}`:''}</small></button>
-      <div class="fav-acts"><button class="fav-ic del" type="button" data-rpd="${i}" aria-label="${_t("Видалити")}" title="${_t("Видалити")}">${IC_DEL}</button></div></div>`).join('')}</div>`
-    :`<div class="empty"><p>${_t("Тут з’являться ваші персональні розбори та прогнози від ШІ.")}</p><p class="muted">${_t("Замовити розбір можна під вашою матрицею — кнопка «Персональний розбір від ШІ».")}</p><button class="btn go aura" type="button" data-akmine>${T('sMine')}</button></div>`}`;
+function repsPane(only){
+  const L=aiReps(only), Y=only==='year', nm=r=>{ if(r.kind==='report') return _t("Персональний розбір матриці"); const d=new Date(r.ts||Date.now()), e=new Date(d.getFullYear(),d.getMonth()+11,1); return `${MONTHN[d.getMonth()]} ${d.getFullYear()} — ${MONTHN[e.getMonth()].toLowerCase()} ${e.getFullYear()}`; };
+  return `<div class="dm-h"><h2>${Y?_t("Прогнози на рік"):_t("Розбори матриці")}</h2></div>
+    ${L.length?`<div class="favs">${L.map((r,i)=>`<div class="fav rp-row"><button class="fav-open" type="button" data-rpo="${i}"><span class="rp-ic">${r.kind==='report'?IC_DOC:IC_CLOCK}</span><strong>${nm(r)}</strong><small>${Y?`${_t("Прогноз на 12 місяців")} · `:''}${aimKeyLabel(r.k).replace(/<[^>]+>/g,'')}${r.ts?` · ${whenTxt(r.ts)}`:''}${r.old!=null?` · ${_t("попередня версія")}`:''}</small></button>
+      <div class="fav-acts"><button class="btn ghost sm rp-pdf" type="button" data-rpp="${i}">PDF</button><button class="fav-ic del" type="button" data-rpd="${i}" aria-label="${_t("Видалити")}" title="${_t("Видалити")}">${IC_DEL}</button></div></div>`).join('')}</div>`
+    :`<div class="empty"><p>${Y?_t("Тут з’являться ваші прогнози на 12 місяців — усі збережені версії."):_t("Тут з’являться ваші персональні розбори від ШІ.")}</p><p class="muted">${Y?_t("Замовити прогноз можна під вашою матрицею — кнопка «Прогноз на 12 місяців»."):_t("Замовити розбір можна під вашою матрицею — кнопка «Персональний розбір від ШІ».")}</p><button class="btn go aura" type="button" data-akmine>${T('sMine')}</button></div>`}`;
 }
 /* open the matrix behind a stored key, then the AI window on top of it */
 function aimOpenFor(k,kind){
@@ -5468,7 +5469,7 @@ function aiReader(r){
     if(e.target.closest('[data-rdm]')){ close(); const f=aimKeyInfo(r.k); openFav({type:'solo',name:f.name,d:f.d,m:f.m,y:f.y,g:f.g}); }
   });
 }
-const CAB_ITEMS=()=>[{k:'data',ic:IC_USR,t:T('cDataT'),n:null},{k:'saved',ic:BM_SVG,t:T('cSavedT'),n:USER.favs.length},{k:'hist',ic:IC_CLOCK,t:T('cHistT'),n:(USER.hist||[]).length},{k:'tarot',ic:IC_CARDS,t:_t("Мої розклади"),n:tpHist().length},{k:'asks',ic:IC_ASK,t:_t("Питання до матриці"),n:aiAskCount()},{k:'reps',ic:IC_DOC,t:_t("Розбори матриці"),n:aiReps().length},{k:'sub',ic:IC_PLAN,t:'Підписка',n:USER&&USER.sub&&USER.sub.plan!=='free'&&USER.sub.paid_until&&new Date(USER.sub.paid_until)>new Date()?USER.sub.plan[0].toUpperCase()+USER.sub.plan.slice(1):'Free'}];
+const CAB_ITEMS=()=>[{k:'data',ic:IC_USR,t:T('cDataT'),n:null},{k:'saved',ic:BM_SVG,t:T('cSavedT'),n:USER.favs.length},{k:'hist',ic:IC_CLOCK,t:T('cHistT'),n:(USER.hist||[]).length},{k:'tarot',ic:IC_CARDS,t:_t("Мої розклади"),n:tpHist().length},{k:'asks',ic:IC_ASK,t:_t("Питання до матриці"),n:aiAskCount()},{k:'reps',ic:IC_DOC,t:_t("Розбори матриці"),n:aiReps('report').length},{k:'yrs',ic:IC_CLOCK,t:_t("Прогнози на рік"),n:aiReps('year').length},{k:'sub',ic:IC_PLAN,t:'Підписка',n:USER&&USER.sub&&USER.sub.plan!=='free'&&USER.sub.paid_until&&new Date(USER.sub.paid_until)>new Date()?USER.sub.plan[0].toUpperCase()+USER.sub.plan.slice(1):'Free'}];
 function cabinetHTML(){
   const p=USER.profile||{};
   return `<div class="cab fade">
@@ -5484,13 +5485,14 @@ function cabinetHTML(){
         <button class="dn${CAB_TAB==='hist'?' on':''}" type="button" data-tab="hist" aria-current="${CAB_TAB==='hist'?'page':'false'}">${IC_CLOCK}<span>${T('cHistT')}</span><em>${(USER.hist||[]).length}</em></button>
         <button class="dn${CAB_TAB==='tarot'?' on':''}" type="button" data-tab="tarot" aria-current="${CAB_TAB==='tarot'?'page':'false'}">${IC_CARDS}<span>${_t("Мої розклади")}</span><em>${tpHist().length}</em></button>
         <button class="dn${CAB_TAB==='asks'?' on':''}" type="button" data-tab="asks" aria-current="${CAB_TAB==='asks'?'page':'false'}">${IC_ASK}<span>${_t("Питання до матриці")}</span><em>${aiAskCount()}</em></button>
-        <button class="dn${CAB_TAB==='reps'?' on':''}" type="button" data-tab="reps" aria-current="${CAB_TAB==='reps'?'page':'false'}">${IC_DOC}<span>${_t("Розбори матриці")}</span><em>${aiReps().length}</em></button>
+        <button class="dn${CAB_TAB==='reps'?' on':''}" type="button" data-tab="reps" aria-current="${CAB_TAB==='reps'?'page':'false'}">${IC_DOC}<span>${_t("Розбори матриці")}</span><em>${aiReps('report').length}</em></button>
+        <button class="dn${CAB_TAB==='yrs'?' on':''}" type="button" data-tab="yrs" aria-current="${CAB_TAB==='yrs'?'page':'false'}">${IC_CLOCK}<span>${_t("Прогнози на рік")}</span><em>${aiReps('year').length}</em></button>
         <button class="dn${CAB_TAB==='sub'?' on':''}" type="button" data-tab="sub" aria-current="${CAB_TAB==='sub'?'page':'false'}">${IC_PLAN}<span>Підписка</span><em>${USER&&USER.sub&&USER.sub.plan!=='free'&&USER.sub.paid_until&&new Date(USER.sub.paid_until)>new Date()?USER.sub.plan[0].toUpperCase()+USER.sub.plan.slice(1):'Free'}</em></button>
         </div></div>
         <div class="dn-sep" aria-hidden="true"></div>
         <button class="btn go dn-go" type="button" id="myMatrix" data-mymx>${T('sMine')}</button>
       </nav>
-      <section class="panel dash-main">${CAB_TAB==='data'?dataPane(p):CAB_TAB==='hist'?histPane():CAB_TAB==='tarot'?tarotPane():CAB_TAB==='asks'?asksPane():CAB_TAB==='reps'?repsPane():CAB_TAB==='sub'?subPane():savedPane()}</section>
+      <section class="panel dash-main">${CAB_TAB==='data'?dataPane(p):CAB_TAB==='hist'?histPane():CAB_TAB==='tarot'?tarotPane():CAB_TAB==='asks'?asksPane():CAB_TAB==='reps'?repsPane('report'):CAB_TAB==='yrs'?repsPane('year'):CAB_TAB==='sub'?subPane():savedPane()}</section>
     </div></div>`;
 }
 async function downloadFav(f,btn){ const prev=STATE; STATE=favState(f); try{ await downloadCode(btn); } finally{ STATE=prev; } }
@@ -5558,12 +5560,13 @@ function renderHome(){
     if(profileReady(USER.profile)){ setMode('solo'); fill(USER.profile); $('#q').requestSubmit(); }
     else { CAB_TAB='data'; PF_EDIT=true; renderHome(); const e=$('#pfErr'); e.textContent=T('cFill'); e.hidden=false; e.classList.add('info'); }
   }));
-  if(CAB_TAB==='asks'||CAB_TAB==='reps'){
+  if(CAB_TAB==='asks'||CAB_TAB==='reps'||CAB_TAB==='yrs'){ const RL=()=>aiReps(CAB_TAB==='reps'?'report':CAB_TAB==='yrs'?'year':undefined);
     h.querySelectorAll('[data-akmine]').forEach(b=>b.addEventListener('click',()=>{ const m=$('#myMatrix'); if(m) m.click(); }));
     h.querySelectorAll('[data-akgo]').forEach(b=>b.addEventListener('click',()=>aimOpenFor(b.dataset.akgo,'chat')));
     h.querySelectorAll('[data-akdel]').forEach(b=>b.addEventListener('click',()=>{ const st=aiStore(), k=b.dataset.akdel; if(st[k]){ delete st[k].chat; aiSave(st); } renderHome(); toast(_t("Питання видалено.")); }));
-    h.querySelectorAll('[data-rpo]').forEach(b=>b.addEventListener('click',()=>{ const r=aiReps()[+b.dataset.rpo]; if(r) aiReader(r); }));
-    h.querySelectorAll('[data-rpd]').forEach(b=>b.addEventListener('click',()=>{ const r=aiReps()[+b.dataset.rpd]; if(!r) return; const st=aiStore(); if(st[r.k]){ delete st[r.k][r.kind]; aiSave(st); } renderHome(); toast(_t("Розбір видалено.")); }));
+    h.querySelectorAll('[data-rpo]').forEach(b=>b.addEventListener('click',()=>{ const r=RL()[+b.dataset.rpo]; if(r) aiReader(r); }));
+    h.querySelectorAll('[data-rpp]').forEach(b=>b.addEventListener('click',()=>{ const r=RL()[+b.dataset.rpp]; if(!r) return; const o=aimKeyInfo(r.k); downloadCode(b,aiPdfSrc(r.kind,r.text,r.ts,{name:o.name,date:dotDate(o.d,o.m,o.y)},!!(STATE&&STATE.P&&AIM_KEY()===r.k))); }));
+    h.querySelectorAll('[data-rpd]').forEach(b=>b.addEventListener('click',()=>{ const r=RL()[+b.dataset.rpd]; if(!r) return; const st=aiStore(); if(st[r.k]){ if(r.old!=null) (st[r.k].yearsOld||[]).splice(r.old,1); else delete st[r.k][r.kind]; aiSave(st); } renderHome(); toast(_t("Розбір видалено.")); }));
   }
   if(CAB_TAB==='tarot'){
     h.querySelectorAll('[data-cto]').forEach(b=>b.addEventListener('click',()=>{ const x=tpHist()[+b.dataset.cto]; if(x) tpOpenSaved(x); }));
