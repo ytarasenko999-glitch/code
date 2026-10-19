@@ -11,12 +11,22 @@ const ORIGIN = 'https://code-matrix.space';
 const WM = 'https://www.googleapis.com/webmasters/v3';
 
 const b64u = b => Buffer.from(b).toString('base64').replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
-function creds() {
-  let email = process.env.GSC_CLIENT_EMAIL || '', key = process.env.GSC_PRIVATE_KEY || '';
-  if ((!email || !key) && process.env.GSC_SA_JSON) { try { const j = JSON.parse(process.env.GSC_SA_JSON); email = email || j.client_email; key = key || j.private_key; } catch (_) {} }
-  key = key.replace(/\\n/g, '\n').replace(/^"|"$/g, '').trim();
-  return email && /BEGIN [A-Z ]*PRIVATE KEY/.test(key) ? { email: email.trim(), key } : null;
+/* reads the service account from the environment, forgiving the usual paste slips:
+   the whole JSON file pasted into one variable, quotes around the value, \n written as text */
+function readEnv() {
+  const clean = v => String(v || '').trim().replace(/^['"]|['"],?$/g, '').trim();
+  let email = clean(process.env.GSC_CLIENT_EMAIL), key = String(process.env.GSC_PRIVATE_KEY || '').trim();
+  for (const raw of [process.env.GSC_SA_JSON, key, process.env.GSC_CLIENT_EMAIL]) {
+    const t = String(raw || '').trim();
+    if (t.startsWith('{')) { try { const j = JSON.parse(t); if (j.client_email) email = j.client_email; if (j.private_key) key = j.private_key; } catch (_) {} }
+  }
+  key = clean(key).replace(/\\n/g, '\n').replace(/\r/g, '');
+  /* a key pasted as one line with spaces instead of line breaks */
+  const m = /-----BEGIN ([A-Z ]*PRIVATE KEY)-----([\s\S]*?)-----END \1-----/.exec(key);
+  if (m) key = `-----BEGIN ${m[1]}-----\n${m[2].replace(/\s+/g, '').replace(/(.{64})/g, '$1\n').replace(/\n$/, '')}\n-----END ${m[1]}-----\n`;
+  return { email, key, hasEmail: !!email, emailOk: /^[^@\s]+@[^@\s]+\.iam\.gserviceaccount\.com$/.test(email), hasKey: !!key, keyOk: !!m };
 }
+function creds() { const r = readEnv(); return r.emailOk && r.keyOk ? { email: r.email, key: r.key } : null; }
 let TOK = null;
 async function token(c) {
   if (TOK && TOK.exp > Date.now() + 60000) return TOK.t;
@@ -62,7 +72,7 @@ module.exports = async (req, res) => {
     let b = req.body || {}; if (typeof b === 'string') { try { b = JSON.parse(b); } catch (_) { b = {}; } }
 
     const c = creds();
-    if (!c) return done(200, { configured: false });
+    if (!c) { const r = readEnv(); return done(200, { configured: false, env: { hasEmail: r.hasEmail, emailOk: r.emailOk, email: r.emailOk ? r.email : '', hasKey: r.hasKey, keyOk: r.keyOk } }); }
     const t = await token(c);
     const s = await site(t);
     const enc = encodeURIComponent(s);
