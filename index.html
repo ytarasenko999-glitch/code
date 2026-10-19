@@ -2100,8 +2100,9 @@ body.hdr-off:not(.auth-on):not(.dr-open) .top{transform:translateY(calc(-100% - 
 @media (prefers-reduced-motion:reduce){.ai-ld i,.ai-ld b,.tp-think>span:last-child{animation-duration:4s}}
 
 /* earlier entered people under the name field + «reset data» on the start page */
-.rec-pop{position:fixed;z-index:200;max-height:min(60vh,380px);overflow:auto;padding:8px;border-radius:22px;background:var(--surface-solid);border:1px solid var(--line);box-shadow:0 24px 60px -24px rgba(0,0,0,.55),0 0 0 1px var(--hair);backdrop-filter:saturate(180%) blur(24px);-webkit-backdrop-filter:saturate(180%) blur(24px);animation:recIn .18s ease both}
+.rec-pop{position:fixed;z-index:200;max-height:min(52vh,360px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--accent) 55%,transparent) transparent;padding:8px;border-radius:22px;background:var(--surface-solid);border:1px solid var(--line);box-shadow:0 24px 60px -24px rgba(0,0,0,.55),0 0 0 1px var(--hair);backdrop-filter:saturate(180%) blur(24px);-webkit-backdrop-filter:saturate(180%) blur(24px);animation:recIn .18s ease both}
 @keyframes recIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.rec-pop::-webkit-scrollbar{width:6px}.rec-pop::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--accent) 55%,transparent);border-radius:6px}.rec-pop::-webkit-scrollbar-track{background:transparent;margin:14px 0}
 .rec-h{margin:4px 10px 6px;font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .rec-it{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:16px;cursor:pointer;transition:background .15s}
 .rec-it:hover,.rec-it.on{background:var(--accent-soft)}
@@ -4865,15 +4866,21 @@ nameInp.addEventListener('input',()=>{const p=nameInp.selectionStart,v=capName(n
 /* ---------- the form starts empty; earlier entered people are offered as suggestions under the name field ---------- */
 const REC_KEY='code-recent';
 function recList(){ try{ return JSON.parse(localStorage.getItem(REC_KEY)||'[]')||[]; }catch(_){ return []; } }
-function recSave(l){ try{ localStorage.setItem(REC_KEY,JSON.stringify(l.slice(0,12))); }catch(_){} }
+function recSave(l){ try{ localStorage.setItem(REC_KEY,JSON.stringify(l.slice(0,40))); }catch(_){} }
+/* guests: only with cookie consent («accept all»); signed-in users: always (their search history also lives in the account) */
+const recAllowed=()=>{ if(USER) return true; try{ return localStorage.getItem('code-cookies')==='all'; }catch(_){ return false; } };
+function recHidden(){ try{ return JSON.parse(localStorage.getItem('code-recent-hide')||'[]')||[]; }catch(_){ return []; } }
+function recHide(o){ const k=recKey(o); try{ localStorage.setItem('code-recent-hide',JSON.stringify([k,...recHidden().filter(x=>x!==k)].slice(0,200))); }catch(_){} recSave(recList().filter(r=>recKey(r)!==k)); }
 const recKey=o=>`${(o.name||'').toLowerCase()}|${o.d}.${o.m}.${o.y}`;
-function recAdd(o){ if(!o||!o.d||!o.m||!o.y) return; const k=recKey(o); recSave([{name:o.name||'',d:o.d,m:o.m,y:o.y,g:o.g||''},...recList().filter(x=>recKey(x)!==k)]); }
+function recAdd(o){ if(!o||!o.d||!o.m||!o.y||!recAllowed()) return; const k=recKey(o); try{ localStorage.setItem('code-recent-hide',JSON.stringify(recHidden().filter(x=>x!==k))); }catch(_){} recSave([{name:o.name||'',d:o.d,m:o.m,y:o.y,g:o.g||''},...recList().filter(x=>recKey(x)!==k)]); }
 function recAll(){
-  const out=[], seen=new Set(), push=(o,tag)=>{ if(!o||!o.d||!o.m||!o.y) return; const k=recKey(o); if(seen.has(k)) return; seen.add(k); out.push(Object.assign({},o,{tag})); };
+  if(!recAllowed()) return [];
+  const hide=new Set(recHidden()), out=[], seen=new Set(), push=(o,tag)=>{ if(!o||!o.d||!o.m||!o.y) return; const k=recKey(o); if(seen.has(k)||(tag!=='me'&&hide.has(k))) return; seen.add(k); out.push(Object.assign({},o,{tag})); };
   if(USER&&profileReady(USER.profile)) push(USER.profile,'me');
   recList().forEach(o=>push(o,'rec'));
-  ((USER&&USER.favs)||[]).forEach(f=>{ if(f&&f.type!=='pair') push({name:f.name,d:f.d,m:f.m,y:f.y,g:f.g},'fav'); });
-  return out.slice(0,10);
+  ((USER&&USER.hist)||[]).forEach(h=>{ if(!h) return; if(h.type==='pair'){ push({name:h.a&&h.a.n,d:h.a&&h.a.d,m:h.a&&h.a.m,y:h.a&&h.a.y},'rec'); push({name:h.b&&h.b.n,d:h.b&&h.b.d,m:h.b&&h.b.m,y:h.b&&h.b.y},'rec'); } else push({name:h.name,d:h.d,m:h.m,y:h.y,g:h.g},'rec'); });
+  ((USER&&USER.favs)||[]).forEach(f=>{ if(f&&f.type!=='pair') push({name:f.name,d:f.d,m:f.m,y:f.y,g:f.g},'rec'); });
+  return out.slice(0,40);
 }
 function clearForm(){
   $('#name').value=''; yearSel.value=''; monSel.value=''; fillDays(); daySel.value=''; $('#gf').checked=true;
@@ -4916,7 +4923,7 @@ const formHasData=()=>{ const has=!!($('#name').value.trim()||daySel.value||monS
       else if(e.key==='Escape'){ close(); } });
   });
   document.addEventListener('pointerdown',e=>{ if(!pop) return; const x=e.target.closest('.rec-x');
-    if(x){ e.preventDefault(); const o=pop._list[+x.dataset.x]; recSave(recList().filter(r=>recKey(r)!==recKey(o))); const t=cur; open(t); return; }
+    if(x){ e.preventDefault(); const o=pop._list[+x.dataset.x]; recHide(o); const t=cur; open(t); return; }
     const it=e.target.closest('.rec-it'); if(it&&pop.contains(it)){ e.preventDefault(); pick(+it.dataset.i); return; }
     if(!pop.contains(e.target)&&cur&&e.target!==cur.inp) close(); },true);
   addEventListener('scroll',place,{passive:true}); addEventListener('resize',place);
