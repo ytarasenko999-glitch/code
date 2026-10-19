@@ -7154,21 +7154,32 @@ loadSession();
 renderHome();
 
 
-/* ---------- floating header: hide on scroll down, glide back on scroll up (all screens) ---------- */
+/* ---------- floating header (all screens): hides on scroll down, glides back on scroll up.
+   Phones: the first short swipe up brings the header back WITH the form open (you were probably heading for it);
+   if you keep scrolling up without touching it, you are reading, so the form folds back into the compact bar
+   (menu · «Змінити дані» · account). ---------- */
 (()=>{
   const B=document.body, top=document.getElementById('topForm'); if(!top) return;
-  let last=scrollY, acc=0;
-  const off=v=>{ if(B.classList.contains('hdr-off')!==v) B.classList.toggle('hdr-off',v); };
-  const busy=()=>{ const a=document.activeElement; return (a&&top.contains(a)&&/INPUT|SELECT|TEXTAREA/.test(a.tagName))||!!document.querySelector('.cs-pop')||B.classList.contains('dr-open'); };
+  const has=c=>B.classList.contains(c), mobFold=()=>has('tfx')&&window.setMC;
+  let last=scrollY, acc=0, revealY=null, touched=false;
+  const off=v=>{ if(has('hdr-off')!==v) B.classList.toggle('hdr-off',v); };
+  const busy=()=>{ const a=document.activeElement; return (a&&top.contains(a)&&/INPUT|SELECT|TEXTAREA/.test(a.tagName))||!!document.querySelector('.cs-pop,.rec-pop')||has('dr-open'); };
   addEventListener('scroll',()=>{
     const y=scrollY, d=y-last; last=y;
-    if(B.classList.contains('auth-on')||y<90){ off(false); acc=0; return; }
+    if(has('auth-on')||y<90){ off(false); acc=0; revealY=null; return; }
     if(d===0) return;
     if((d>0)!==(acc>0)) acc=0; acc+=d;
-    if(acc>14&&!busy()) off(true);
-    else if(acc<-10&&B.classList.contains('hdr-off')){ off(false); if(B.classList.contains('tfx')&&B.classList.contains('mc')&&window.setMC) setMC(false); }
+    if(acc>14&&!busy()){ off(true); revealY=null; touched=false; return; }
+    if(acc<-10&&has('hdr-off')){
+      off(false); revealY=y; touched=false;
+      if(mobFold()&&has('mc')) setMC(false);
+      return;
+    }
+    /* still going up after the reveal: fold the form so it doesn't cover what you are reading */
+    if(d<0&&revealY!=null&&!touched&&!busy()&&mobFold()&&!has('mc')&&revealY-y>220){ setMC(true); revealY=null; }
   },{passive:true});
-  top.addEventListener('focusin',()=>off(false));
+  top.addEventListener('focusin',()=>{ off(false); touched=true; });
+  top.addEventListener('pointerdown',()=>{ touched=true; },true);
 })();
 
 /* ---------- mobile: fixed top bar; the form folds into a pill ("Розрахувати код" on home, "Змінити дані" on results) ---------- */
