@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="CODE — матриця долі за методом Наталії Ладіні, сумісність, прогноз по роках, енергія дня і Таро-трактувальник.">
 <meta name="theme-color" content="#05050C">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/favicon.ico" sizes="any">
 <meta property="og:title" content="CODE — розрахуй свій код">
 <meta property="og:description" content="Матриця долі, сумісність, роки, енергія дня і Таро-трактувальник.">
 <meta property="og:type" content="website">
@@ -2084,6 +2086,19 @@ body.hdr-off:not(.auth-on):not(.dr-open) .top{transform:translateY(calc(-100% - 
 .aim-cp{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--muted);font-family:var(--font-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:color .2s,border-color .2s}
 .aim-cp:hover{color:var(--accent);border-color:var(--accent)}.aim-cp svg{width:14px;height:14px}
 @media (max-width:640px){.aim-box .tf-h{flex-direction:column;align-items:stretch}.aim-hist{align-self:flex-start}}
+/* AI is answering: a multicolour orbit loader (three rings spinning at different speeds + a pulsing core) with changing phrases */
+.tp-think{flex-direction:column;justify-content:center;gap:16px;padding:30px 0 26px;text-align:center}
+.ai-ld{position:relative;display:block;width:58px;height:58px;flex:0 0 auto}
+.ai-ld i{position:absolute;inset:0;border-radius:50%;-webkit-mask:radial-gradient(circle,transparent 62%,#000 65%);mask:radial-gradient(circle,transparent 62%,#000 65%)}
+.ai-ld i:nth-child(1){background:conic-gradient(from 0deg,transparent 0 15%,var(--accent) 45%,var(--accent-2) 70%,transparent 72%);animation:pdSpin 1.15s linear infinite;filter:drop-shadow(0 0 6px var(--accent))}
+.ai-ld i:nth-child(2){inset:8px;background:conic-gradient(from 120deg,transparent 0 20%,var(--accent-3) 50%,var(--accent) 75%,transparent 78%);animation:pdSpin 1.7s linear infinite reverse;filter:drop-shadow(0 0 5px var(--accent-3))}
+.ai-ld i:nth-child(3){inset:16px;background:conic-gradient(from 240deg,transparent 0 25%,var(--accent-2) 55%,#ff7ab6 80%,transparent 82%);animation:pdSpin .9s linear infinite;filter:drop-shadow(0 0 4px var(--accent-2))}
+.ai-ld b{position:absolute;inset:23px;border-radius:50%;background:radial-gradient(circle,#fff 0,var(--accent-2) 45%,transparent 72%);animation:aiPulse 1.4s ease-in-out infinite}
+@keyframes aiPulse{0%,100%{transform:scale(.7);opacity:.6}50%{transform:scale(1.15);opacity:1}}
+.tp-think>span:last-child{background:linear-gradient(90deg,var(--muted),var(--accent),var(--accent-3),var(--muted));background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:aiShine 2.6s linear infinite}
+@keyframes aiShine{to{background-position:-300% 0}}
+@media (prefers-reduced-motion:reduce){.ai-ld i,.ai-ld b,.tp-think>span:last-child{animation-duration:4s}}
+
 </style>
 </head>
 <body>
@@ -6823,9 +6838,9 @@ function tpRight(){
 const AI_THINK=()=>[_t("Читаю вашу матрицю…"),_t("Зводжу енергії й програми…"),_t("Шукаю зв’язки між позиціями…"),_t("Формулюю відповідь…")];
 const aiCopyBtn=()=>`<div class="aim-cpw"><button class="aim-cp" type="button" data-aim-cp><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M15.5 8.5V6A1.5 1.5 0 0 0 14 4.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5" stroke="currentColor" stroke-width="1.6"/></svg><span>${_t("Копіювати")}</span></button></div>`;
 document.addEventListener('click',async e=>{ const cb=e.target.closest&&e.target.closest('.ak-a [data-aim-cp]'); if(!cb) return; const a=cb.closest('.ak-a'); try{ await navigator.clipboard.writeText(tpStrip(a.dataset.raw||'')); toast(_t("Текст скопійовано.")); }catch(_){} });
-const aiThinking=deep=>`<div class="tp-think ai-think" data-k="0"><span class="tp-orb" aria-hidden="true"></span><span class="ai-think-t">${AI_THINK()[0]}</span></div>`;
+const aiThinking=deep=>`<div class="tp-think ai-think" data-k="0" role="status" aria-live="polite"><span class="ai-ld" aria-hidden="true"><i></i><i></i><i></i><b></b></span><span class="ai-think-t">${AI_THINK()[0]}</span></div>`;
 setInterval(()=>{ document.querySelectorAll('.ai-think').forEach(el=>{ const L=AI_THINK(), k=(+el.dataset.k+1)%L.length, t=el.querySelector('.ai-think-t'); el.dataset.k=k; if(t){ t.classList.remove('in'); void t.offsetWidth; t.textContent=L[k]; t.classList.add('in'); } }); },2200);
-const tpThinking=()=>`<div class="tp-think"><span class="tp-orb" aria-hidden="true"></span><span>${_t("Карти говорять…")}</span></div>`;
+const tpThinking=()=>`<div class="tp-think" role="status" aria-live="polite"><span class="ai-ld" aria-hidden="true"><i></i><i></i><i></i><b></b></span><span>${_t("Карти говорять…")}</span></div>`;
 function renderTarot(){
   const sec=$('#tarot'); if(!sec) return;
   sec.innerHTML=`<div class="res-head fade"><div><div class="title-row"><h2>${_t("Таро-<b>трактувальник</b>")}</h2><div class="tr-acts"><button class="btn aura tp-plans" type="button" data-plans>Тарифи</button></div></div><div class="meta">${_t("Ваше питання · ваші карти · тлумачення від ШІ")}</div></div></div>
