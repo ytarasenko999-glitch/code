@@ -2039,11 +2039,11 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
 .tf-box.narrow .co{max-width:none}
 .tf-box.narrow .co-acts{display:flex;gap:10px}.tf-box.narrow .co-acts .btn{flex:1 1 0!important}
 .tf-box.narrow .co-acts .btn.go{flex:1.6 1 0!important}
-/* launch: Ukrainian only — the language switch is hidden (translations stay in the code) */
-.dr-lang .langs{display:none!important}
-.dr-lang .dl-row{justify-content:flex-start!important}
+/* languages on: only the finished ones are shown (ua, en); the rest appear when translated. Languages left, light switch right — one row */
+.dr-lang .lang-b:not([data-lang="uk"]):not([data-lang="en"]){display:none!important}
+.dr-lang .dl-row{justify-content:space-between!important}
 .dr-lang{padding-top:4px}
-.dr-lang .theme-sw{margin-left:0}
+.dr-lang .theme-sw{margin-left:auto!important}
 .au-rem{margin:2px 0 4px}
 .ft-blog{display:block;text-decoration:none}
 .aim-gate{padding:8px 0}.aim-gate p{margin:0 0 12px;line-height:1.6}.aim-gate .btn{flex:0 0 auto!important}
@@ -2148,7 +2148,7 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
         <p data-i18n="ftLead">CODE — простір самопізнання. Усе є енергія — досліджуйте свою.</p>
       </div>
       <div class="foot-cols">
-        <div><h5 data-i18n="ftSec">Розділи</h5><button class="flink" data-nav="matrix" data-i18n="tMatrix">Матриця</button><button class="flink" data-nav="today" data-i18n="tToday">Сьогодні</button><button class="flink" data-nav="years" data-i18n="tYears">Прогноз по роках</button><button class="flink" data-nav="arcana" data-i18n="tArc">Аркани</button><button class="flink" data-nav="tarot" data-i18n="mTarot">Таро-трактувальник</button><a class="flink ft-blog" href="/blog">Блог</a></div>
+        <div><h5 data-i18n="ftSec">Розділи</h5><button class="flink" data-nav="matrix" data-i18n="tMatrix">Матриця</button><button class="flink" data-nav="today" data-i18n="tToday">Сьогодні</button><button class="flink" data-nav="years" data-i18n="tYears">Прогноз по роках</button><button class="flink" data-nav="arcana" data-i18n="tArc">Аркани</button><button class="flink" data-nav="tarot" data-i18n="mTarot">Таро-трактувальник</button><a class="flink ft-blog" href="/blog" data-blog>Блог</a></div>
         <div><h5 data-i18n="ftCalc">Розрахунки</h5><button class="flink" data-mode="solo" data-i18n="mSolo">Особиста матриця</button><button class="flink" data-mode="pair" data-i18n="mPair">Сумісність</button><button class="flink" data-nav="arcana" data-i18n="mCat">Довідник арканів</button></div>
         <div><h5 data-i18n="ftMeth">Метод</h5><span class="ftxt" data-i18n="ftM1">Матриця долі Наталії Ладіні</span><span class="ftxt" data-i18n="ftM2">22 Старші Аркани</span><span class="ftxt" data-i18n="ftM3">Карта здоров’я, програми, роки</span></div>
       </div>
@@ -2250,13 +2250,15 @@ it:{solo:"Personale",pair:"Compatibilità",name:"Nome",namePh:"Il tuo nome",day:
  rMatrix:"Matrice",rYour:"La tua",rDestiny:"matrice del destino",rPair:"Compatibilità",tMatrix:"Matrice",tToday:"Oggi",tYears:"Per anno",tArc:"Arcani",tPair:"Matrice di coppia",rCenter:"Centro",rTail:"Coda karmica",rYear:"Quest’anno",rUnion:"Energia dell’unione",rKProg:"Programma karmico",rPurp:"Scopo della coppia",rDl:"Scarica il codice",rF:"donna",rM:"uomo",rAge:"anni",rOverlay:"sovrapposizione completa",bmAdd:"Aggiungi ai preferiti",bmDel:"Rimuovi dai preferiti",
  ftLead:"CODE — uno spazio per conoscersi. Tutto è energia — esplora la tua.",ftSec:"Sezioni",ftCalc:"Calcoli",ftMeth:"Metodo",ftM1:"Matrice del destino di Natalia Ladini",ftM2:"22 Arcani maggiori",ftM3:"Mappa della salute, programmi, anni",chData:"Modifica i dati",aAgree1:"Accetto l’",aAgree2:"informativa sulla privacy",aNeedAgree:"Accetta l’informativa sulla privacy.",aHelp:"Aiuto",aTerms:"Termini",aPriv:"Privacy",thOn:"Accendi la luce",thOff:"Spegni la luce",ckT:"Cookie",ckP:"Salviamo lingua, tema, account e i tuoi codici in questo browser perché il sito funzioni comodamente.",ckL:"Scopri di più",ckMin:"Solo necessari",ckAll:"Accetta",pdT:"Scarica il codice",pdS:"Scegli lo stile del PDF: chiaro o scuro, come il sito.",pdLight:"Chiaro",pdDark:"Scuro",pdLightS:"Per stampare e leggere di giorno",pdDarkS:"Cosmo profondo, come il sito",pdCancel:"Annulla",pdPrep:"Preparazione del PDF…",pdGo:"Scarica PDF",pdBuild:"Impaginazione…",pdPage:"Pagina",pdSave:"Salvataggio…",calcCode:"Calcola il codice",ftCopy:"Uno strumento di conoscenza di sé, non una previsione né una diagnosi",mTarot:"Lettura dei tarocchi",mGuide:"Guida alle posizioni",cHistT:"Cronologia",cClear:"Cancella cronologia",cHistEmpty:"Qui compariranno le matrici che hai visto.",cCleared:"Cronologia cancellata.",cDataT:"Dati personali",cSavedT:"Codici salvati",cEdit:"Modifica",cCancel:"Annulla",cPdf:"Scarica PDF",cDel:"Elimina",cSolo:"Personale",cPairT:"Compatibilità",cCenter:"centro",cTail:"coda",cFill:"Compila i tuoi dati personali per calcolare la tua matrice."}
 };
-const LANGS_HIDDEN=true;
-let LANG=(()=>{if(LANGS_HIDDEN) return 'uk';try{const l=localStorage.getItem('code-lang');return l&&I18N[JSON.parse(l)]?JSON.parse(l):'uk'}catch(_){return 'uk'}})();
+const LANGS_ON=['uk','en'];
+let LANG=(()=>{ try{ const q=new URLSearchParams(location.search).get('lang'); if(q&&LANGS_ON.includes(q)&&I18N[q]){ localStorage.setItem('code-lang',JSON.stringify(q)); return q; } }catch(_){}
+  try{const l=JSON.parse(localStorage.getItem('code-lang')||'null');return l&&LANGS_ON.includes(l)&&I18N[l]?l:'uk'}catch(_){return 'uk'}})();
 const T=(k,x)=>{const s=(I18N[LANG]&&I18N[LANG][k])||I18N.uk[k]||k;return x?s.replace('{x}',x):s;};
 const mName=m=>LANG==='uk'?MONTHS[m-1]:MONTHN_L[LANG][m-1];
 function applyStaticI18n(){
   L10N_apply();
   document.documentElement.lang=LANG;
+  document.querySelectorAll('[data-blog]').forEach(a=>a.setAttribute('href',LANG==='en'?'/en/blog':'/blog'));
   document.querySelectorAll('[data-i18n]').forEach(e=>{ const v=T(e.dataset.i18n);
     if(e.dataset.i18n==='ftLead'){ const k=v.indexOf('. '); if(k>0){ e.textContent=''; e.append(v.slice(0,k+1)+' '); const m=document.createElement('span'); m.className='ft-m'; m.textContent=v.slice(k+2); e.append(m); return; } }
     e.textContent=v; });

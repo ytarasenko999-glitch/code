@@ -23,6 +23,14 @@
       "destination": "/api/blog?slug=:slug"
     },
     {
+      "source": "/en/blog",
+      "destination": "/api/blog?lang=en"
+    },
+    {
+      "source": "/en/blog/:slug",
+      "destination": "/api/blog?slug=:slug&lang=en"
+    },
+    {
       "source": "/sitemap.xml",
       "destination": "/api/blog?sitemap=1"
     }
@@ -61,6 +69,19 @@
     },
     {
       "source": "/blog-setup.sql",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://supabase.com"
+        },
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/blog-en.sql",
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",

@@ -6,13 +6,43 @@ const { md, esc, plain } = require('./_md.js');
 const SB_URL = process.env.SUPABASE_URL || 'https://blwyzqxhzvjzhqkabesi.supabase.co';
 const SB_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_v2wRmfGkiVW7fF6wIkPZBg_fjeS3wBu';
 const FIELDS = 'slug,h1,h2,title,description,cover,cover_alt,body,published_at,updated_at';
+const EN_FIELDS = ',h1_en,h2_en,title_en,description_en,cover_alt_en,body_en';
+const BUILTIN_EN = require('./_blog_en.js');
 
+/* reads published posts; asks for the English columns too and quietly falls back if the database doesn't have them yet */
 async function posts(q) {
-  const r = await fetch(`${SB_URL}/rest/v1/posts?select=${FIELDS}&status=eq.published${q || ''}&order=published_at.desc`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } });
+  const get = f => fetch(`${SB_URL}/rest/v1/posts?select=${f}&status=eq.published${q || ''}&order=published_at.desc`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } });
+  let r = await get(FIELDS + EN_FIELDS);
+  if (r.status === 400) r = await get(FIELDS);
   if (!r.ok) throw new Error('db ' + r.status);
   return r.json();
 }
-const fmtDate = d => d ? new Date(d).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+/* the post in the requested language: English from the database, else the built-in English text, else null */
+const inLang = (p, lang) => {
+  if (lang !== 'en') return p;
+  const b = BUILTIN_EN[p.slug] || {};
+  const pick = k => (p[k + '_en'] && String(p[k + '_en']).trim()) || b[k] || '';
+  const body = pick('body'), h1 = pick('h1');
+  if (!body || !h1) return null;
+  return Object.assign({}, p, { h1, h2: pick('h2'), title: pick('title') || h1, description: pick('description'), cover_alt: pick('cover_alt') || h1, body });
+};
+const L = {
+  uk: { html: 'uk', og: 'uk_UA', loc: 'uk-UA', blog: 'Блог', tarot: 'Таро', calc: 'Розрахувати матрицю', home: 'Головна', min: 'хв читання', more: '[ Читайте також ]',
+    foot: 'матриця долі за методом Наталії Ладіні', privacy: 'Конфіденційність', ctaH: 'Розрахуйте свою матрицю долі', ctaP: 'Безкоштовно, за датою народження: особистість, таланти, гроші, стосунки, кармічний хвіст і програми років.',
+    listT: 'Блог про матрицю долі — CODE', listD: 'Статті про матрицю долі: як розшифрувати свою матрицю, програми років, кармічний хвіст, сумісність і самопізнання за методом Наталії Ладіні.', listH: 'Блог про матрицю долі',
+    listP: 'Розбираємо, як читати свою матрицю: програми років, кармічні задачі, таланти, гроші та стосунки. Простими словами — і з посиланнями на безкоштовний розрахунок.', soon: 'Статті скоро з’являться.', blogName: 'Блог CODE',
+    nfT: 'Статтю не знайдено — CODE', nfD: 'Такої статті немає.', nfH: 'Статтю не знайдено', nfP: 'Можливо, її перейменували. Подивіться інші статті в <a href="/blog">блозі</a> або <a href="/">розрахуйте свою матрицю</a>.',
+    errT: 'Блог тимчасово недоступний — CODE', errP: 'Спробуйте оновити сторінку за хвилину. А поки — <a href="/">розрахуйте свою матрицю</a>.' },
+  en: { html: 'en', og: 'en_GB', loc: 'en-GB', blog: 'Blog', tarot: 'Tarot', calc: 'Calculate your matrix', home: 'Home', min: 'min read', more: '[ Read also ]',
+    foot: 'Destiny Matrix by Natalia Ladini’s method', privacy: 'Privacy', ctaH: 'Calculate your Destiny Matrix', ctaP: 'Free, from your date of birth: personality, talents, money, relationships, karmic tail and programs of the years.',
+    listT: 'Destiny Matrix blog — CODE', listD: 'Articles about the Destiny Matrix: how to read your matrix, programs of the years, the karmic tail, compatibility and self-knowledge with Natalia Ladini’s method.', listH: 'The Destiny Matrix blog',
+    listP: 'How to read your matrix: programs of the years, karmic tasks, talents, money and relationships. In plain words — with links to a free calculation.', soon: 'Articles are coming soon.', blogName: 'CODE blog',
+    nfT: 'Article not found — CODE', nfD: 'There is no such article.', nfH: 'Article not found', nfP: 'It may have been renamed. See other articles in the <a href="/en/blog">blog</a> or <a href="/?lang=en">calculate your matrix</a>.',
+    errT: 'The blog is temporarily unavailable — CODE', errP: 'Try refreshing the page in a minute. Meanwhile — <a href="/?lang=en">calculate your matrix</a>.' }
+};
+const pre = lang => lang === 'en' ? '/en' : '';
+const site = (lang, q) => lang === 'en' ? `/?${q ? q + '&' : ''}lang=en` : (q ? `/?${q}` : '/');
+const fmtDate = (d, lang) => d ? new Date(d).toLocaleDateString(L[lang].loc, { day: 'numeric', month: 'long', year: 'numeric' }) : '';
 const readMin = body => Math.max(2, Math.round(plain(body).split(' ').length / 180));
 const abs = (base, u) => !u ? '' : /^https?:/i.test(u) ? u : base + (u.startsWith('/') ? u : '/' + u);
 
@@ -64,49 +94,57 @@ h1{font-family:var(--font-display);font-weight:400;font-size:clamp(32px,5vw,54px
 .hero{margin:30px 0 30px}.hero h1{margin-bottom:10px}.hero p{color:var(--muted);max-width:640px;margin:0}
 .foot{border-top:1px solid var(--hair);padding:26px 0 40px;color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between}
 .foot a{color:var(--muted)}
-@media (max-width:640px){body{font-size:16px}.nav a:not(.go){display:none}.cover{border-radius:20px}.endcta{padding:24px 18px}}
+@media (max-width:640px){body{font-size:16px}.nav a:not(.go):not(.lg){display:none}.cover{border-radius:20px}.endcta{padding:24px 18px}}
 `;
 const THEME = `<script>try{var t=JSON.parse(localStorage.getItem("code-theme")||"null");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>`;
 const FONTS = `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap">`;
-const head = (title, desc, url, img, extra) => `<!doctype html><html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><link rel="canonical" href="${esc(url)}"><meta name="robots" content="index,follow,max-image-preview:large">
-<meta property="og:type" content="${extra && extra.article ? 'article' : 'website'}"><meta property="og:site_name" content="CODE"><meta property="og:locale" content="uk_UA"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${esc(url)}">${img ? `<meta property="og:image" content="${esc(img)}"><meta name="twitter:image" content="${esc(img)}">` : ''}<meta name="twitter:card" content="summary_large_image">
+const head = (lang, title, desc, url, img, extra) => `<!doctype html><html lang="${L[lang].html}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><link rel="canonical" href="${esc(url)}"><meta name="robots" content="index,follow,max-image-preview:large">${extra && extra.alt ? extra.alt : ''}
+<meta property="og:type" content="${extra && extra.article ? 'article' : 'website'}"><meta property="og:site_name" content="CODE"><meta property="og:locale" content="${L[lang].og}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${esc(url)}">${img ? `<meta property="og:image" content="${esc(img)}"><meta name="twitter:image" content="${esc(img)}">` : ''}<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">${FONTS}${THEME}<style>${CSS}</style>${extra && extra.ld ? `<script type="application/ld+json">${JSON.stringify(extra.ld).replace(/</g, '\\u003c')}</script>` : ''}</head><body>`;
-const top = `<div class="wrap"><header class="top"><a class="logo" href="/">CODE<sup>©</sup></a><nav class="nav"><a href="/blog">Блог</a><a href="/?go=tarot">Таро</a><a class="go" href="/">Розрахувати матрицю</a></nav></header>`;
-const foot = `<footer class="foot"><span>© ${new Date().getFullYear()} CODE · матриця долі за методом Наталії Ладіні</span><span><a href="/">Розрахувати матрицю</a> · <a href="/blog">Блог</a> · <a href="/privacy.html">Конфіденційність</a></span></footer></div><script src="/t.js" defer></script></body></html>`;
-const card = p => `<a class="card" href="/blog/${esc(p.slug)}">${p.cover ? `<img src="${esc(p.cover)}" alt="${esc(p.cover_alt || p.h1)}" loading="lazy" width="1200" height="630">` : ''}<div><h3>${esc(p.h1)}</h3><p>${esc(p.description || '')}</p><small>${fmtDate(p.published_at)} · ${readMin(p.body)} хв читання</small></div></a>`;
-const endCta = `<section class="endcta"><h2>Розрахуйте свою матрицю долі</h2><p>Безкоштовно, за датою народження: особистість, таланти, гроші, стосунки, кармічний хвіст і програми років.</p><a class="cta-b" href="/">Розрахувати матрицю</a></section>`;
+/* hreflang pair for search engines (only when both language versions exist) */
+const alts = (base, path, hasEn) => hasEn ? `<link rel="alternate" hreflang="uk" href="${esc(base + path)}"><link rel="alternate" hreflang="en" href="${esc(base + '/en' + path)}"><link rel="alternate" hreflang="x-default" href="${esc(base + path)}">` : '';
+const top = (lang, other) => `<div class="wrap"><header class="top"><a class="logo" href="${site(lang)}">CODE<sup>©</sup></a><nav class="nav">${other ? `<a class="lg" href="${esc(other)}" hreflang="${lang === 'en' ? 'uk' : 'en'}" lang="${lang === 'en' ? 'uk' : 'en'}">${lang === 'en' ? 'UA' : 'EN'}</a>` : ''}<a href="${pre(lang)}/blog">${L[lang].blog}</a><a href="${site(lang, 'go=tarot')}">${L[lang].tarot}</a><a class="go" href="${site(lang)}">${L[lang].calc}</a></nav></header>`;
+const foot = lang => `<footer class="foot"><span>© ${new Date().getFullYear()} CODE · ${L[lang].foot}</span><span><a href="${site(lang)}">${L[lang].calc}</a> · <a href="${pre(lang)}/blog">${L[lang].blog}</a> · <a href="/privacy.html">${L[lang].privacy}</a></span></footer></div><script src="/t.js" defer></script></body></html>`;
+const card = lang => p => `<a class="card" href="${pre(lang)}/blog/${esc(p.slug)}">${p.cover ? `<img src="${esc(p.cover)}" alt="${esc(p.cover_alt || p.h1)}" loading="lazy" width="1200" height="630">` : ''}<div><h3>${esc(p.h1)}</h3><p>${esc(p.description || '')}</p><small>${fmtDate(p.published_at, lang)} · ${readMin(p.body)} ${L[lang].min}</small></div></a>`;
+const endCta = lang => `<section class="endcta"><h2>${L[lang].ctaH}</h2><p>${L[lang].ctaP}</p><a class="cta-b" href="${site(lang)}">${L[lang].calc}</a></section>`;
 
 module.exports = async (req, res) => {
   /* canonical links, sitemap and OG always point to the main domain, so the old *.vercel.app copy is not indexed as a duplicate */
   const base = (process.env.SITE_URL || 'https://code-matrix.space').replace(/\/$/, '');
   const q = req.query || {};
+  const lang = q.lang === 'en' ? 'en' : 'uk', T = L[lang], P = pre(lang);
   const send = (code, html, type) => { res.statusCode = code; res.setHeader('content-type', (type || 'text/html') + '; charset=utf-8'); res.setHeader('cache-control', code === 200 ? 'public, s-maxage=300, stale-while-revalidate=86400' : 'no-store'); res.end(html); };
   try {
     if (q.sitemap) {
       const list = await posts();
-      const urls = [{ loc: base + '/', pr: '1.0' }, { loc: base + '/blog', pr: '0.8' }].concat(list.map(p => ({ loc: `${base}/blog/${p.slug}`, lm: (p.updated_at || p.published_at || '').slice(0, 10), pr: '0.7' })));
+      const en = list.filter(p => inLang(p, 'en'));
+      const urls = [{ loc: base + '/', pr: '1.0' }, { loc: base + '/blog', pr: '0.8' }, { loc: base + '/en/blog', pr: '0.7' }]
+        .concat(list.map(p => ({ loc: `${base}/blog/${p.slug}`, lm: (p.updated_at || p.published_at || '').slice(0, 10), pr: '0.7' })))
+        .concat(en.map(p => ({ loc: `${base}/en/blog/${p.slug}`, lm: (p.updated_at || p.published_at || '').slice(0, 10), pr: '0.6' })));
       return send(200, `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map(u => `<url><loc>${esc(u.loc)}</loc>${u.lm ? `<lastmod>${u.lm}</lastmod>` : ''}<priority>${u.pr}</priority></url>`).join('')}</urlset>`, 'application/xml');
     }
     const slug = String(q.slug || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
     if (slug) {
-      const list = await posts(`&slug=eq.${slug}`);
-      const p = list[0];
-      if (!p) return send(404, head('Статтю не знайдено — CODE', 'Такої статті немає.', base + '/blog') + top + `<main class="art"><p class="crumbs"><a href="/">Головна</a> / <a href="/blog">Блог</a></p><h1>Статтю не знайдено</h1><p class="lead">Можливо, її перейменували. Подивіться інші статті в <a href="/blog">блозі</a> або <a href="/">розрахуйте свою матрицю</a>.</p></main>` + foot);
-      const url = `${base}/blog/${p.slug}`, img = abs(base, p.cover), title = p.title || p.h1;
-      const ld = [{ '@context': 'https://schema.org', '@type': 'BlogPosting', headline: p.h1, description: p.description, image: img || undefined, datePublished: p.published_at, dateModified: p.updated_at || p.published_at, inLanguage: 'uk', mainEntityOfPage: url, author: { '@type': 'Organization', name: 'CODE' }, publisher: { '@type': 'Organization', name: 'CODE', url: base } },
-        { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Головна', item: base + '/' }, { '@type': 'ListItem', position: 2, name: 'Блог', item: base + '/blog' }, { '@type': 'ListItem', position: 3, name: p.h1, item: url }] }];
-      let others = []; try { others = (await posts(`&slug=neq.${slug}`)).slice(0, 3); } catch (_) {}
-      return send(200, head(`${title} — CODE`, p.description || plain(p.body).slice(0, 155), url, img, { article: true, ld }) + top +
-        `<main class="art"><p class="crumbs"><a href="/">Головна</a> / <a href="/blog">Блог</a></p><article><h1>${esc(p.h1)}</h1>${p.h2 ? `<p class="lead">${esc(p.h2)}</p>` : ''}<p class="meta">${fmtDate(p.published_at)} · ${readMin(p.body)} хв читання</p>${p.cover ? `<img class="cover" src="${esc(p.cover)}" alt="${esc(p.cover_alt || p.h1)}" width="1200" height="630">` : ''}<div class="body">${md(p.body)}</div></article>${endCta}</main>` +
-        (others.length ? `<section class="more"><h2>[ Читайте також ]</h2><div class="grid">${others.map(card).join('')}</div></section>` : '') + foot);
+      const raw = (await posts(`&slug=eq.${slug}`))[0];
+      const p = raw && inLang(raw, lang);
+      if (!p) return send(404, head(lang, T.nfT, T.nfD, base + P + '/blog') + top(lang, raw && lang === 'en' ? `/blog/${slug}` : '') + `<main class="art"><p class="crumbs"><a href="${site(lang)}">${T.home}</a> / <a href="${P}/blog">${T.blog}</a></p><h1>${T.nfH}</h1><p class="lead">${T.nfP}</p></main>` + foot(lang));
+      const hasEn = !!inLang(raw, 'en');
+      const url = `${base}${P}/blog/${p.slug}`, img = abs(base, p.cover), title = p.title || p.h1;
+      const ld = [{ '@context': 'https://schema.org', '@type': 'BlogPosting', headline: p.h1, description: p.description, image: img || undefined, datePublished: p.published_at, dateModified: p.updated_at || p.published_at, inLanguage: T.html, mainEntityOfPage: url, author: { '@type': 'Organization', name: 'CODE' }, publisher: { '@type': 'Organization', name: 'CODE', url: base } },
+        { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: T.home, item: base + site(lang) }, { '@type': 'ListItem', position: 2, name: T.blog, item: base + P + '/blog' }, { '@type': 'ListItem', position: 3, name: p.h1, item: url }] }];
+      let others = []; try { others = (await posts(`&slug=neq.${slug}`)).map(x => inLang(x, lang)).filter(Boolean).slice(0, 3); } catch (_) {}
+      const other = hasEn ? (lang === 'en' ? `/blog/${p.slug}` : `/en/blog/${p.slug}`) : '';
+      return send(200, head(lang, `${title} — CODE`, p.description || plain(p.body).slice(0, 155), url, img, { article: true, ld, alt: alts(base, `/blog/${p.slug}`, hasEn) }) + top(lang, other) +
+        `<main class="art"><p class="crumbs"><a href="${site(lang)}">${T.home}</a> / <a href="${P}/blog">${T.blog}</a></p><article><h1>${esc(p.h1)}</h1>${p.h2 ? `<p class="lead">${esc(p.h2)}</p>` : ''}<p class="meta">${fmtDate(p.published_at, lang)} · ${readMin(p.body)} ${T.min}</p>${p.cover ? `<img class="cover" src="${esc(p.cover)}" alt="${esc(p.cover_alt || p.h1)}" width="1200" height="630">` : ''}<div class="body">${md(p.body)}</div></article>${endCta(lang)}</main>` +
+        (others.length ? `<section class="more"><h2>${T.more}</h2><div class="grid">${others.map(card(lang)).join('')}</div></section>` : '') + foot(lang));
     }
-    const list = await posts();
-    const ld = { '@context': 'https://schema.org', '@type': 'Blog', name: 'Блог CODE', url: base + '/blog', inLanguage: 'uk' };
-    return send(200, head('Блог про матрицю долі — CODE', 'Статті про матрицю долі: як розшифрувати свою матрицю, програми років, кармічний хвіст, сумісність і самопізнання за методом Наталії Ладіні.', base + '/blog', list[0] && abs(base, list[0].cover), { ld }) + top +
-      `<main><section class="hero"><p class="crumbs"><a href="/">Головна</a> / Блог</p><h1>Блог про матрицю долі</h1><p>Розбираємо, як читати свою матрицю: програми років, кармічні задачі, таланти, гроші та стосунки. Простими словами — і з посиланнями на безкоштовний розрахунок.</p></section>
-      ${list.length ? `<div class="grid">${list.map(card).join('')}</div>` : '<p class="lead">Статті скоро з’являться.</p>'}</main>` + `<div style="max-width:760px;margin:0 auto">${endCta}</div>` + foot);
+    const list = (await posts()).map(x => inLang(x, lang)).filter(Boolean);
+    const ld = { '@context': 'https://schema.org', '@type': 'Blog', name: T.blogName, url: base + P + '/blog', inLanguage: T.html };
+    return send(200, head(lang, T.listT, T.listD, base + P + '/blog', list[0] && abs(base, list[0].cover), { ld, alt: alts(base, '/blog', true) }) + top(lang, lang === 'en' ? '/blog' : '/en/blog') +
+      `<main><section class="hero"><p class="crumbs"><a href="${site(lang)}">${T.home}</a> / ${T.blog}</p><h1>${T.listH}</h1><p>${T.listP}</p></section>
+      ${list.length ? `<div class="grid">${list.map(card(lang)).join('')}</div>` : `<p class="lead">${T.soon}</p>`}</main>` + `<div style="max-width:760px;margin:0 auto">${endCta(lang)}</div>` + foot(lang));
   } catch (e) {
-    return send(503, head('Блог тимчасово недоступний — CODE', '', base + '/blog') + top + `<main class="art"><h1>Блог тимчасово недоступний</h1><p class="lead">Спробуйте оновити сторінку за хвилину. А поки — <a href="/">розрахуйте свою матрицю</a>.</p></main>` + foot);
+    return send(503, head(lang, T.errT, '', base + P + '/blog') + top(lang) + `<main class="art"><h1>${T.errT.replace(' — CODE', '')}</h1><p class="lead">${T.errP}</p></main>` + foot(lang));
   }
 };
