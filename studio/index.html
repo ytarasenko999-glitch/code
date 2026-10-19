@@ -741,7 +741,7 @@ function vBal(){
   const by={}; m30.filter(x=>x.cost!=null).forEach(x=>{ const k=by[x.kind]=by[x.kind]||{n:0,c:0,i:0,o:0}; k.n++; k.c+=+x.cost; k.i+=x.tokens_in||0; k.o+=x.tokens_out||0; });
   const low=b.has&&(b.left<2||(b.days!=null&&b.days<7));
   const kpi=(t,v,s,cls='')=>`<div class="panel kpi ${cls}"><small>${t}</small><b>${v}</b><span>${s||''}</span></div>`;
-  return head('Баланс ШІ')+`<div class="bal-v">
+  return head('Баланс ШІ',`<a class="btn sm" href="https://platform.claude.com/settings/billing" target="_blank" rel="noopener" title="Claude Console → Billing (акаунт code.matrix.support@gmail.com)">Поповнити баланс ↗</a>`)+`<div class="bal-v">
   ${b.has?'':'<div class="panel bal-warn">Додайте нижче суму поповнення в Claude Console (і поточний баланс, наприклад $5 на сьогодні) — тоді тут з’явиться орієнтовний залишок і на скільки його вистачить.</div>'}
   ${low?`<div class="panel bal-warn bad">Баланс закінчується: орієнтовно ${usd(b.left)}${b.days!=null?`, вистачить приблизно на ${b.days} дн.`:''} Поповніть у <a href="https://platform.claude.com/settings/billing" target="_blank" rel="noopener">Claude Console → Billing</a>.</div>`:''}
   <div class="kpis kpis5">
