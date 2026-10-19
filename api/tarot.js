@@ -9,7 +9,7 @@ const MODEL = process.env.AI_MODEL || 'claude-sonnet-5-5';
 const DAILY_CAP = parseInt(process.env.AI_DAILY_CAP || '60', 10);   // safety cap per user per day, any plan
 const QUOTA = { plus: parseInt(process.env.AI_PLUS || '100', 10), pro: parseInt(process.env.AI_PRO || '300', 10) }; // per 30 days
 const DEEP = { report: { plus: 1, pro: 10 }, year: { plus: 1, pro: 10 } }; // personal readings / 12-month forecasts per 30 days
-const POOL = 'kind=not.in.(report,year,photo,cont)'; // «cont» = free continuation of a cut-off paid reading
+const POOL = 'kind=not.in.(report,year,photo,cont,tr)'; // «cont» = free continuation of a cut-off paid reading
 const PRICE_IN = parseFloat(process.env.AI_PRICE_IN || '2'), PRICE_OUT = parseFloat(process.env.AI_PRICE_OUT || '10'); // $ per million tokens (Sonnet 5.5)
 const costOf = (i, o) => Math.round(((i || 0) * PRICE_IN + (o || 0) * PRICE_OUT) / 1e6 * 1e6) / 1e6;
 const PHOTO_DAY = parseInt(process.env.AI_PHOTO_DAY || '20', 10); // photo recognition is free (part of the reading) but capped per day // tarot + ask-your-matrix share one request pool
@@ -43,8 +43,17 @@ async function getSub(token, uid) {
 }
 /* decides which allowance pays for this request.
    tarot / chat: plan → free → pack requests.  report / year: plan's monthly deep quota → pack readings (report only). */
+const TR_DAY = parseInt(process.env.AI_TR_DAY || '80', 10);   // translation chunks per user per day
+const TR_LANGS = { en: 'English', uk: 'Ukrainian', de: 'German', fr: 'French', es: 'Spanish', it: 'Italian' };
 async function allowance(token, uid, task) {
   const day = new Date(); day.setUTCHours(0, 0, 0, 0);
+  if (task === 'tr') {
+    /* translating a reading the person already has (a paid report / forecast): free, but only for people who have one, with a daily cap */
+    const owned = (await countUse(token, uid, { kind: 'report' })) + (await countUse(token, uid, { kind: 'year' }));
+    if (!owned) return { ok: false, code: 'need_plan', plan: 'free' };
+    if (await countUse(token, uid, { since: day, kind: 'tr' }) >= TR_DAY) return { ok: false, code: 'daily_limit' };
+    return { ok: true, source: 'tr', left: 0, plan: 'free' };
+  }
   if (await countUse(token, uid, { since: day }) >= DAILY_CAP) return { ok: false, code: 'daily_limit' };
   const sub = (await getSub(token, uid)) || { plan: 'free', packs: 0 };
   const paid = (sub.plan === 'plus' || sub.plan === 'pro') && sub.paid_until && new Date(sub.paid_until) > new Date();
@@ -167,7 +176,7 @@ module.exports = async (req, res) => {
   if (!KEY) return fail(res, 503, 'not_configured');
 
   let al;
-  const body0 = req.body || {}, task = ['tarot', 'chat', 'report', 'year', 'cont'].includes(body0.task) ? body0.task : 'tarot';
+  const body0 = req.body || {}, task = ['tarot', 'chat', 'report', 'year', 'cont', 'tr'].includes(body0.task) ? body0.task : 'tarot';
   try { al = await allowance(token, user.id, task); } catch (e) { return fail(res, 500, 'usage', { detail: String(e.message || e) }); }
   if (!al.ok) return fail(res, al.code === 'daily_limit' ? 429 : al.code === 'need_plan' ? 403 : 402, al.code, { plan: al.plan });
 
@@ -188,6 +197,16 @@ module.exports = async (req, res) => {
       .map(i => ({ type: 'image', source: { type: 'base64', media_type: i.type, data: i.data } }));
     content.push({ type: 'text', text: body.prompt + '\n\nReturn ONLY valid JSON, no prose, no code fences.' });
     messages = [{ role: 'user', content }];
+  } else if (task === 'tr') {
+    /* the server writes the instruction itself, so this free task can only translate */
+    const t = Array.isArray(body.turns) && body.turns.length ? body.turns[body.turns.length - 1] : null;
+    const text = t && typeof t.content === 'string' ? t.content : '';
+    const to = TR_LANGS[body.lang] || 'English';
+    if (!text.trim() || text.length > 14000) return fail(res, 400, 'bad_request');
+    messages = [{ role: 'user', content: `Translate the text below into ${to}. It is part of a personal Destiny Matrix reading (Natalia Ladini method; numbers are Major Arcana). Keep the Markdown structure exactly (headings, bold, lists, numbering), keep all numbers and position letters (A, B, C, D, E, A1, C2…) unchanged, use the standard ${to} names of the Tarot arcana, address the reader as “you”. Output ONLY the translation — no notes, no preface.
+
+TEXT:
+${text}` }];
   } else {
     messages = cleanTurns(body.turns, task === 'cont');
     if (!messages) return fail(res, 400, 'bad_request');
@@ -196,7 +215,7 @@ module.exports = async (req, res) => {
   const upstream = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: MODEL, max_tokens: json ? 1200 : (task === 'report' || task === 'year' || task === 'cont') ? 12000 : task === 'chat' ? 2000 : 2400, messages, stream: !json })
+    body: JSON.stringify({ model: MODEL, max_tokens: json ? 1200 : (task === 'report' || task === 'year' || task === 'cont') ? 12000 : task === 'tr' ? 8000 : task === 'chat' ? 2000 : 2400, messages, stream: !json })
   }).catch(() => null);
   if (!upstream) return fail(res, 502, 'network');
   if (!upstream.ok) {
