@@ -98,9 +98,22 @@ main{min-width:0;display:flex;flex-direction:column;gap:18px}
 .grid2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px}
 .card{padding:20px 22px}
 .card h3{font-weight:400;font-size:18px;margin-bottom:14px}
-.bars{display:flex;align-items:flex-end;gap:4px;height:150px;padding-top:8px}
-.bars i{flex:1;min-width:3px;border-radius:6px 6px 2px 2px;background:linear-gradient(0deg,var(--accent),var(--accent-2),var(--accent-3));opacity:.85;position:relative}
-.bars i:hover{opacity:1}
+.bars{position:relative;display:flex;align-items:flex-end;gap:4px;height:170px;padding-top:22px}
+.bars .bc{flex:1;min-width:3px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;cursor:default;outline:none}
+.bars .bc b{font-family:var(--font-mono);font-size:10px;font-weight:500;color:var(--muted);line-height:1;margin-bottom:4px;white-space:nowrap}
+.bars.dense .bc b{font-size:9px}
+.bars i{width:100%;border-radius:6px 6px 2px 2px;background:linear-gradient(0deg,var(--accent),var(--accent-2),var(--accent-3));opacity:.8;transition:opacity .12s}
+.bars .bc.on i,.bars .bc:focus-visible i{opacity:1;box-shadow:0 0 0 2px var(--accent-soft)}
+.bars .bc.on b{color:var(--fg)}
+.bars .bc.today b{color:var(--accent)}
+.bars-tip{position:absolute;top:-6px;z-index:3;pointer-events:none;padding:7px 11px;border-radius:12px;background:var(--surface-solid);border:1px solid var(--line);box-shadow:var(--shadow);font-size:12.5px;line-height:1.35;white-space:nowrap}
+.bars-tip b{display:block;font-weight:600}
+.bars-tip span{color:var(--muted);font-size:11.5px}
+.bars-sum{display:flex;flex-wrap:wrap;gap:6px 22px;margin:0 0 6px}
+.bars-sum span{display:flex;align-items:baseline;gap:6px}
+.bars-sum em{font-style:normal;font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.bars-sum b{font-family:var(--font-display);font-weight:400;font-size:20px}
+.bars-sum small{font-size:11.5px;color:var(--muted)}
 .bars-x{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:6px}
 .tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 16px}
 .tools input[type=search]{flex:1 1 240px;height:42px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:none}
@@ -391,12 +404,29 @@ function go(v){ VIEW=v; document.querySelectorAll('.navb').forEach(b=>b.classLis
 document.querySelectorAll('.navb').forEach(b=>b.onclick=async()=>{ if(b.dataset.v==='blog') EDIT=null; if(b.dataset.v==='mail'){ MAIL=null; await loadMail(); } if(b.dataset.v==='an') await loadAn(); if(b.dataset.v==='set') await loadSet(); if(b.dataset.v==='seo'&&!SEO.def) await loadSeo(); go(b.dataset.v); });
 const head=(t,acts='')=>`<div class="top"><div><p class="pk">[ адмінпанель ]</p><h2>${t}</h2></div><div class="acts">${acts}<button class="btn ghost sm" data-act="reload">Оновити</button></div></div>`;
 
+const zapyt=n=>{ const a=n%10,b=n%100; return n+' '+(a===1&&b!==11?'запит':a>=2&&a<=4&&(b<12||b>14)?'запити':'запитів'); };
+const dayLbl=k=>{ const [y,m,d]=k.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('uk-UA',{weekday:'short',day:'numeric',month:'long'}); };
 function bars(days){
   const by={}; for(let i=days-1;i>=0;i--) by[isoDay(Date.now()-i*864e5)]=0;
   D.ai.forEach(x=>{ const k=isoDay(x.created_at); if(k in by) by[k]++; });
-  const v=Object.values(by), mx=Math.max(1,...v), ks=Object.keys(by);
-  return `<div class="bars">${v.map((n,i)=>`<i style="height:${Math.max(2,n/mx*100)}%" title="${ks[i]}: ${n}"></i>`).join('')}</div><div class="bars-x"><span>${ks[0].slice(5)}</span><span>макс. ${mx} / день</span><span>${ks[ks.length-1].slice(5)}</span></div>`;
+  const v=Object.values(by), ks=Object.keys(by), mx=Math.max(1,...v), sum=v.reduce((a,b)=>a+b,0), today=v[v.length-1], pk=v.indexOf(Math.max(...v));
+  /* numbers above the bars: every day when they fit (≤31 days), otherwise only the peak */
+  const lbl=(n,i)=>n&&(days<=31||i===pk)?`<b>${n}</b>`:'';
+  return `<div class="bars-sum"><span><em>Усього</em><b>${sum.toLocaleString('uk-UA')}</b></span><span><em>Сьогодні</em><b>${today}</b></span><span><em>У середньому</em><b>${(sum/days).toFixed(1).replace('.',',')}</b><small>/ день</small></span>${sum?`<span><em>Пік</em><b>${v[pk]}</b><small>${esc(dayLbl(ks[pk]))}</small></span>`:''}</div>
+  <div class="bars${days>31?' dense':''}">${v.map((n,i)=>`<span class="bc${i===v.length-1?' today':''}" data-tip="${esc(dayLbl(ks[i]))}" data-n="${n}" tabindex="0">${lbl(n,i)}<i style="height:${n?Math.max(3,n/mx*100):1.5}%"></i></span>`).join('')}<div class="bars-tip" hidden></div></div>
+  <div class="bars-x"><span>${esc(dayLbl(ks[0]))}</span><span>сьогодні</span></div>`;
 }
+/* instant tooltip on the day bars: mouse, keyboard focus or a tap on a phone */
+(()=>{ const show=c=>{ const w=c.closest('.bars'), t=w&&w.querySelector('.bars-tip'); if(!t) return;
+    w.querySelectorAll('.bc.on').forEach(x=>x.classList.remove('on')); c.classList.add('on');
+    t.innerHTML=`<b>${zapyt(+c.dataset.n)}</b><span>${c.dataset.tip}</span>`; t.hidden=false;
+    const W=w.clientWidth, x=c.offsetLeft+c.offsetWidth/2, tw=t.offsetWidth; t.style.left=Math.max(0,Math.min(W-tw,x-tw/2))+'px'; };
+  const hide=w=>{ if(!w) return; const t=w.querySelector('.bars-tip'); if(t) t.hidden=true; w.querySelectorAll('.bc.on').forEach(x=>x.classList.remove('on')); };
+  document.addEventListener('pointerover',e=>{ const c=e.target.closest&&e.target.closest('.bars .bc'); if(c) show(c); });
+  document.addEventListener('pointerdown',e=>{ const c=e.target.closest&&e.target.closest('.bars .bc'); if(c) show(c); else document.querySelectorAll('.bars').forEach(hide); });
+  document.addEventListener('focusin',e=>{ const c=e.target.closest&&e.target.closest('.bars .bc'); if(c) show(c); });
+  document.addEventListener('pointerout',e=>{ const w=e.target.closest&&e.target.closest('.bars'); if(w&&e.pointerType==='mouse'&&!w.contains(e.relatedTarget)) hide(w); });
+})();
 function vOverview(){
   const now=new Date(), mStart=new Date(now.getFullYear(),now.getMonth(),1);
   const subs=Object.values(D.subs).filter(active), plus=subs.filter(s=>s.plan==='plus'), pro=subs.filter(s=>s.plan==='pro');
