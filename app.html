@@ -1872,8 +1872,10 @@ a,button,label,select,input,textarea,[role=button],[role=tab],.pt,.card,.chip,.c
 .pl-pr span{color:var(--muted);font-size:13px}
 .pl-lim{margin:0 0 14px;display:flex;flex-direction:column;border-top:1px solid var(--hair)}
 .pl-lim>div{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid var(--hair)}
-.pl-lim dt{font-size:12.5px;line-height:1.35;color:var(--muted);min-width:0}
-.pl-lim dd{margin:0;font-size:13px;font-weight:500;text-align:right;white-space:nowrap;color:var(--fg)}
+.pl-lim dt{flex:1 1 auto;font-size:12.5px;line-height:1.35;color:var(--muted);min-width:0}
+/* the value wraps onto a second line instead of running over the label («3 на старт, далі 1 на тиждень») */
+.pl-lim dd{flex:0 0 auto;margin:0;font-size:13px;line-height:1.35;font-weight:500;text-align:right;white-space:nowrap;color:var(--fg)}
+.pl-lim dd.lng{flex:0 1 auto;max-width:50%;white-space:normal}
 .pl-lim .no dd{color:var(--muted);font-weight:400}
 .sub-f.pl-lim{max-width:560px}
 .pl-sub{margin:2px 0 14px;font-size:12px;color:var(--accent);min-height:1.4em}
@@ -5637,7 +5639,7 @@ const PLANS=[
   {id:'pro',n:'Pro',m:549,y:4990,tag:'Для тарологів',d:'Робоче місце для консультацій',lim:{ai:'300 на місяць',rep:'10 на місяць',yr:'10 на місяць',wl:'Так'},f:['Розбори й прогнози для клієнтів — на будь-які дати народження','Уточнення до розкладу — кожне рахується як окремий запит','Трактування розкладів з урахуванням матриці клієнта'],soon:'Незабаром у Pro: база клієнтів, тон відповіді «для мене / для клієнта» і шаблони консультацій'},
 ];
 const PLAN_LIM=[['all','Матриця, сумісність, прогноз по роках, PDF'],['ai','Запити до ШІ (Таро, уточнення, «Запитай свою матрицю»)'],['rep','Персональний розбір матриці'],['yr','Прогноз на 12 місяців'],['wl','PDF без логотипу CODE']];
-const limHTML=p=>`<dl class="pl-lim">${PLAN_LIM.map(([k,t])=>{ const v=k==='all'?_t("Без ліміту"):_t(p.lim[k]); return `<div class="${v==='—'?'no':''}"><dt>${_t(t)}</dt><dd>${v}</dd></div>`; }).join('')}</dl>`;
+const limHTML=p=>`<dl class="pl-lim">${PLAN_LIM.map(([k,t])=>{ const v=k==='all'?_t("Без ліміту"):_t(p.lim[k]); return `<div class="${v==='—'?'no':''}"><dt>${_t(t)}</dt><dd${v.length>16?' class="lng"':''}>${v}</dd></div>`; }).join('')}</dl>`;
 let PLAN_PER='m';
 const uah=n=>_f("{0} грн",[String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ')]);
 function plansHTML(){
