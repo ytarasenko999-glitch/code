@@ -34,6 +34,7 @@ module.exports = async (req, res) => {
       const seen = await get(`email_log?select=id&user_id=eq.${s.user_id}&kind=eq.${kind}&ref=eq.${ref}`); if (seen.length) { out.skipped.push(`${s.user_id}:${kind}:sent`); continue; }
       const ud = (await get(`user_data?select=email,profile&id=eq.${s.user_id}`))[0] || {};
       const to = s.email || ud.email; if (!to) { out.skipped.push(`${s.user_id}:no_email`); continue; }
+      if (ud.profile && ud.profile.consent && ud.profile.consent.service === false) { out.skipped.push(`${s.user_id}:${kind}:optout`); continue; }
       const vars = { name: (ud.profile && ud.profile.name) || 'друже', email: to, plan: s.plan === 'pro' ? 'Pro' : 'Plus', period: s.period === 'y' ? 'рік' : 'місяць', amount: String((PRICE[s.plan] || {})[s.period === 'y' ? 'y' : 'm'] || ''), paid_until: fmt(s.paid_until), days_left: String(Math.max(1, Math.ceil(left))), cabinet_url: SITE + '/?go=acct', plans_url: SITE + '/?go=acct', site_url: SITE };
       try {
         await sendMail(to, render(tpl, vars));
