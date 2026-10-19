@@ -3,7 +3,7 @@
 Run after every translation batch:  python3 tools/i18n-stats.py"""
 import re, json, datetime, os
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-s=open(os.path.join(ROOT,'index.html'),encoding='utf-8').read()
+s=open(os.path.join(ROOT,'app.html'),encoding='utf-8').read()
 LANGS=['en','de','fr','es','it']; NAMES={'en':'Англійська','de':'Німецька','fr':'Французька','es':'Іспанська','it':'Італійська'}
 def H(t):
   h=0x811c9dc5

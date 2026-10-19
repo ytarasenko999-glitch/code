@@ -195,6 +195,66 @@ select.tb{max-width:240px}
 @media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}}
 @media (max-width:820px){.app{grid-template-columns:1fr;padding:12px}.side{position:static;max-height:none;flex-direction:row;flex-wrap:wrap;padding:12px}.side .who,.side .sp{display:none}.logo{width:100%;font-size:28px}.navb{width:auto;padding:9px 12px;font-size:13.5px}.navb em{margin-left:6px}.side-acts{width:100%}.fg{grid-template-columns:1fr}}
 .pe-en summary{cursor:pointer;list-style:none;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.pe-en summary::-webkit-details-marker{display:none}.pe-en[open] summary{margin-bottom:14px}
+
+/* SEO */
+.seo-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:0 0 16px}
+.seo-hint{font-size:10.5px;color:var(--muted)}
+.seo-g1{margin-bottom:8px}
+.seo-sec{font-family:var(--font-display);font-weight:400;font-size:20px;margin:26px 4px 12px}
+.serp{font-family:Arial,Helvetica,sans-serif;max-width:600px;color:var(--fg)}
+.serp-site{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.serp-fav{width:28px;height:28px;border-radius:50%;background:var(--surface-solid);border:1px solid var(--hair);display:grid;place-items:center;flex:none}
+.serp-fav img{width:18px;height:18px}
+.serp-site b{display:block;font-size:14px;font-weight:400}
+.serp-site small{display:block;font-size:12px;color:var(--muted);word-break:break-all}
+.serp-t{font-size:20px;line-height:1.3;color:#1a0dab;margin:2px 0 3px}
+:root[data-theme="dark"] .serp-t{color:#99c3ff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .serp-t{color:#99c3ff}}
+.serp-t.sm{font-size:16px}
+.serp-d{margin:0;font-size:14px;line-height:1.55;color:var(--muted)}
+.serp-sl{display:grid;grid-template-columns:1fr 1fr;gap:12px 26px;margin:14px 0 0 38px}
+.serp-sl .serp-d{font-size:13px}
+.seo-list{display:flex;flex-direction:column;gap:10px}
+.seo-p{border-radius:20px}
+.seo-p>summary{display:flex;align-items:center;gap:14px;padding:14px 18px;cursor:pointer;list-style:none}
+.seo-p>summary::-webkit-details-marker{display:none}
+.seo-ord{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);font-family:var(--font-mono);font-size:12px;flex:none}
+.seo-h{min-width:0;flex:1}
+.seo-h strong{display:block;font-weight:600}
+.seo-h small{display:block;font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.seo-b{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+.seo-mv{display:flex;gap:4px}
+.seo-mv .chip{width:34px;padding:0}
+.seo-mv .chip[disabled]{opacity:.3;cursor:default}
+.seo-body{padding:4px 18px 18px;border-top:1px solid var(--hair)}
+.seo-prev{padding:16px;margin:14px 0;border-radius:16px;background:var(--surface-solid);border:1px solid var(--hair)}
+.seo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.seo-grid textarea{height:auto;min-height:72px}
+.seo-c{float:right;font-style:normal;letter-spacing:.04em}
+.seo-c.ok{color:var(--ok)}.seo-c.warn{color:var(--warn)}.seo-c.bad{color:var(--bad)}
+.seo-slug{display:flex;align-items:center;border-radius:14px;background:var(--surface-2);border:1px solid transparent;overflow:hidden}
+.seo-slug:focus-within{border-color:var(--accent);background:var(--surface-solid)}
+.seo-slug span{padding:0 0 0 14px;font-family:var(--font-mono);font-size:12px;color:var(--muted);white-space:nowrap}
+.seo-slug input{flex:1;min-width:0;background:none!important;border:0!important;padding-left:2px!important;font-family:var(--font-mono);font-size:13px}
+.seo-slug input:disabled{opacity:.6}
+.seo-old{display:block;margin-top:4px;font-size:11.5px;color:var(--muted)}
+.seo-og{margin-top:12px}
+.seo-og>summary{cursor:pointer;font-size:13px;color:var(--muted);margin-bottom:10px}
+.seo-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:14px}
+.seo-ni{display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer}
+.seo-gh{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+#seoGsc .kpis{margin-bottom:14px}
+#seoGsc .kpi .up{color:var(--ok)}#seoGsc .kpi .dn{color:var(--bad)}
+#seoGsc .panel.card{margin-bottom:14px}
+#seoGsc td small{display:block;color:var(--muted);font-size:11.5px;word-break:break-all}
+.seo-ch{width:100%;height:150px;display:block}
+.seo-ch path{fill:none;stroke-width:2;vector-effect:non-scaling-stroke}
+.seo-ch .lc,.lg.lc{stroke:var(--accent);background:var(--accent)}
+.seo-ch .li,.lg.li{stroke:var(--accent-3);background:var(--accent-3);opacity:.8}
+.lg{display:inline-block;width:10px;height:3px;border-radius:2px;margin:0 4px 2px 8px;vertical-align:middle}
+.seo-setup ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:10px;line-height:1.55;font-size:14px}
+.seo-setup code{font-family:var(--font-mono);font-size:12px;background:var(--surface-2);padding:1px 6px;border-radius:6px}
+@media (max-width:820px){.seo-grid,.serp-sl{grid-template-columns:1fr}.serp-sl{margin-left:0}.seo-p>summary{flex-wrap:wrap}.seo-b{justify-content:flex-start;width:100%;order:3}}
 </style>
 </head>
 <body>
@@ -225,6 +285,7 @@ select.tb{max-width:240px}
     <button class="navb" data-v="bal">Баланс ШІ<em id="cB"></em></button>
     <button class="navb" data-v="log">Журнал дій</button>
     <button class="navb" data-v="blog">Блог<em id="cBl"></em></button>
+    <button class="navb" data-v="seo">SEO</button>
     <button class="navb" data-v="mail">Email-розсилки</button>
     <button class="navb" data-v="docs">Документація</button>
     <button class="navb" data-v="set">Налаштування</button>
@@ -326,8 +387,8 @@ async function logA(action,target,details){ await SB.from('admin_log').insert({a
 
 /* ---------- views ---------- */
 function go(v){ VIEW=v; document.querySelectorAll('.navb').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); const m=$('#main');
-  m.innerHTML=v==='users'?vUsers():v==='subs'?vSubs():v==='pays'?vPays():v==='ai'?vAI():v==='log'?vLog():v==='admins'?vAdmins():v==='bal'?vBal():v==='blog'?vBlog():v==='post'?vPost():v==='docs'?vDocs():v==='mail'?vMail():v==='an'?vAn():v==='partners'?vPartners():v==='set'?vSet():vOverview(); bindView(); }
-document.querySelectorAll('.navb').forEach(b=>b.onclick=async()=>{ if(b.dataset.v==='blog') EDIT=null; if(b.dataset.v==='mail'){ MAIL=null; await loadMail(); } if(b.dataset.v==='an') await loadAn(); if(b.dataset.v==='set') await loadSet(); go(b.dataset.v); });
+  m.innerHTML=v==='users'?vUsers():v==='subs'?vSubs():v==='pays'?vPays():v==='ai'?vAI():v==='log'?vLog():v==='admins'?vAdmins():v==='bal'?vBal():v==='blog'?vBlog():v==='post'?vPost():v==='docs'?vDocs():v==='mail'?vMail():v==='an'?vAn():v==='partners'?vPartners():v==='set'?vSet():v==='seo'?vSeo():vOverview(); bindView(); }
+document.querySelectorAll('.navb').forEach(b=>b.onclick=async()=>{ if(b.dataset.v==='blog') EDIT=null; if(b.dataset.v==='mail'){ MAIL=null; await loadMail(); } if(b.dataset.v==='an') await loadAn(); if(b.dataset.v==='set') await loadSet(); if(b.dataset.v==='seo'&&!SEO.def) await loadSeo(); go(b.dataset.v); });
 const head=(t,acts='')=>`<div class="top"><div><p class="pk">[ адмінпанель ]</p><h2>${t}</h2></div><div class="acts">${acts}<button class="btn ghost sm" data-act="reload">Оновити</button></div></div>`;
 
 function bars(days){
@@ -819,8 +880,221 @@ function vSet(){
     :'<p class="empty">Не вдалося завантажити статистику перекладів.</p>'}
   </div>`;
 }
+/* ---------- SEO: page titles & descriptions for Google, addresses, order of the main sections (sitelinks), Search Console data ---------- */
+const SEO_ORIGIN='https://code-matrix.space', SEO_F=['slug','name','title','desc','ogTitle','ogDesc','ogImage'];
+let SEO={def:null,raw:{},list:[],saved:{},lang:'uk',open:new Set(),dirty:false,pub:null,gsc:null,gscDays:28,gscBusy:false,insp:null,inspBusy:false,maps:null,err:null};
+async function loadSeo(){
+  try{
+    const [d,r]=await Promise.all([fetch('/api/page?defaults=1').then(x=>x.json()),SB.from('admin_settings').select('value').eq('key','seo').maybeSingle()]);
+    SEO.def=d; SEO.err=r.error&&r.error.message; SEO.raw=r.data&&r.data.value||{};
+    /* can the public site read these settings? (needs seo-setup.sql once) */
+    SEO.pub=null; if(r.data){ try{ const a=await fetch('https://blwyzqxhzvjzhqkabesi.supabase.co/rest/v1/admin_settings?select=key&key=eq.seo',{headers:{apikey:'sb_publishable_v2wRmfGkiVW7fF6wIkPZBg_fjeS3wBu'}}).then(x=>x.json()); SEO.pub=Array.isArray(a)&&a.length>0; }catch(_){ SEO.pub=null; } }
+  }catch(e){ SEO.err=e.message; SEO.def=SEO.def||{pages:[]}; }
+  seoBuild(); SEO.dirty=false;
+}
+const seoRe=()=>new RegExp(SEO.def&&SEO.def.reserved||'^(api|studio|blog|en)$');
+function seoBuild(){
+  const sp=SEO.raw.pages||{}, order=Array.isArray(SEO.raw.order)?SEO.raw.order:[];
+  SEO.list=(SEO.def.pages||[]).map((d,i)=>{ const s=sp[d.k]||{}; const p={k:d.k,fixed:!!d.fixed,noindex:!!s.noindex,i:order.includes(d.k)?order.indexOf(d.k):100+i,def:d};
+    ['uk','en'].forEach(l=>{ const x=s[l]||{}; p[l]={}; SEO_F.forEach(f=>p[l][f]=x[f]!=null&&String(x[f]).trim()!==''&&!(f==='slug'&&d.fixed)?String(x[f]):(f in d[l]?d[l][f]:'')); p[l].old=Array.isArray(x.old)?x.old.slice():[]; });
+    return p; }).sort((a,b)=>a.k==='home'?-1:b.k==='home'?1:a.i-b.i);
+  SEO.saved={}; SEO.list.forEach(p=>SEO.saved[p.k]={uk:p.uk.slug,en:p.en.slug});
+  SEO.site=Object.assign({ogImage:''},SEO.raw.site||{});
+}
+const seoPath=(p,l)=>p.k==='home'?(l==='en'?'/en':'/'):p.k==='blog'?(l==='en'?'/en/blog':'/blog'):(l==='en'?'/en/':'/')+p[l].slug;
+const seoCut=(s,n)=>s.length>n?s.slice(0,n-1).replace(/\s+\S*$/,'')+' …':s;
+const seoLenCls=(n,a,b,c)=>n===0?'bad':n<a?'warn':n<=b?'ok':n<=c?'warn':'bad';
+function seoCrumb(p,l){ const parts=seoPath(p,l).split('/').filter(Boolean); return `${SEO_ORIGIN}${parts.length?' › '+parts.map(esc).join(' › '):''}`; }
+function seoSerp(p,l,withLinks){
+  const L=p[l], links=withLinks?SEO.list.filter(x=>x.k!=='home'&&!x.noindex).slice(0,6):[];
+  return `<div class="serp"><div class="serp-site"><span class="serp-fav"><img src="/favicon.svg" alt=""></span><div><b>CODE</b><small>${seoCrumb(p,l)}</small></div></div>
+    <div class="serp-t">${esc(seoCut(L.title||'',62))}</div><p class="serp-d">${esc(seoCut(L.desc||'',160))}</p>
+    ${links.length?`<div class="serp-sl">${links.map(x=>`<div><span class="serp-t sm">${esc(x[l].name)}</span><p class="serp-d">${esc(seoCut(x[l].desc||'',70))}</p></div>`).join('')}</div>`:''}</div>`;
+}
+const seoNum=n=>Number(n||0).toLocaleString('uk-UA');
+const seoStat=url=>{ const g=SEO.gsc&&SEO.gsc.byPage||[]; const r=g.find(x=>x.k.replace(/\/$/,'')===url.replace(/\/$/,'')); return r; };
+const seoInsp=url=>SEO.insp&&SEO.insp.find(x=>x.url===url);
+const INSP_UA={PASS:['ok','в індексі'],NEUTRAL:['warn','не в індексі'],FAIL:['bad','помилка'],PARTIAL:['warn','частково'],VERDICT_UNSPECIFIED:['','невідомо']};
+function seoRowBadges(p){
+  const out=[];
+  ['uk','en'].forEach(l=>{ const u=SEO_ORIGIN+seoPath(p,l), i=seoInsp(u); if(i) out.push(i.error?`<span class="badge bad" title="${esc(i.error)}">${l.toUpperCase()} · помилка перевірки</span>`:`<span class="badge ${(INSP_UA[i.verdict]||['',''])[0]}" title="${esc(i.coverage||'')}">${l.toUpperCase()} · ${(INSP_UA[i.verdict]||['',i.verdict||'—'])[1]}</span>`); });
+  const s=seoStat(SEO_ORIGIN+seoPath(p,'uk')); if(s) out.push(`<span class="badge">${seoNum(s.clicks)} клік. · поз. ${s.pos.toFixed(1)}</span>`);
+  if(p.noindex) out.push('<span class="badge bad">прихована від Google</span>');
+  return out.join(' ');
+}
+function seoField(p,l,f,label,opt){
+  opt=opt||{}; const v=p[l][f]||'', id=`sf-${p.k}-${l}-${f}`;
+  const cnt=opt.max?`<em class="seo-c ${seoLenCls(v.length,opt.min,opt.max,opt.max+12)}" id="${id}-c">${v.length} / ${opt.max}</em>`:'';
+  if(f==='slug'){ const pre=l==='en'?'code-matrix.space/en/':'code-matrix.space/';
+    return `<div class="field"><label for="${id}">${label}</label><div class="seo-slug"><span>${pre}</span><input id="${id}" data-seo="${p.k}|${l}|${f}" value="${esc(v)}" ${p.fixed?'disabled':''} spellcheck="false" autocomplete="off"></div>${p[l].old.length?`<small class="seo-old">Старі адреси переадресовуються сюди: ${p[l].old.map(o=>'/'+(l==='en'?'en/':'')+esc(o)).join(', ')}</small>`:''}</div>`; }
+  const tag=opt.area?`<textarea id="${id}" data-seo="${p.k}|${l}|${f}" rows="3" placeholder="${esc(opt.ph||'')}">${esc(v)}</textarea>`:`<input id="${id}" data-seo="${p.k}|${l}|${f}" value="${esc(v)}" placeholder="${esc(opt.ph||'')}">`;
+  return `<div class="field"><label for="${id}">${label}${cnt}</label>${tag}</div>`;
+}
+function seoPageHTML(p,idx){
+  const l=SEO.lang, L=p[l], first=p.k==='home', canUp=idx>1, canDn=idx>0&&idx<SEO.list.length-1;
+  return `<details class="panel seo-p" data-seo-k="${p.k}" ${SEO.open.has(p.k)?'open':''}>
+    <summary><span class="seo-ord">${first?'★':idx}</span><span class="seo-h"><strong>${esc(L.name)}</strong><small>${esc(seoPath(p,l))}</small></span><span class="seo-b">${seoRowBadges(p)}</span>
+      ${first?'':`<span class="seo-mv"><button type="button" class="chip" data-seo-up="${p.k}" ${canUp?'':'disabled'} title="Вище">↑</button><button type="button" class="chip" data-seo-dn="${p.k}" ${canDn?'':'disabled'} title="Нижче">↓</button></span>`}</summary>
+    <div class="seo-body">
+      <div class="seo-prev" id="sp-${p.k}">${seoSerp(p,l,false)}</div>
+      <div class="seo-grid">
+        ${seoField(p,l,'title','Заголовок у Google (title)',{max:60,min:30,ph:p.def[l].title})}
+        ${seoField(p,l,'desc','Опис під заголовком (description)',{max:160,min:110,area:1,ph:p.def[l].desc})}
+        ${seoField(p,l,'slug','Адреса сторінки')}
+        ${seoField(p,l,'name','Назва розділу (підвал, сайтлінки, хлібні крихти)',{ph:p.def[l].name})}
+      </div>
+      <details class="seo-og"><summary>Для соцмереж і месенджерів (необов’язково)</summary><div class="seo-grid">
+        ${seoField(p,l,'ogTitle','Заголовок при поширенні',{ph:'як title'})}
+        ${seoField(p,l,'ogImage','Картинка (посилання, 1200×630)',{ph:SEO_ORIGIN+(l==='en'?'/og-en.png':'/og.png')})}
+        ${seoField(p,l,'ogDesc','Опис при поширенні',{area:1,ph:'як description'})}
+      </div></details>
+      <div class="seo-foot"><label class="seo-ni"><input type="checkbox" data-seo-ni="${p.k}" ${p.noindex?'checked':''} ${first?'disabled':''}> Приховати сторінку від Google (noindex)</label>
+        <span><a class="btn ghost sm" href="${SEO_ORIGIN+seoPath(p,l)}" target="_blank" rel="noopener">Відкрити</a> <button type="button" class="btn ghost sm" data-seo-reset="${p.k}">Повернути стандартні тексти</button></span></div>
+    </div></details>`;
+}
+function seoChart(rows){
+  if(!rows.length) return '<p class="empty">Ще немає даних за цей період.</p>';
+  const W=640,H=150,P=6, mxC=Math.max(1,...rows.map(r=>r.clicks)), mxI=Math.max(1,...rows.map(r=>r.impr)), n=rows.length;
+  const x=i=>P+(W-2*P)*(n===1?.5:i/(n-1)), yC=v=>H-P-(H-2*P)*v/mxC, yI=v=>H-P-(H-2*P)*v/mxI;
+  const line=(f,k)=>rows.map((r,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${f(r[k]).toFixed(1)}`).join('');
+  return `<svg class="seo-ch" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${line(yI,'impr')}" class="li"/><path d="${line(yC,'clicks')}" class="lc"/></svg>
+    <div class="bars-x"><span>${esc(rows[0].k.slice(5))}</span><span><i class="lg lc"></i>кліки (макс. ${seoNum(mxC)}) · <i class="lg li"></i>покази (макс. ${seoNum(mxI)})</span><span>${esc(rows[n-1].k.slice(5))}</span></div>`;
+}
+function seoDelta(a,b,inv){ if(!b) return ''; const d=(a-b)/b*100; if(!isFinite(d)||Math.abs(d)<.5) return '<span>без змін</span>'; const good=inv?d<0:d>0; return `<span class="${good?'up':'dn'}">${d>0?'+':''}${d.toFixed(0)}% до попер. періоду</span>`; }
+function seoPageName(url){ const u=url.replace(SEO_ORIGIN,'')||'/'; for(const p of SEO.list) for(const l of ['uk','en']) if(seoPath(p,l).replace(/\/$/,'')===u.replace(/\/$/,'')||(!seoPath(p,l).replace(/\/$/,'')&&u==='/')) return `${esc(p[l].name)}${l==='en'?' <span class="badge">EN</span>':''}`; return esc(decodeURIComponent(u)); }
+function seoGscHTML(){
+  const G=SEO.gsc;
+  if(SEO.gscBusy&&!G) return '<p class="empty">Завантажую дані з Google Search Console…</p>';
+  if(!G) return `<p class="empty"><button class="btn sm" data-seo-gsc>Завантажити дані Google</button></p>`;
+  if(G.configured===false) return seoSetupHTML();
+  if(G.error){ const why=G.code==='google_auth'?'Google не прийняв ключ сервісного акаунта. Перевір, що в Vercel вставлено саме client_email і повний private_key з JSON-файлу, і зроби Redeploy.'
+      :G.code==='no_property'?`Сервісний акаунт працює, але не має доступу до ресурсу code-matrix.space у Search Console. Додай його email у Search Console → Налаштування → Користувачі й дозволи.${G.sites&&G.sites.length?' Зараз він бачить: '+G.sites.map(esc).join(', '):''}`
+      :G.code==='forbidden'?'Google відмовив у доступі. Найчастіше — не ввімкнено Search Console API у Google Cloud або в акаунта немає дозволу на ресурс.':'Не вдалося отримати дані.';
+    return `<div class="bal-warn bad">${why}<br><small>${esc(G.error)}</small></div>${G.code==='google_auth'||G.code==='forbidden'?seoSetupHTML(true):''}`; }
+  const t=G.total||{}, pv=G.prev||{};
+  const days=[7,28,90].map(d=>`<button class="chip${SEO.gscDays===d?' on':''}" data-seo-days="${d}">${d} дн.</button>`).join('');
+  const qRows=(G.byQuery||[]).slice(0,25), pRows=(G.byPage||[]).slice(0,30);
+  const DEV={DESKTOP:'Комп’ютер',MOBILE:'Телефон',TABLET:'Планшет'};
+  return `<div class="seo-gh"><div class="chips">${days}</div><small class="mono">${esc(G.site||'')} · ${esc(G.from||'')} — ${esc(G.to||'')}${SEO.gscBusy?' · оновлюю…':''}</small></div>
+    <div class="kpis"><div class="panel kpi"><small>Кліки з Google</small><b>${seoNum(t.clicks)}</b>${seoDelta(t.clicks,pv.clicks)}</div><div class="panel kpi"><small>Покази в пошуку</small><b>${seoNum(t.impr)}</b>${seoDelta(t.impr,pv.impr)}</div>
+      <div class="panel kpi"><small>CTR</small><b>${((t.ctr||0)*100).toFixed(1)}%</b><span>частка кліків від показів</span></div><div class="panel kpi"><small>Середня позиція</small><b>${t.pos?t.pos.toFixed(1):'—'}</b>${seoDelta(t.pos,pv.pos,true)}</div></div>
+    <div class="panel card"><h3>Динаміка</h3>${seoChart(G.byDate||[])}</div>
+    <div class="grid2"><div class="panel card"><h3>Сторінки в пошуку</h3>${pRows.length?`<div class="tw"><table><thead><tr><th>Сторінка</th><th class="num">Кліки</th><th class="num">Покази</th><th class="num">Поз.</th></tr></thead><tbody>${pRows.map(r=>`<tr><td>${seoPageName(r.k)}<small>${esc(decodeURIComponent(r.k.replace(SEO_ORIGIN,''))||'/')}</small></td><td class="num">${seoNum(r.clicks)}</td><td class="num">${seoNum(r.impr)}</td><td class="num">${r.pos.toFixed(1)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">Ще немає показів.</p>'}</div>
+      <div class="panel card"><h3>За якими запитами знаходять</h3>${qRows.length?`<div class="tw"><table><thead><tr><th>Запит</th><th class="num">Кліки</th><th class="num">Покази</th><th class="num">Поз.</th></tr></thead><tbody>${qRows.map(r=>`<tr><td>${esc(r.k)}</td><td class="num">${seoNum(r.clicks)}</td><td class="num">${seoNum(r.impr)}</td><td class="num">${r.pos.toFixed(1)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">Google ще не показував сайт за запитами (або їх замало для статистики).</p>'}</div></div>
+    <div class="grid2"><div class="panel card"><h3>Країни</h3>${(G.byCountry||[]).length?`<div class="tw"><table><tbody>${G.byCountry.map(r=>`<tr><td>${esc((typeof CC!=='undefined'&&CC[r.k.toUpperCase().slice(0,2)])||r.k.toUpperCase())}</td><td class="num">${seoNum(r.clicks)} клік.</td><td class="num">${seoNum(r.impr)} показ.</td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">—</p>'}</div>
+      <div class="panel card"><h3>Пристрої</h3>${(G.byDevice||[]).length?`<div class="tw"><table><tbody>${G.byDevice.map(r=>`<tr><td>${DEV[r.k]||esc(r.k)}</td><td class="num">${seoNum(r.clicks)} клік.</td><td class="num">${seoNum(r.impr)} показ.</td><td class="num">поз. ${r.pos.toFixed(1)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">—</p>'}</div></div>
+    <div class="panel card"><h3>Індексація сторінок</h3>
+      <p class="bal-n" style="margin:0 0 12px">Перевіряє в Google кожну адресу (українську й англійську): чи вона в індексі, коли робот заходив востаннє і яку адресу Google вважає основною.</p>
+      <div class="acts"><button class="btn sm" data-seo-insp ${SEO.inspBusy?'disabled':''}>${SEO.inspBusy?'Перевіряю…':'Перевірити індексацію'}</button>
+        <button class="btn ghost sm" data-seo-submit>Надіслати sitemap у Google</button></div>
+      ${SEO.insp?`<div class="tw" style="margin-top:12px"><table><thead><tr><th>Сторінка</th><th>Статус</th><th>Останній обхід</th><th>Основна адреса за Google</th></tr></thead><tbody>${SEO.insp.map(i=>`<tr><td>${seoPageName(i.url)}<small>${esc(i.url.replace(SEO_ORIGIN,'')||'/')}</small></td><td>${i.error?`<span class="badge bad">помилка</span><small>${esc(i.error)}</small>`:`<span class="badge ${(INSP_UA[i.verdict]||[''])[0]}">${(INSP_UA[i.verdict]||['',i.verdict||'—'])[1]}</span><small>${esc(i.coverage||'')}</small>`}</td><td class="num">${i.lastCrawl?fmtDT(i.lastCrawl):'—'}</td><td><small>${esc(i.googleCanonical||'—')}</small>${i.link?` <a href="${esc(i.link)}" target="_blank" rel="noopener">звіт ↗</a>`:''}</td></tr>`).join('')}</tbody></table></div>`:''}
+      ${SEO.maps?`<p class="bal-n">Sitemap: ${SEO.maps.length?SEO.maps.map(m=>`${esc(m.path)} — ${m.lastDownloaded?'прочитано '+fmtDT(m.lastDownloaded):'ще не прочитано'}${m.errors&&+m.errors?`, помилок: ${esc(m.errors)}`:''}${m.contents?`, адрес: ${m.contents.map(c=>esc(c.submitted)).join('+')}`:''}`).join('; '):'ще не надіслано в Google'}</p>`:''}
+    </div>`;
+}
+function seoSetupHTML(short){
+  return `<div class="panel card seo-setup"><h3>${short?'Як підключити':'Підключи Google Search Console — і тут з’являться покази, кліки, запити й індексація'}</h3>
+    <ol>
+      <li><b>Search Console.</b> Відкрий <a href="https://search.google.com/search-console" target="_blank" rel="noopener">search.google.com/search-console</a> і додай ресурс типу <i>«Домен»</i>: <code>code-matrix.space</code>. Google попросить додати TXT-запис у DNS домену — додай його там, де керуєш доменом (Vercel → Domains або реєстратор).</li>
+      <li><b>Увімкни API.</b> У Google Cloud, у проєкті CODE: <a href="https://console.cloud.google.com/apis/library/searchconsole.googleapis.com?project=concrete-flare-511811-t4" target="_blank" rel="noopener">Google Search Console API → Enable</a>.</li>
+      <li><b>Сервісний акаунт.</b> <a href="https://console.cloud.google.com/iam-admin/serviceaccounts?project=concrete-flare-511811-t4" target="_blank" rel="noopener">IAM → Service Accounts</a> → Create service account (наприклад, <code>code-seo</code>, ролі не потрібні) → відкрий його → Keys → Add key → JSON. Завантажиться файл із ключем.</li>
+      <li><b>Дай доступ.</b> Search Console → Налаштування → Користувачі й дозволи → Додати користувача: email сервісного акаунта (<code>…@….iam.gserviceaccount.com</code>), дозвіл <i>«Повний»</i> (щоб кнопка «Надіслати sitemap» працювала; для самої статистики вистачить «Обмежений»).</li>
+      <li><b>Ключ у Vercel.</b> <a href="https://vercel.com/jupiter-10/code/settings/environment-variables" target="_blank" rel="noopener">Vercel → Environment Variables</a>: <code>GSC_CLIENT_EMAIL</code> = значення <code>client_email</code> з файлу, <code>GSC_PRIVATE_KEY</code> = увесь <code>private_key</code> (від <code>-----BEGIN</code> до <code>END PRIVATE KEY-----</code>). Потім Deployments → Redeploy. Ключ вставляй лише у Vercel — не надсилай його в чат і не зберігай у документації.</li>
+    </ol>
+    <p class="bal-n">Дані в Google з’являються з затримкою: перші покази — через кілька днів після підтвердження сайту, статистика відстає на ~2 дні.</p>
+    <div class="acts"><button class="btn ghost sm" data-seo-gsc>Перевірити підключення</button></div></div>`;
+}
+function vSeo(){
+  if(!SEO.def) return head('SEO')+'<p class="empty">Завантаження…</p>';
+  const l=SEO.lang, home=SEO.list.find(p=>p.k==='home');
+  return head('SEO',`<button class="btn sm" data-seo-save ${SEO.dirty?'':'disabled'}>${SEO.dirty?'Зберегти зміни':'Збережено'}</button>`)+`
+  ${SEO.err?`<div class="bal-warn bad">Не вдалося прочитати SEO-налаштування: ${esc(SEO.err)}</div>`:''}
+  ${SEO.pub===false?`<div class="bal-warn">Сайт поки не бачить ці налаштування — у Google ідуть стандартні тексти. Один раз запусти <a href="/seo-setup.sql" target="_blank">seo-setup.sql</a> у Supabase → SQL Editor.</div>`:''}
+  <div class="seo-top"><div class="chips"><button class="chip${l==='uk'?' on':''}" data-seo-lang="uk">Українська</button><button class="chip${l==='en'?' on':''}" data-seo-lang="en">English</button></div>
+    <span class="mono seo-hint">зміни на сайті — до 5 хв після збереження; у Google — після наступного обходу</span></div>
+  <div class="grid2 seo-g1">
+    <div class="panel card"><h3>Так сайт може виглядати в Google</h3><div id="spHome">${home?seoSerp(home,l,true):''}</div>
+      <div class="acts" style="margin-top:14px"><a class="btn ghost sm" href="https://www.google.com/search?q=site%3Acode-matrix.space" target="_blank" rel="noopener">Що зараз в індексі ↗</a><a class="btn ghost sm" href="https://search.google.com/test/rich-results?url=${encodeURIComponent(SEO_ORIGIN+'/')}" target="_blank" rel="noopener">Перевірка розмітки ↗</a><a class="btn ghost sm" href="https://search.google.com/search-console?resource_id=sc-domain%3Acode-matrix.space" target="_blank" rel="noopener">Search Console ↗</a></div></div>
+    <div class="panel card"><h3>Як Google вибирає підпункти</h3>
+      <p class="bal-n" style="margin:0">Підпункти під головною (сайтлінки) Google будує сам — вибрати їх напряму не можна, але можна чітко підказати. Тепер кожен розділ має власну адресу, заголовок і опис, усі вони є в підвалі сайту, у sitemap і в структурованих даних головної саме в тому порядку, що нижче. Стрілками ↑↓ задай пріоритет: перші шість — ті, що ми пропонуємо показувати.</p>
+      <p class="bal-n">Сайтлінки зазвичай з’являються, коли сайт уже набрав покази за назвою бренду (запити «code matrix», «код матриця»). Покроково: підключити Search Console → надіслати sitemap → чекати перших тижнів показів.</p></div>
+  </div>
+  <h3 class="seo-sec">Сторінки</h3>
+  <div class="seo-list">${SEO.list.map((p,i)=>seoPageHTML(p,i)).join('')}</div>
+  <h3 class="seo-sec">Google Search Console</h3>
+  <div id="seoGsc">${seoGscHTML()}</div>`;
+}
+async function seoApi(body){ const r=await fetch('/api/seo-stats',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+await tok()},body:JSON.stringify(body)}); return r.json().catch(()=>({error:'HTTP '+r.status})); }
+async function seoLoadGsc(){
+  SEO.gscBusy=true; seoPaintGsc();
+  try{ const g=await seoApi({mode:'perf',days:SEO.gscDays}); SEO.gsc=g;
+    if(g.configured&&!g.error){ seoApi({mode:'sitemaps'}).then(m=>{ if(m&&m.sitemaps){ SEO.maps=m.sitemaps; seoPaintGsc(); } }); } }
+  catch(e){ SEO.gsc={configured:true,error:e.message}; }
+  SEO.gscBusy=false; seoPaintGsc(); seoPaintBadges();
+}
+function seoPaintGsc(){ const el=$('#seoGsc'); if(el&&VIEW==='seo'){ el.innerHTML=seoGscHTML(); bindSeoGsc(); } }
+function seoPaintBadges(){ SEO.list.forEach(p=>{ const d=document.querySelector(`.seo-p[data-seo-k="${p.k}"] .seo-b`); if(d) d.innerHTML=seoRowBadges(p); }); }
+function seoMark(){ SEO.dirty=true; const b=$('[data-seo-save]'); if(b){ b.disabled=false; b.textContent='Зберегти зміни'; } }
+function seoValidate(){
+  for(const l of ['uk','en']){ const seen={};
+    for(const p of SEO.list){ if(p.fixed) continue; const s=p[l].slug;
+      if(!/^[a-z0-9-]{1,60}$/.test(s)) return `«${p[l].name}» (${l.toUpperCase()}): адреса — лише латинські малі літери, цифри й дефіс.`;
+      if(seoRe().test(s)) return `«${p[l].name}» (${l.toUpperCase()}): адреса «${s}» уже зайнята службовою сторінкою.`;
+      if(seen[s]) return `Адреса «${s}» (${l.toUpperCase()}) однакова у «${seen[s]}» і «${p[l].name}».`; seen[s]=p[l].name; } }
+  return null;
+}
+async function seoSave(){
+  const bad=seoValidate(); if(bad) return toast(bad);
+  const pages={};
+  SEO.list.forEach(p=>{ const o={noindex:!!p.noindex};
+    ['uk','en'].forEach(l=>{ const x={}; SEO_F.forEach(f=>{ const v=String(p[l][f]||'').trim(); if(v&&v!==String(p.def[l][f]||'')) x[f]=v; });
+      let old=p[l].old.slice(); const was=SEO.saved[p.k][l]; if(!p.fixed&&was&&was!==p[l].slug&&!old.includes(was)) old.push(was); old=old.filter(z=>z!==p[l].slug).slice(-10); if(old.length) x.old=old; p[l].old=old;
+      if(Object.keys(x).length) o[l]=x; });
+    pages[p.k]=o; });
+  const value={pages,order:SEO.list.map(p=>p.k),site:SEO.site};
+  const {error}=await SB.from('admin_settings').upsert({key:'seo',value,updated_at:new Date().toISOString()});
+  if(error) return toast('Не вдалося зберегти: '+error.message);
+  await logA('оновлено SEO сторінок',null,{order:value.order});
+  SEO.raw=value; SEO.saved={}; SEO.list.forEach(p=>SEO.saved[p.k]={uk:p.uk.slug,en:p.en.slug}); SEO.dirty=false;
+  if(SEO.pub==null) loadSeo().then(()=>{ if(VIEW==='seo') go('seo'); }); else go('seo');
+  toast('SEO збережено. На сайті — протягом 5 хвилин.');
+}
+function bindSeoGsc(){
+  document.querySelectorAll('[data-seo-gsc]').forEach(b=>b.onclick=()=>seoLoadGsc());
+  document.querySelectorAll('[data-seo-days]').forEach(b=>b.onclick=()=>{ SEO.gscDays=+b.dataset.seoDays; seoLoadGsc(); });
+  const ib=$('[data-seo-insp]'); if(ib) ib.onclick=async()=>{ SEO.inspBusy=true; seoPaintGsc();
+    const urls=[]; SEO.list.filter(p=>!p.noindex).forEach(p=>['uk','en'].forEach(l=>urls.push(SEO_ORIGIN+seoPath(p,l))));
+    const r=await seoApi({mode:'inspect',urls}); SEO.inspBusy=false; if(r.error){ toast('Не вдалося перевірити: '+r.error); } else SEO.insp=r.results||[]; seoPaintGsc(); seoPaintBadges(); };
+  const sb=$('[data-seo-submit]'); if(sb) sb.onclick=async()=>{ sb.disabled=true; const r=await seoApi({mode:'submit'}); sb.disabled=false;
+    if(r.ok){ toast('Sitemap надіслано в Google.'); const m=await seoApi({mode:'sitemaps'}); if(m.sitemaps){ SEO.maps=m.sitemaps; seoPaintGsc(); } }
+    else toast(/permission|forbidden|403/i.test(r.error||'')?'Google не дав надіслати: сервісному акаунту потрібен дозвіл «Повний» у Search Console.':'Не вдалося: '+(r.error||'помилка')); };
+}
+function bindSeo(){
+  if(VIEW!=='seo') return;
+  const sv=$('[data-seo-save]'); if(sv) sv.onclick=seoSave;
+  document.querySelectorAll('[data-seo-lang]').forEach(b=>b.onclick=()=>{ SEO.lang=b.dataset.seoLang; go('seo'); });
+  document.querySelectorAll('.seo-p').forEach(d=>d.addEventListener('toggle',()=>{ d.open?SEO.open.add(d.dataset.seoK):SEO.open.delete(d.dataset.seoK); }));
+  document.querySelectorAll('[data-seo]').forEach(inp=>inp.addEventListener('input',()=>{
+    const [k,l,f]=inp.dataset.seo.split('|'), p=SEO.list.find(x=>x.k===k); if(!p) return;
+    let v=inp.value; if(f==='slug'){ v=v.toLowerCase().replace(/[\s_]+/g,'-').replace(/[^a-z0-9-]/g,''); if(v!==inp.value){ const c=inp.selectionStart; inp.value=v; inp.setSelectionRange(c,c); } }
+    p[l][f]=v; seoMark();
+    const c=document.getElementById(inp.id+'-c'); if(c){ const max=f==='title'?60:160, min=f==='title'?30:110; c.textContent=`${v.length} / ${max}`; c.className='seo-c '+seoLenCls(v.length,min,max,max+12); }
+    const pv=document.getElementById('sp-'+k); if(pv) pv.innerHTML=seoSerp(p,l,false);
+    const hm=$('#spHome'); const home=SEO.list.find(x=>x.k==='home'); if(hm&&home) hm.innerHTML=seoSerp(home,SEO.lang,true);
+    const sm=inp.closest('.seo-p').querySelector('summary .seo-h'); if(sm&&(f==='name'||f==='slug')) sm.innerHTML=`<strong>${esc(p[l].name)}</strong><small>${esc(seoPath(p,l))}</small>`;
+  }));
+  document.querySelectorAll('[data-seo-ni]').forEach(c=>c.onchange=()=>{ const p=SEO.list.find(x=>x.k===c.dataset.seoNi); p.noindex=c.checked; seoMark(); go('seo'); });
+  const mv=(k,d)=>{ const i=SEO.list.findIndex(x=>x.k===k), j=i+d; if(j<1||j>=SEO.list.length) return; [SEO.list[i],SEO.list[j]]=[SEO.list[j],SEO.list[i]]; seoMark(); go('seo'); };
+  document.querySelectorAll('[data-seo-up]').forEach(b=>b.onclick=e=>{ e.preventDefault(); e.stopPropagation(); mv(b.dataset.seoUp,-1); });
+  document.querySelectorAll('[data-seo-dn]').forEach(b=>b.onclick=e=>{ e.preventDefault(); e.stopPropagation(); mv(b.dataset.seoDn,1); });
+  document.querySelectorAll('[data-seo-reset]').forEach(b=>b.onclick=()=>{ const p=SEO.list.find(x=>x.k===b.dataset.seoReset), l=SEO.lang;
+    ['title','desc','name','ogTitle','ogDesc','ogImage'].forEach(f=>p[l][f]=p.def[l][f]||''); seoMark(); go('seo'); toast('Повернуто стандартні тексти — не забудь зберегти.'); });
+  bindSeoGsc();
+  if(!SEO.gsc&&!SEO.gscBusy) seoLoadGsc();
+}
+addEventListener('beforeunload',e=>{ if(SEO.dirty){ e.preventDefault(); e.returnValue=''; } });
+
 function bindView(){
-  bindPost(); bindDocs(); bindMail(); bindAn(); bindPartners();
+  bindPost(); bindDocs(); bindMail(); bindAn(); bindPartners(); bindSeo();
   { const nb=$('[data-post-new]'); if(nb) nb.onclick=()=>{ EDIT='new'; go('post'); }; document.querySelectorAll('[data-post-edit]').forEach(b=>b.onclick=()=>{ EDIT=+b.dataset.postEdit; go('post'); window.scrollTo({top:0}); }); }
   { const f=$('#tpF'); if(f) f.onsubmit=async e=>{ e.preventDefault(); const usdv=Math.round(parseFloat($('#tpU').value)*100)/100; if(!usdv) return toast('Вкажіть суму (для коригування — з мінусом).');
       const t={d:$('#tpD').value,usd:usdv,note:$('#tpN').value.trim()}; if(await saveTopups([...D.topups,t],'поповнення балансу ШІ',t)) toast('Поповнення додано.'); }; }

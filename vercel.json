@@ -11,6 +11,13 @@
     },
     "api/cron-emails.js": {
       "maxDuration": 60
+    },
+    "api/page.js": {
+      "maxDuration": 10,
+      "includeFiles": "{app.html,404.html}"
+    },
+    "api/seo-stats.js": {
+      "maxDuration": 60
     }
   },
   "rewrites": [
@@ -33,6 +40,22 @@
     {
       "source": "/sitemap.xml",
       "destination": "/api/blog?sitemap=1"
+    },
+    {
+      "source": "/",
+      "destination": "/api/page?pl=uk"
+    },
+    {
+      "source": "/en",
+      "destination": "/api/page?pl=en"
+    },
+    {
+      "source": "/en/:slug([a-z0-9-]+)",
+      "destination": "/api/page?pl=en&slug=:slug"
+    },
+    {
+      "source": "/:slug((?!api$|studio$|blog$|en$|img$|tools$)[a-z0-9-]+)",
+      "destination": "/api/page?pl=uk&slug=:slug"
     }
   ],
   "headers": [
@@ -92,6 +115,28 @@
           "value": "text/plain; charset=utf-8"
         }
       ]
+    },
+    {
+      "source": "/app.html",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
+    },
+    {
+      "source": "/seo-setup.sql",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://supabase.com"
+        },
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        }
+      ]
     }
   ],
   "crons": [
@@ -101,6 +146,11 @@
     }
   ],
   "redirects": [
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
+    },
     {
       "source": "/:path((?!api/).*)",
       "has": [

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Merges tools/i18n/<lang>.json ({"Ukrainian source": "translation"}) into TR[<lang>] inside index.html (keys = FNV hash of the source).
+"""Merges tools/i18n/<lang>.json ({"Ukrainian source": "translation"}) into TR[<lang>] inside app.html (keys = FNV hash of the source).
 Usage: python3 tools/i18n-merge.py en   (then: python3 tools/i18n-stats.py)"""
 import json, os, re, sys
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -11,7 +11,7 @@ def H(t):
   while True:
     o=d[h%36]+o; h//=36
     if h==0: return o
-p=os.path.join(ROOT,'index.html'); s=open(p,encoding='utf-8').read()
+p=os.path.join(ROOT,'app.html'); s=open(p,encoding='utf-8').read()
 i=s.index('const TR=')+len('const TR='); obj,end=json.JSONDecoder().raw_decode(s[i:])
 src=json.load(open(os.path.join(ROOT,'tools','i18n',LANG+'.json'),encoding='utf-8'))
 d=obj.setdefault(LANG,{}); n=0; bad=[]

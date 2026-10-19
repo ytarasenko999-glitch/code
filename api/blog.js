@@ -41,7 +41,10 @@ const L = {
     errT: 'The blog is temporarily unavailable — CODE', errP: 'Try refreshing the page in a minute. Meanwhile — <a href="/?lang=en">calculate your matrix</a>.' }
 };
 const pre = lang => lang === 'en' ? '/en' : '';
-const site = (lang, q) => lang === 'en' ? `/?${q ? q + '&' : ''}lang=en` : (q ? `/?${q}` : '/');
+const SEO = require('./_seo.js');
+let SEO_S = SEO.merge({});
+/* link into the app: clean page addresses from «SEO» (/taro, /en/tarot …) */
+const site = (lang, q) => { const k = q && (/go=([a-z]+)/.exec(q) || [])[1]; const p = SEO_S.pages.find(x => x.k === (k || 'home')) || SEO_S.pages[0]; return SEO.pathOf(p, lang); };
 const fmtDate = (d, lang) => d ? new Date(d).toLocaleDateString(L[lang].loc, { day: 'numeric', month: 'long', year: 'numeric' }) : '';
 const readMin = body => Math.max(2, Math.round(plain(body).split(' ').length / 180));
 const abs = (base, u) => !u ? '' : /^https?:/i.test(u) ? u : base + (u.startsWith('/') ? u : '/' + u);
@@ -113,16 +116,24 @@ module.exports = async (req, res) => {
   /* canonical links, sitemap and OG always point to the main domain, so the old *.vercel.app copy is not indexed as a duplicate */
   const base = (process.env.SITE_URL || 'https://code-matrix.space').replace(/\/$/, '');
   const q = req.query || {};
-  const lang = q.lang === 'en' ? 'en' : 'uk', T = L[lang], P = pre(lang);
+  const lang = q.lang === 'en' ? 'en' : 'uk', T = Object.assign({}, L[lang]), P = pre(lang);
   const send = (code, html, type) => { res.statusCode = code; res.setHeader('content-type', (type || 'text/html') + '; charset=utf-8'); res.setHeader('cache-control', code === 200 ? 'public, s-maxage=300, stale-while-revalidate=86400' : 'no-store'); res.end(html); };
+  try { SEO_S = await SEO.load(); } catch (_) {}
+  const blogSeo = SEO_S.pages.find(x => x.k === 'blog');
+  if (blogSeo) { T.listT = blogSeo[lang].title; T.listD = blogSeo[lang].desc; }
   try {
     if (q.sitemap) {
-      const list = await posts();
+      const list = await posts().catch(() => []);
       const en = list.filter(p => inLang(p, 'en'));
-      const urls = [{ loc: base + '/', pr: '1.0' }, { loc: base + '/blog', pr: '0.8' }, { loc: base + '/en/blog', pr: '0.7' }]
+      /* app pages in both languages, each with its language alternates; pages hidden from search in «SEO» are left out */
+      const app = SEO_S.pages.filter(p => p.k !== 'blog' && !p.noindex);
+      const pr = k => k === 'home' ? '1.0' : ['solo', 'pair', 'tarot', 'cat'].includes(k) ? '0.9' : '0.8';
+      const urls = [].concat(...app.map(p => ['uk', 'en'].map(l => ({ loc: base + SEO.pathOf(p, l), pr: l === 'en' ? (pr(p.k) - 0.1).toFixed(1) : pr(p.k), alt: { uk: base + SEO.pathOf(p, 'uk'), en: base + SEO.pathOf(p, 'en') } }))))
+        .concat([{ loc: base + '/blog', pr: '0.8' }, { loc: base + '/en/blog', pr: '0.7' }])
         .concat(list.map(p => ({ loc: `${base}/blog/${p.slug}`, lm: (p.updated_at || p.published_at || '').slice(0, 10), pr: '0.7' })))
         .concat(en.map(p => ({ loc: `${base}/en/blog/${p.slug}`, lm: (p.updated_at || p.published_at || '').slice(0, 10), pr: '0.6' })));
-      return send(200, `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map(u => `<url><loc>${esc(u.loc)}</loc>${u.lm ? `<lastmod>${u.lm}</lastmod>` : ''}<priority>${u.pr}</priority></url>`).join('')}</urlset>`, 'application/xml');
+      const altX = u => u.alt ? `<xhtml:link rel="alternate" hreflang="uk" href="${esc(u.alt.uk)}"/><xhtml:link rel="alternate" hreflang="en" href="${esc(u.alt.en)}"/><xhtml:link rel="alternate" hreflang="x-default" href="${esc(u.alt.uk)}"/>` : '';
+      return send(200, `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">${urls.map(u => `<url><loc>${esc(u.loc)}</loc>${altX(u)}${u.lm ? `<lastmod>${u.lm}</lastmod>` : ''}<priority>${u.pr}</priority></url>`).join('')}</urlset>`, 'application/xml');
     }
     const slug = String(q.slug || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
     if (slug) {

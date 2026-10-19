@@ -2230,8 +2230,8 @@ body.hdr-off:not(.auth-on):not(.dr-open) .top{transform:translateY(calc(-100% - 
         <p data-i18n="ftLead">CODE — простір самопізнання. Усе є енергія — досліджуйте свою.</p>
       </div>
       <div class="foot-cols">
-        <div><h5 data-i18n="ftSec">Розділи</h5><button class="flink" data-nav="matrix" data-i18n="tMatrix">Матриця</button><button class="flink" data-nav="today" data-i18n="tToday">Сьогодні</button><button class="flink" data-nav="years" data-i18n="tYears">Прогноз по роках</button><button class="flink" data-nav="arcana" data-i18n="tArc">Аркани</button><button class="flink" data-nav="tarot" data-i18n="mTarot">Таро-трактувальник</button><a class="flink ft-blog" href="/blog" data-blog>Блог</a></div>
-        <div><h5 data-i18n="ftCalc">Розрахунки</h5><button class="flink" data-mode="solo" data-i18n="mSolo">Особиста матриця</button><button class="flink" data-mode="pair" data-i18n="mPair">Сумісність</button><button class="flink" data-nav="arcana" data-i18n="mCat">Довідник арканів</button></div>
+        <div><h5 data-i18n="ftCalc">Розрахунки</h5><a class="flink" data-pg="solo" href="/osobysta-matrytsia">Особиста матриця</a><a class="flink" data-pg="pair" href="/sumisnist">Матриця сумісності</a><a class="flink" data-pg="today" href="/enerhiia-dnia">Енергія дня</a><a class="flink" data-pg="years" href="/prohnoz-po-rokakh">Прогноз по роках</a></div>
+        <div><h5 data-i18n="ftSec">Розділи</h5><a class="flink" data-pg="cat" href="/arkany">Посібник по арканах</a><a class="flink" data-pg="guide" href="/pozytsii-matrytsi">Шпаргалка по позиціях</a><a class="flink" data-pg="tarot" href="/taro">Таро-трактувальник ШІ</a><a class="flink" data-pg="acct" href="/kabinet">Особистий кабінет</a><a class="flink ft-blog" href="/blog" data-blog>Блог</a></div>
         <div><h5 data-i18n="ftMeth">Метод</h5><span class="ftxt" data-i18n="ftM1">Матриця долі Наталії Ладіні</span><span class="ftxt" data-i18n="ftM2">22 Старші Аркани</span><span class="ftxt" data-i18n="ftM3">Карта здоров’я, програми, роки</span></div>
       </div>
     </div>
@@ -2333,7 +2333,8 @@ it:{solo:"Personale",pair:"Compatibilità",name:"Nome",namePh:"Il tuo nome",day:
  ftLead:"CODE — uno spazio per conoscersi. Tutto è energia — esplora la tua.",ftSec:"Sezioni",ftCalc:"Calcoli",ftMeth:"Metodo",ftM1:"Matrice del destino di Natalia Ladini",ftM2:"22 Arcani maggiori",ftM3:"Mappa della salute, programmi, anni",chData:"Modifica i dati",aAgree1:"Accetto l’",aAgree2:"informativa sulla privacy",aNeedAgree:"Accetta l’informativa sulla privacy.",aHelp:"Aiuto",aTerms:"Termini",aPriv:"Privacy",thOn:"Accendi la luce",thOff:"Spegni la luce",ckT:"Cookie",ckP:"Salviamo lingua, tema, account e i tuoi codici in questo browser perché il sito funzioni comodamente.",ckL:"Scopri di più",ckMin:"Solo necessari",ckAll:"Accetta",pdT:"Scarica il codice",pdS:"Scegli lo stile del PDF: chiaro o scuro, come il sito.",pdLight:"Chiaro",pdDark:"Scuro",pdLightS:"Per stampare e leggere di giorno",pdDarkS:"Cosmo profondo, come il sito",pdCancel:"Annulla",pdPrep:"Preparazione del PDF…",pdGo:"Scarica PDF",pdBuild:"Impaginazione…",pdPage:"Pagina",pdSave:"Salvataggio…",calcCode:"Calcola il codice",ftCopy:"Uno strumento di conoscenza di sé, non una previsione né una diagnosi",mTarot:"Lettura dei tarocchi",mGuide:"Guida alle posizioni",cHistT:"Cronologia",cClear:"Cancella cronologia",cHistEmpty:"Qui compariranno le matrici che hai visto.",cCleared:"Cronologia cancellata.",cDataT:"Dati personali",cSavedT:"Codici salvati",cEdit:"Modifica",cCancel:"Annulla",cPdf:"Scarica PDF",cDel:"Elimina",cSolo:"Personale",cPairT:"Compatibilità",cCenter:"centro",cTail:"coda",cFill:"Compila i tuoi dati personali per calcolare la tua matrice."}
 };
 const LANGS_ON=['uk','en'];
-let LANG=(()=>{ try{ const q=new URLSearchParams(location.search).get('lang'); if(q&&LANGS_ON.includes(q)&&I18N[q]){ localStorage.setItem('code-lang',JSON.stringify(q)); return q; } }catch(_){}
+let LANG=(()=>{ try{ if(window.__SEO&&__SEO.lang==='en'&&I18N.en){ localStorage.setItem('code-lang',JSON.stringify('en')); return 'en'; } }catch(_){ if(window.__SEO&&__SEO.lang==='en') return 'en'; }
+  try{ const q=new URLSearchParams(location.search).get('lang'); if(q&&LANGS_ON.includes(q)&&I18N[q]){ localStorage.setItem('code-lang',JSON.stringify(q)); return q; } }catch(_){}
   try{const l=JSON.parse(localStorage.getItem('code-lang')||'null');return l&&LANGS_ON.includes(l)&&I18N[l]?l:'uk'}catch(_){return 'uk'}})();
 const T=(k,x)=>{const s=(I18N[LANG]&&I18N[LANG][k])||I18N.uk[k]||k;return x?s.replace('{x}',x):s;};
 const mName=m=>LANG==='uk'?MONTHS[m-1]:MONTHN_L[LANG][m-1];
@@ -6216,6 +6217,58 @@ $('#drawer').addEventListener('click',e=>{
   else if(a==='today'||a==='years') goCalc('solo',a);
 });
 
+/* ---------- page addresses: every section has its own URL (/taro, /sumisnist, /en/tarot …), titles and slugs come from «SEO» in the admin panel.
+   The server (api/page.js) puts the right title/description into the HTML for search engines; here we keep the address bar, tab title
+   and footer links in step while the visitor moves around the app, and open the right section when someone arrives on /taro etc. ---------- */
+const PG_DEF=[['home','',''],['acct','kabinet','account'],['solo','osobysta-matrytsia','destiny-matrix'],['pair','sumisnist','compatibility'],['today','enerhiia-dnia','energy-of-the-day'],['cat','arkany','arcana'],['tarot','taro','tarot'],['years','prohnoz-po-rokakh','forecast-by-year'],['guide','pozytsii-matrytsi','positions'],['blog','blog','blog']];
+const PG=(window.__SEO&&Array.isArray(__SEO.p)&&__SEO.p.length)?__SEO.p:PG_DEF.map(([k,u,e])=>({k,uk:{s:u},en:{s:e}}));
+const PG_CALC=['solo','pair','today','years'];
+const pgL=()=>LANG==='en'?'en':'uk';
+function pgPath(k,l){ l=l||pgL(); const p=PG.find(x=>x.k===k); if(!p) return null; if(k==='home') return l==='en'?'/en':'/'; if(k==='blog') return l==='en'?'/en/blog':'/blog'; return (l==='en'?'/en/':'/')+p[l].s; }
+function pgFromPath(pth){ const l=/^\/en(\/|$)/.test(pth)?'en':'uk'; const s=pth.replace(/^\/en(?=\/|$)/,'').replace(/^\/+|\/+$/g,''); if(!s||s==='index.html'||s==='app.html') return {k:'home',l}; const p=PG.find(x=>x.k!=='home'&&x[l]&&x[l].s===s); return p?{k:p.k,l}:null; }
+const PG_SERVED=!!window.__SEO;   /* false when app.html is opened directly (local preview): leave the address alone */
+const PG_START=(window.__SEO&&__SEO.k)||'home';
+let PG_CUR=PG_START, PG_HINT=PG_CALC.includes(PG_START)?PG_START:null, PG_BUSY=true, PG_READY=false, pgT=0;
+function pgMeta(k){ const p=PG.find(x=>x.k===k), L=p&&p[pgL()]; if(!L||!L.t) return; document.title=L.t; const md=document.querySelector('meta[name="description"]'); if(md&&L.d) md.setAttribute('content',L.d); const c=document.querySelector('link[rel="canonical"]'); if(c) c.setAttribute('href',location.origin+pgPath(k)); }
+function pgSet(k,replace){
+  const to=pgPath(k); if(!to) return;
+  const same=location.pathname.replace(/\/+$/,'')===to.replace(/\/+$/,'');
+  if(k===PG_CUR&&same) return; PG_CUR=k;
+  if(!same&&PG_SERVED){ try{ history[(replace||PG_BUSY)?'replaceState':'pushState']({pg:k},'',to+location.search+location.hash); }catch(_){} }
+  pgMeta(k);
+}
+function pgLinks(){ document.querySelectorAll('a.flink[data-pg]').forEach(a=>{ const k=a.dataset.pg, p=PG.find(x=>x.k===k); a.setAttribute('href',pgPath(k)); if(p&&p[pgL()]&&p[pgL()].n) a.textContent=p[pgL()].n; else if(LANG!=='uk') a.textContent=_t(a.textContent); }); }
+function pgNow(){
+  if(document.body.classList.contains('auth-on')) return 'acct';   /* sign-in screen = the way into the cabinet */
+  const vis=id=>{ const e=document.getElementById(id); return !!(e&&!e.hidden); };
+  if(vis('tarot')) return 'tarot';
+  if(vis('guide')) return 'guide';
+  if(vis('result')) return hasResult()?(isPair()?'pair':STATE.view==='today'?'today':STATE.view==='years'?'years':'solo'):'cat';
+  if(vis('home')){ if(HOME_MODE==='cab') return 'acct'; const qp=document.getElementById('qp'); if(qp&&!qp.hidden) return 'pair'; return PG_HINT&&PG_HINT!=='pair'?PG_HINT:'home'; }
+  return null;
+}
+function pgSoon(){ if(!PG_READY) return; clearTimeout(pgT); pgT=setTimeout(()=>{ const k=pgNow(); if(k) pgSet(k); },80); }
+function pgRoute(k){
+  PG_HINT=PG_CALC.includes(k)?k:null;
+  if(k==='home'){ GUEST_START=true; showHome('start'); return; }
+  if(k==='blog'){ location.href=pgPath('blog'); return; }
+  const b=document.querySelector(`#drawer [data-act="${k}"]`); if(b) b.click();
+}
+['home','result','guide','tarot','qp'].forEach(id=>{ const e=document.getElementById(id); if(e) new MutationObserver(pgSoon).observe(e,{attributes:true,attributeFilter:['hidden'],childList:id==='result'||id==='home'}); });
+new MutationObserver(pgSoon).observe(document.body,{attributes:true,attributeFilter:['class']});
+/* what the visitor chose decides the address on the start screen (personal / day / years / compatibility form) */
+$('#drawer').addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); if(b) PG_HINT=PG_CALC.includes(b.dataset.act)?b.dataset.act:null; },true);
+document.addEventListener('click',e=>{ if(e.target.closest('#drLogo,#toStart')) PG_HINT=null; },true);
+document.addEventListener('click',e=>{ const a=e.target.closest('a.flink[data-pg]'); if(!a||e.metaKey||e.ctrlKey||e.shiftKey||e.button) return; e.preventDefault(); PG_BUSY=false; pgRoute(a.dataset.pg); window.scrollTo({top:0,behavior:'smooth'}); });
+$('#drawer').addEventListener('click',e=>{ if(!e.target.closest('.lang-b')) return; pgLinks(); const k=PG_CUR; PG_CUR=null; pgSet(k,true); });
+addEventListener('popstate',()=>{ const r=pgFromPath(location.pathname); if(!r) return; if(r.l!==pgL()){ location.reload(); return; } PG_BUSY=true; PG_CUR=r.k; pgRoute(r.k); pgMeta(r.k); setTimeout(()=>{ PG_BUSY=false; },600); });
+pgLinks();
+/* arrived on /taro, /kabinet …: open that section (like the old ?go= links); a stored English preference on a Ukrainian address moves to /en/… */
+setTimeout(()=>{ try{
+  const k=PG_START; if(k!=='home') pgRoute(k);
+  if(PG_SERVED&&__SEO.lang!==pgL()){ PG_CUR=null; pgSet(k,true); } else pgMeta(k);
+}catch(_){} setTimeout(()=>{ PG_READY=true; pgSoon(); setTimeout(()=>{ PG_BUSY=false; },400); },300); },700);
+
 
 /* ---------- tarot card art: line-art vectors in the CODE style (Rider–Waite–Smith symbolism) ---------- */
 const TA=(()=>{
@@ -7154,7 +7207,7 @@ loadSession();
 renderHome();
 
 
-/* ---------- floating header (all screens): hides on scroll down, glides back on scroll up.
+/* ---------- floating header (matrix results only): hides on scroll down, glides back on scroll up.
    Phones: the first short swipe up brings the header back WITH the form open (you were probably heading for it);
    if you keep scrolling up without touching it, you are reading, so the form folds back into the compact bar
    (menu · «Змінити дані» · account). ---------- */
@@ -7164,9 +7217,14 @@ renderHome();
   let last=scrollY, acc=0, revealY=null, touched=false;
   const off=v=>{ if(has('hdr-off')!==v) B.classList.toggle('hdr-off',v); };
   const busy=()=>{ const a=document.activeElement; return (a&&top.contains(a)&&/INPUT|SELECT|TEXTAREA/.test(a.tagName))||!!document.querySelector('.cs-pop,.rec-pop')||has('dr-open'); };
+  /* only on a calculated matrix (personal or compatibility, any tab); the cabinet, start screen, guide, tarot keep a plain sticky header */
+  const res=document.getElementById('result');
+  const onCalc=()=>!!(res&&!res.hidden&&typeof STATE!=='undefined'&&STATE&&STATE.P);
+  const reset=()=>{ if(!onCalc()){ off(false); acc=0; revealY=null; } };
+  ['result','home','guide','tarot'].forEach(id=>{ const el=document.getElementById(id); if(el) new MutationObserver(reset).observe(el,{attributes:true,attributeFilter:['hidden']}); });
   addEventListener('scroll',()=>{
     const y=scrollY, d=y-last; last=y;
-    if(has('auth-on')||y<90){ off(false); acc=0; revealY=null; return; }
+    if(has('auth-on')||y<90||!onCalc()){ off(false); acc=0; revealY=null; return; }
     if(d===0) return;
     if((d>0)!==(acc>0)) acc=0; acc+=d;
     if(acc>14&&!busy()){ off(true); revealY=null; touched=false; return; }
@@ -8016,7 +8074,7 @@ window.register=async function(email,pw,name){
   await ready; if(!sb) throw 'network';
   if(pw.length<6) throw 'weakpw';
   { let pr=''; try{ pr=localStorage.getItem('code-promo')||''; }catch(_){} if(pr){ const {data:ok,error:pe}=await sb.rpc('promo_ok',{c:pr}); if(!pe&&ok===false) throw 'promo'; } }
-  const {data,error}=await sb.auth.signUp({email,password:pw,options:{data:{name:name||''},emailRedirectTo:location.origin+location.pathname}});
+  const {data,error}=await sb.auth.signUp({email,password:pw,options:{data:{name:name||''},emailRedirectTo:location.origin+'/'}});
   if(error){ if(/registered|exists/i.test(error.message)) throw 'exists'; if(/password/i.test(error.message)) throw 'weakpw'; throw 'network'; }
   if(data&&data.user&&Array.isArray(data.user.identities)&&!data.user.identities.length) throw 'exists';
   if(!data.session) throw 'confirm';
@@ -8048,7 +8106,7 @@ document.addEventListener('click',async e=>{
     const show=(m,info)=>{ if(er){ er.textContent=m; er.hidden=false; er.classList.toggle('info',!!info); } };
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em.trim())){ show('Впишіть свій email у поле вище — і натисніть «Забули пароль?» ще раз.'); $('#auEmail')&&$('#auEmail').focus(); return; }
     await ready; if(!sb){ show(AUTH_ERR.network); return; }
-    const {error}=await sb.auth.resetPasswordForEmail(em.trim().toLowerCase(),{redirectTo:location.origin+location.pathname});
+    const {error}=await sb.auth.resetPasswordForEmail(em.trim().toLowerCase(),{redirectTo:location.origin+'/'});
     show(error?AUTH_ERR.network:'Готово! Ми надіслали лист із посиланням для нового пароля. Перевірте пошту (і папку «Спам»).',!error); return; }
   const g=e.target.closest&&e.target.closest('[data-sso]');
   if(g){ e.preventDefault(); e.stopImmediatePropagation();
@@ -8057,7 +8115,7 @@ document.addEventListener('click',async e=>{
     await ready; if(!sb) return;
     const er=$('#auErr'), say=m=>{ if(er){ er.textContent=m; er.hidden=false; er.classList.add('info'); } };
     try{ const r=await fetch(CFG.url+'/auth/v1/settings',{headers:{apikey:CFG.key}}); const j=await r.json(); if(!j||!j.external||!j.external.google){ say('Вхід через Google ще налаштовується. Поки що увійдіть через email — це хвилина.'); return; } }catch(_){ say(AUTH_ERR.network); return; }
-    await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}}); }
+    await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+'/'}}); }
 },true);
 
 function newPasswordDialog(){
