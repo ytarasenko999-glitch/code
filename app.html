@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="description" content="CODE — матриця долі за методом Наталії Ладіні, сумісність, прогноз по роках, енергія дня і Таро-трактувальник.">
 <meta name="theme-color" content="#05050C">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -2133,6 +2133,15 @@ body.hdr-off:not(.auth-on):not(.dr-open) .top{transform:translateY(calc(-100% - 
 .cs-t b{font-weight:500;font-size:14.5px;color:var(--fg)}
 .cs-t small{font-size:12.5px;line-height:1.5;color:var(--muted)}
 .cs-f{margin:12px 2px 0;font-size:12px;line-height:1.55;color:var(--muted)}
+
+/* phones: steady page — no auto-zoom when a field gets focus (iOS zooms into text under 16px), no sideways drift or bounce */
+html,body{overscroll-behavior-x:none;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+@media (max-width:820px){ input,select,textarea{font-size:16px!important} }
+/* footer section links: plain text, no underline */
+a.flink,a.flink:visited{text-decoration:none;color:var(--fg)}
+a.flink:hover{color:var(--accent)}
+/* phones: the menu panel a bit narrower so the page stays visible beside it */
+@media (max-width:520px){ .drawer{width:min(352px,84vw)!important} }
 
 </style>
 </head>
