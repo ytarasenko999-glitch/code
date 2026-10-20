@@ -3,7 +3,7 @@
 Run after every translation batch:  python3 tools/i18n-stats.py"""
 import re, json, datetime, os
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-s=open(os.path.join(ROOT,'app.html'),encoding='utf-8').read()
+s=open(os.path.join(ROOT,'app.html'),encoding='utf-8').read()+'<script>'+open(os.path.join(ROOT,'app.js'),encoding='utf-8').read()+'</script>'
 LANGS=['en','de','fr','es','it']; NAMES={'en':'Англійська','de':'Німецька','fr':'Французька','es':'Іспанська','it':'Італійська'}
 def H(t):
   h=0x811c9dc5
@@ -25,7 +25,11 @@ def obj(name):
     elif c=='}':
       depth-=1
       if depth==0: return s[i:j+1],(i,j+1)
-TRs,span1=obj('const TR='); TR=json.loads(TRs)
+TR={}
+for l in LANGS:
+  fp=os.path.join(ROOT,'i18n','tr-'+l+'.js')
+  if os.path.exists(fp):
+    t=open(fp,encoding='utf-8').read(); TR[l],_=json.JSONDecoder().raw_decode(t[t.index(']=')+2:])
 TRXs,span2=obj('const TRX='); TRX=json.loads(TRXs)
 for i,l in enumerate(LANGS):
   for k,v in TRX.items():
@@ -48,7 +52,7 @@ def keys_of(lang):
 uk_keys=keys_of('uk')
 # phrases wrapped in _t/_f and content strings (Cyrillic literals) outside the dictionaries
 body=s
-for a,b in sorted([span1,span2,span3],reverse=True): body=body[:a]+body[b:]
+for a,b in sorted([span2,span3],reverse=True): body=body[:a]+body[b:]
 code=''.join(m.group(1) for m in re.finditer(r'<script(?![^>]*src)[^>]*>(.*?)</script>',body,re.S))
 phr=set(m.group(2) for m in re.finditer(r'_(t|f)\("((?:[^"\\]|\\.)*)"',code))
 def _un(p):

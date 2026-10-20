@@ -87,8 +87,13 @@ module.exports = async (req, res) => {
     `<script type="application/ld+json">${json(ld)}</script>`
   ].join('\n');
 
+  /* home page: the start screen goes into the HTML itself, so it paints before app.js has loaded */
+  let pre = '';
+  if (page.k === 'home') { try { pre = fs.readFileSync(path.join(process.cwd(), 'prerender', `home-${lang}.html`), 'utf8'); } catch (_) {} }
   html = html
-    .replace(/<html lang="[^"]*">/, () => `<html lang="${lang}">`)
+    .replace(/<html lang="[^"]*">/, () => `<html lang="${lang}"${pre ? ' class="pre"' : ''}>`)
+    .replace('<section class="hero home" id="home"></section>', () => pre ? `<section class="hero home is-start" id="home">${pre}</section>` : '<section class="hero home" id="home"></section>')
+    .replace(/<body([^>]*)>/, (m, a) => pre ? (/class="/.test(a) ? m.replace('class="', 'class="on-start ') : `<body${a} class="on-start">`) : m)
     .replace(/<title>[\s\S]*?<\/title>/, () => `<title>${esc(L.title)}</title>`)
     .replace(/<meta name="description" content="[^"]*">/, () => `<meta name="description" content="${esc(L.desc)}">`)
     .replace(/<meta property="og:title" content="[^"]*">/, () => `<meta property="og:title" content="${esc(L.ogTitle || L.title)}">`)

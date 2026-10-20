@@ -14,7 +14,7 @@
     },
     "api/page.js": {
       "maxDuration": 10,
-      "includeFiles": "{app.html,404.html}"
+      "includeFiles": "{app.html,404.html,prerender/*.html}"
     },
     "api/seo-stats.js": {
       "maxDuration": 60
