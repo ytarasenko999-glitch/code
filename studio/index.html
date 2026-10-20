@@ -410,7 +410,7 @@ async function logA(action,target,details){ await SB.from('admin_log').insert({a
 /* ---------- views ---------- */
 function go(v){ VIEW=v; document.querySelectorAll('.navb').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); const m=$('#main');
   m.innerHTML=v==='users'?vUsers():v==='subs'?vSubs():v==='pays'?vPays():v==='ai'?vAI():v==='log'?vLog():v==='admins'?vAdmins():v==='bal'?vBal():v==='blog'?vBlog():v==='post'?vPost():v==='docs'?vDocs():v==='mail'?vMail():v==='an'?vAn():v==='partners'?vPartners():v==='set'?vSet():v==='seo'?vSeo():vOverview(); bindView(); }
-document.querySelectorAll('.navb').forEach(b=>b.onclick=async()=>{ if(b.dataset.v==='blog') EDIT=null; if(b.dataset.v==='mail'){ MAIL=null; await loadMail(); } if(b.dataset.v==='an') await loadAn(); if(b.dataset.v==='set') await loadSet(); if(b.dataset.v==='bal'&&!COST) loadCost(); if(b.dataset.v==='seo'&&!SEO.def) await loadSeo(); go(b.dataset.v); });
+document.querySelectorAll('.navb').forEach(b=>b.onclick=async()=>{ if(b.dataset.v==='blog'){ EDIT=null; if(!DRAFTS) loadDrafts(); } if(b.dataset.v==='mail'){ MAIL=null; await loadMail(); } if(b.dataset.v==='an') await loadAn(); if(b.dataset.v==='set') await loadSet(); if(b.dataset.v==='bal'&&!COST) loadCost(); if(b.dataset.v==='seo'&&!SEO.def) await loadSeo(); go(b.dataset.v); });
 const head=(t,acts='')=>`<div class="top"><div><p class="pk">[ адмінпанель ]</p><h2>${t}</h2></div><div class="acts">${acts}<button class="btn ghost sm" data-act="reload">Оновити</button></div></div>`;
 
 const zapyt=n=>{ const a=n%10,b=n%100; return n+' '+(a===1&&b!==11?'запит':a>=2&&a<=4&&(b<12||b>14)?'запити':'запитів'); };
@@ -525,15 +525,19 @@ const TR={а:'a',б:'b',в:'v',г:'h',ґ:'g',д:'d',е:'e',є:'ie',ж:'zh',з:'z
 const STOP=new Set(['i','ta','v','u','na','z','iz','do','pro','yak','shcho','dlia','po','vid','ne','ii','tse','abo','chy','a','za','pry']);
 const slugify=t=>String(t||'').toLowerCase().replace(/['’ʼ`]/g,'').split('').map(c=>TR[c]!=null?TR[c]:c).join('').replace(/[^a-z0-9]+/g,'-').split('-').filter(w=>w&&!STOP.has(w)).slice(0,6).join('-').slice(0,60).replace(/-+$/,'');
 const cnt=(n,lo,hi)=>`<em class="cnt ${n>hi||(lo&&n&&n<lo)?'warn':n?'ok':''}">${n}${hi?` / ${lo?lo+'–':''}${hi}`:''}</em>`;
+/* ready-made SEO articles shipped in the repo (blog/drafts/drafts.json) — one click adds the missing ones as drafts */
+let DRAFTS=null;
+async function loadDrafts(){ try{ const r=await fetch('/blog/drafts/drafts.json?v='+Date.now()); DRAFTS=r.ok?await r.json():[]; }catch(_){ DRAFTS=[]; } if(VIEW==='blog') go('blog'); }
 function vBlog(){
   const rows=D.posts.map(p=>`<tr><td style="width:84px">${p.cover?`<img class="bl-th" src="${esc(p.cover)}" alt="">`:'<span class="bl-th"></span>'}</td><td><b class="bl-t">${esc(p.h1)}</b><small>/blog/${esc(p.slug)}</small></td><td>${p.status==='published'?'<span class="badge ok">опубліковано</span>':'<span class="badge">чернетка</span>'}</td><td class="num">${fmtD(p.published_at||p.created_at)}</td><td style="text-align:right;white-space:nowrap">${p.status==='published'?`<a class="btn ghost sm" href="/blog/${esc(p.slug)}" target="_blank" rel="noopener">Відкрити</a> `:''}<button class="btn ghost sm" data-post-edit="${p.id}">Редагувати</button></td></tr>`).join('');
   return head('Блог',`<a class="btn ghost sm" href="/blog" target="_blank" rel="noopener">Блог на сайті</a><button class="btn go sm" data-post-new>Нова стаття</button>`)+
     (D.postsErr?`<div class="panel bal-warn bad">Не вдалося завантажити статті: ${esc(D.postsErr)}. Потрібно виконати blog-setup.sql у Supabase.</div>`:'')+
+    (DRAFTS&&DRAFTS.filter(d=>!D.posts.some(p=>p.slug===d.slug)).length?`<div class="panel bal-warn"><b>Підготовлені статті від Claude: ${DRAFTS.filter(d=>!D.posts.some(p=>p.slug===d.slug)).length}.</b> ${DRAFTS.filter(d=>!D.posts.some(p=>p.slug===d.slug)).map(d=>'«'+esc(d.h1)+'»').join(', ')}. Додадуться як чернетки — перегляньте, додайте обкладинку й опублікуйте.<div class="acts" style="margin-top:10px"><button class="btn sm" data-drafts-add>Додати чернетки</button></div></div>`:'')+
     `<div class="panel">${D.posts.length?`<div class="tw"><table><thead><tr><th></th><th>Стаття</th><th>Статус</th><th>Дата</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`:'<p class="empty">Статей ще немає. Натисніть «Нова стаття».</p>'}</div>
     <p class="bal-n" style="margin:12px 6px">Посилання на блог є у футері сайту, а всі опубліковані статті автоматично потрапляють у <a href="/sitemap.xml" target="_blank" rel="noopener">sitemap.xml</a> для Google.</p>`;
 }
 const INS=[['H2','\n## Підзаголовок\n'],['H3','\n### Підзаголовок\n'],['Ж','**жирний**'],['К','*курсив*'],['Посилання','[текст](/)'],['Список','\n- пункт\n- пункт\n'],['Цитата','\n> цитата\n'],['Примітка','\n[[note: важлива примітка]]\n'],['Кнопка','\n[[cta: Розрахувати матрицю | /]]\n']];
-const LINKS=[['Головна · розрахунок','/'],['Прогноз по роках','/?go=years'],['Сумісність','/?go=pair'],['Таро-трактувальник','/?go=tarot'],['Довідник арканів','/?go=cat'],['Шпаргалка по позиціях','/?go=guide'],['Енергія дня','/?go=today']];
+const LINKS=[['Головна · розрахунок','/'],['Особиста матриця','/osobysta-matrytsia'],['Прогноз по роках','/prohnoz-po-rokakh'],['Сумісність','/sumisnist'],['Таро-трактувальник','/taro'],['Довідник арканів','/arkany'],['Шпаргалка по позиціях','/pozytsii-matrytsi'],['Енергія дня','/enerhiia-dnia'],['Кабінет','/kabinet']];
 const EN_COLS=()=>D.posts.length>0&&('h1_en' in D.posts[0]);
 function vPost(){
   const p=EDIT==='new'?{h1:'',slug:'',title:'',h2:'',description:'',cover:'',cover_alt:'',body:'',status:'draft',published_at:null}:D.posts.find(x=>x.id===EDIT);
@@ -1164,6 +1168,9 @@ addEventListener('beforeunload',e=>{ if(SEO.dirty){ e.preventDefault(); e.return
 
 function bindView(){
   bindPost(); bindDocs(); bindMail(); bindAn(); bindPartners(); bindSeo();
+  { const db=$('[data-drafts-add]'); if(db) db.onclick=async()=>{ db.disabled=true; const add=DRAFTS.filter(d=>!D.posts.some(p=>p.slug===d.slug)).map(d=>({slug:d.slug,h1:d.h1,h2:d.h2||null,title:d.title||null,description:d.description||null,body:d.body,status:'draft'}));
+      const {error}=await SB.from('posts').insert(add); if(error){ db.disabled=false; return toast('Не вдалося додати: '+error.message); }
+      await logA('додано чернетки статей',null,{slugs:add.map(x=>x.slug)}); await load(); go('blog'); toast(`Додано чернеток: ${add.length}.`); }; }
   { const nb=$('[data-post-new]'); if(nb) nb.onclick=()=>{ EDIT='new'; go('post'); }; document.querySelectorAll('[data-post-edit]').forEach(b=>b.onclick=()=>{ EDIT=+b.dataset.postEdit; go('post'); window.scrollTo({top:0}); }); }
   { const f=$('#tpF'); if(f) f.onsubmit=async e=>{ e.preventDefault(); const usdv=Math.round(parseFloat($('#tpU').value)*100)/100; if(!usdv) return toast('Вкажіть суму (для коригування — з мінусом).');
       const t={d:$('#tpD').value,usd:usdv,note:$('#tpN').value.trim()}; if(await saveTopups([...D.topups,t],'поповнення балансу ШІ',t)) toast('Поповнення додано.'); }; }
