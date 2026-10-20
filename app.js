@@ -2008,6 +2008,69 @@ function chakraRows(P){
   const sum=f=>r(rows.reduce((s,x)=>s+x[f],0));
   return {rows,total:{ph:sum('ph'),en:sum('en'),em:sum('em')}};
 }
+/* ---------- «Шлях призначення»: родові програми → пошук себе → соціалізація → духовна грамотність (під картою здоров'я) ----------
+   Left (2/3): the scheme — Sky + Earth give personal purpose, father's + mother's lines give social purpose, both give spiritual purpose.
+   Right (1/3): what the chosen point means, plus/minus and how to work it through. Tooltips on hover, click a circle to read. */
+const PP_ST={self:{t:"Пошук себе",a:"до 40 років",c:'var(--p-violet)'},rod:{t:"Родові програми",a:"сила і завдання роду",c:'var(--p-cyan)'},soc:{t:"Соціалізація",a:"40–60 років",c:'var(--p-blue)'},spir:{t:"Духовна грамотність",a:"після 60 років",c:'var(--p-gold)'}};
+const PP_N={
+  SKY:{st:'self',t:"Лінія Неба",f:"таланти + кармічне завдання",x:80,y:78,r:27,
+    role:"Вертикаль матриці: дар, з яким ви прийшли, і завдання душі. Це духовні якості, які варто в собі розвинути, — те, що ви приносите у світ зсередини."},
+  EARTH:{st:'self',t:"Лінія Землі",f:"особистість + матеріальне",x:222,y:78,r:27,
+    role:"Горизонталь матриці: як ви проявляєтеся і як заробляєте. Це вміння й навички, через які ви реалізуєтеся в матеріальному світі."},
+  PERS:{st:'self',t:"Особисте призначення",f:"Небо + Земля",x:151,y:200,r:40,
+    role:"Пошук себе. До 40 років головне завдання — зрозуміти, хто ви, і поєднати внутрішнє покликання з матеріальною реалізацією."},
+  MALE:{st:'rod',t:"Чоловіча лінія роду",s:"Лінія батька",f:"рід батька: 10 і 50 років",x:378,y:78,r:27,
+    role:"Програми, сила й досвід, передані по батьківській лінії. Те, як ви ставитеся до дії, відповідальності, грошей і влади, часто звідси."},
+  FEM:{st:'rod',t:"Жіноча лінія роду",s:"Лінія матері",f:"рід матері: 30 і 70 років",x:520,y:78,r:27,
+    role:"Програми, мудрість і почуття, передані по материнській лінії. Звідси — ставлення до турботи, близькості, тіла й власної цінності."},
+  SOC:{st:'soc',t:"Соціальне призначення",f:"чоловіча лінія + жіноча лінія",x:449,y:200,r:40,
+    role:"Соціалізація. Між 40 і 60 роками важливо реалізуватися серед людей — у справі, команді, суспільстві, — прийнявши досвід свого роду."},
+  SPIR:{st:'spir',t:"Духовне призначення",f:"особисте + соціальне",x:300,y:404,r:46,
+    role:"Духовна грамотність. Після 60 років — мудрість, якою ви ділитеся, і гармонія між тим, ким ви стали, і тим, що дали людям."}
+};
+const PP_ORD=['SKY','EARTH','PERS','MALE','FEM','SOC','SPIR'];
+const ppDefault=()=>{ const a=curAge(); return a<40?'PERS':a<60?'SOC':'SPIR'; };
+function ppInfo(id){
+  const P=STATE.P, v=P[id], a=ARC[v], n=PP_N[id], st=PP_ST[n.st];
+  const parts={SKY:['B','D'],EARTH:['A','C'],PERS:['SKY','EARTH'],MALE:['F','H'],FEM:['G','I'],SOC:['MALE','FEM'],SPIR:['PERS','SOC']}[id];
+  const PL={A:"Особистість",C:"Матеріальне",B:"Таланти",D:"Кармічне завдання",F:"Рід батька, 10 р.",H:"Рід батька, 50 р.",G:"Рід матері, 30 р.",I:"Рід матері, 70 р."};
+  const pl=k=>PP_N[k]?_t(PP_N[k].s||PP_N[k].t):_t(PL[k]||k);
+  return `<div class="pp-i" style="--c:${st.c}">
+    <p class="pp-stage">${_t(st.t)} · ${_t(st.a)}</p>
+    <div class="pp-ih"><span class="pp-big">${v}</span><div><h3>${_t(n.t)}</h3><p class="pp-arc">${esc(a.n)}</p></div></div>
+    <p class="pp-calc">${parts.map(k=>`${pl(k)} <b>${P[k]}</b>`).join(' + ')} = <b>${v}</b></p>
+    <p class="pp-role">${_t(n.role)}</p>
+    <p class="pp-pur"><b>${_t("Суть:")}</b> ${cap(a.pur)}.</p>
+    <div class="pm"><div class="pp"><h4>${_t("У плюсі")}</h4>${UL(LST(v,'p',3))}</div><div class="pp minus"><h4>${_t("У мінусі")}</h4>${UL(LST(v,'m',3))}</div></div>
+    <h4>${_t("Як пропрацювати")}</h4>${UL([...(a.how||[]).slice(0,3),cap(a.task)])}
+    ${aiAsk('arc:'+id)}
+  </div>`;
+}
+function pathSection(){
+  if(!STATE.P||isPair()) return '';
+  const P=STATE.P, sel=STATE.pp||ppDefault(), age=curAge(), now=age<40?'PERS':age<60?'SOC':'SPIR';
+  /* connectors start under each circle's caption, so they never cross the text */
+  const line=(a,b)=>{ const A_=PP_N[a], B_=PP_N[b], y1=A_.y+A_.r+(A_.r>30?(a===now?76:56):28); return `<line x1="${A_.x}" y1="${y1}" x2="${B_.x}" y2="${B_.y-B_.r-6}" style="--c:${PP_ST[B_.st].c}"/>`; };
+  const node=id=>{ const n=PP_N[id], st=PP_ST[n.st], a=ARC[P[id]];
+    return `<g class="pp-n${id===sel?' on':''}${id===now?' now':''}" data-pp="${id}" tabindex="0" role="button" aria-pressed="${id===sel}" aria-label="${esc(_t(n.t))}: ${P[id]} ${esc(a.n)}" style="--c:${st.c}" data-tip-h="${esc(_t(n.t))} · ${P[id]} ${esc(a.n)}" data-tip="${esc(_t(n.f))}. ${esc(_t("Натисніть, щоб прочитати."))}">
+      <circle class="pp-halo" cx="${n.x}" cy="${n.y}" r="${n.r+9}"/><circle class="pp-c" cx="${n.x}" cy="${n.y}" r="${n.r}"/>
+      <text class="pp-v" x="${n.x}" y="${n.y}" style="font-size:${Math.round(n.r*.78)}px">${P[id]}</text>
+      <text class="pp-l" x="${n.x}" y="${n.y+n.r+(n.r>30?22:19)}">${esc(_t(n.s||n.t))}</text></g>`; };
+  const grp=(x,w,y,key)=>`<g class="pp-grp" style="--c:${PP_ST[key].c}"><path d="M${x} ${y+10}v-8h${w}v8"/><text x="${x+w/2}" y="${y-6}">${esc(_t(key==='rod'?"Родові програми":"Небо і Земля"))}</text></g>`;
+  const stg=(id)=>{ const n=PP_N[id], st=PP_ST[n.st], y=n.y+n.r+40; return `<text class="pp-sg" x="${n.x}" y="${y}" style="--c:${st.c}">${esc(_t(st.t))} · ${esc(_t(st.a))}</text>${id===now?`<g class="pp-nowg" style="--c:${st.c}"><rect class="pp-nr" x="${n.x-62}" y="${y+7}" width="124" height="22" rx="11"/><text class="pp-now" x="${n.x}" y="${y+22}">${esc(_t("ви зараз тут"))}</text></g>`:''}`; };
+  return `<section class="ppath fade" aria-labelledby="pph">
+    <div class="sec-h" style="--meta-pre:'${_t("[ призначення ]  ").replace(/'/g,"\\'")}'"><h2 id="pph">${_t("Шлях призначення")}</h2><p class="meta">${_t("Родові програми, пошук себе, соціалізація й духовна грамотність — як вони складаються у вашій матриці. Наведіть на кружечок, щоб побачити підказку, натисніть — щоб прочитати, як пропрацювати.")}</p></div>
+    <div class="pp-grid">
+      <div class="panel pp-sch"><svg viewBox="0 0 600 520" class="pp-svg" role="group" aria-label="${esc(_t("Схема призначення"))}">
+        <g class="pp-lines">${line('SKY','PERS')}${line('EARTH','PERS')}${line('MALE','SOC')}${line('FEM','SOC')}${line('PERS','SPIR')}${line('SOC','SPIR')}</g>
+        ${grp(48,206,30,'self')}${grp(346,206,30,'rod')}
+        ${PP_ORD.map(node).join('')}
+        ${stg('PERS')}${stg('SOC')}${stg('SPIR')}
+      </svg>
+      <div class="pp-leg">${['self','rod','soc','spir'].map(k=>`<button type="button" class="pp-lg" data-pp="${{self:'PERS',rod:'MALE',soc:'SOC',spir:'SPIR'}[k]}" style="--c:${PP_ST[k].c}"><i></i>${_t(PP_ST[k].t)}<small>${_t(PP_ST[k].a)}</small></button>`).join('')}</div></div>
+      <aside class="panel pp-side" id="ppside" aria-live="polite">${ppInfo(sel)}</aside>
+    </div></section>`;
+}
 function chakraSection(){
   const P=STATE.P, {rows,total}=chakraRows(P), ci=STATE.ch;
   const cell=(v,col)=>`<td><span class="cnum${col?' em':''}">${v}</span></td>`;
@@ -2072,7 +2135,7 @@ function render(){
   else if(STATE.view==='today') left=`<div class="panel tdp fade" id="left">${todayPanel()}</div>`;
   else left=`<div class="panel cl fade" id="left">${catGrid()}</div>`;
   if(STATE.view==='matrix') left=left.replace(/<\/div>\s*$/,aiBlock()+'</div>');
-  $('#result').innerHTML=head+`<div class="grid">${left}<aside class="panel side" id="side"></aside></div>`+(P&&STATE.view==='matrix'&&!isPair()?chakraSection():'');
+  $('#result').innerHTML=head+`<div class="grid">${left}<aside class="panel side" id="side"></aside></div>`+(P&&STATE.view==='matrix'&&!isPair()?chakraSection()+pathSection():'');
   document.querySelectorAll('.tabs [data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
   document.querySelectorAll('.codes [data-go]').forEach(b=>b.addEventListener('click',()=>{ if(STATE.view!=='matrix'){ setView('matrix'); } openDet(parseGo(b.dataset.go)); }));
   const zb=$('#zoomB'); if(zb) zb.addEventListener('click',()=>{ STATE.zoom=!STATE.zoom; render(); const sc=$('.mx-sc'); if(sc&&STATE.zoom){ sc.scrollLeft=(sc.scrollWidth-sc.clientWidth)/2; } const z2=$('#zoomB'); if(z2) z2.focus({preventScroll:true}); });
@@ -2096,6 +2159,10 @@ function render(){
     ct.addEventListener('click',e=>{const tr=e.target.closest('.crow');if(tr)pick(tr)});
     ct.addEventListener('keydown',e=>{const tr=e.target.closest('.crow');if(tr&&(e.key==='Enter'||e.key===' ')){e.preventDefault();pick(tr)}});
   }
+  { const pp=document.querySelector('.ppath');
+    if(pp){ const pick=id=>{ if(!PP_N[id]) return; STATE.pp=id; pp.querySelectorAll('.pp-n').forEach(g=>{ const on=g.dataset.pp===id; g.classList.toggle('on',on); g.setAttribute('aria-pressed',String(on)); }); pp.querySelectorAll('.pp-lg').forEach(b=>b.classList.toggle('on',b.dataset.pp===id)); const sd=$('#ppside'); sd.innerHTML=ppInfo(id); sd.classList.remove('flash'); void sd.offsetWidth; sd.classList.add('flash'); if(innerWidth<=980) sd.scrollIntoView({behavior:'smooth',block:'nearest'}); };
+      pp.addEventListener('click',e=>{ const g=e.target.closest('[data-pp]'); if(g) pick(g.dataset.pp); });
+      pp.addEventListener('keydown',e=>{ const g=e.target.closest('.pp-n'); if(g&&(e.key==='Enter'||e.key===' ')){ e.preventDefault(); pick(g.dataset.pp); } }); } }
   renderSide(); updateSel(); if(typeof placeForm==='function') placeForm();
   if(STATE.view==='years'){ const on=lp.querySelector('.yrow.on'); if(on&&lp.scrollHeight>lp.clientHeight) lp.scrollTop=on.offsetTop-lp.clientHeight/2; }
 }

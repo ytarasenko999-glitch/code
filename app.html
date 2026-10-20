@@ -13,7 +13,7 @@
 <meta property="og:type" content="website">
 <script>window.addEventListener('load',function(){setTimeout(function(){var h=document.getElementById('home'),r=document.getElementById('result');if(h&&(!h.innerHTML.trim()||h.querySelector('[inert]'))&&r&&r.hidden!==false&&!document.querySelector('.st-title:not([inert] .st-title)')){var d=document.createElement('div');d.setAttribute('style','position:fixed;inset:0;z-index:999;display:grid;place-items:center;padding:24px;background:#05050C;color:#EEF0FF;font:16px/1.6 -apple-system,Segoe UI,sans-serif;text-align:center');d.innerHTML='<div><p style="font:12px monospace;letter-spacing:.08em;opacity:.6">[ CODE ]</p><h1 style="font-weight:300;margin:0 0 10px">Щось пішло не так</h1><p style="opacity:.75;max-width:40ch;margin:0 auto 22px">Сторінка не завантажилась повністю. Перевірте інтернет і спробуйте ще раз.</p><button onclick="location.reload()" style="height:48px;padding:0 26px;border:0;border-radius:999px;background:linear-gradient(120deg,#8C7DFF,#B47CFF);color:#fff;font-weight:600;cursor:pointer">Оновити сторінку</button><p style="margin-top:22px;font-size:13px;opacity:.6">Не допомагає? code.matrix.support@gmail.com</p></div>';document.body.appendChild(d)}},2500)})</script>
 <script>/* until the app has placed the form (start screen vs header), keep the header form out of the layout so nothing jumps */document.documentElement.classList.add('booting');document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){document.documentElement.classList.remove('booting')},0);setTimeout(function(){document.documentElement.classList.remove('pre')},1500)});</script>
-<script>/* translations are separate files, fetched only when the page is not in Ukrainian */(function(){try{var V={"en": "94e3887e", "de": "38c7697b", "fr": "b9979cc1", "es": "8060333d", "it": "9fd15f9b"},l=(window.__SEO&&__SEO.lang)||'';if(/^\/en(\/|$)/.test(location.pathname))l='en';if(!l){var q=new URLSearchParams(location.search).get('lang');l=q||JSON.parse(localStorage.getItem('code-lang')||'null')||'uk';}if(l!=='uk'&&V[l])document.write('<script defer src="/i18n/tr-'+l+'.js?v='+V[l]+'"><\/script>');}catch(e){}})();</script>
+<script>/* translations are separate files, fetched only when the page is not in Ukrainian */(function(){try{var V={"en": "3330174a", "de": "38c7697b", "fr": "b9979cc1", "es": "8060333d", "it": "9fd15f9b"},l=(window.__SEO&&__SEO.lang)||'';if(/^\/en(\/|$)/.test(location.pathname))l='en';if(!l){var q=new URLSearchParams(location.search).get('lang');l=q||JSON.parse(localStorage.getItem('code-lang')||'null')||'uk';}if(l!=='uk'&&V[l])document.write('<script defer src="/i18n/tr-'+l+'.js?v='+V[l]+'"><\/script>');}catch(e){}})();</script>
 <title>Матриця долі</title>
 <script>try{var t=JSON.parse(localStorage.getItem("code-theme")||"null");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2156,8 +2156,51 @@ a.flink:hover{color:var(--accent)}
 .field .f-x:hover{color:var(--fg);background:var(--accent-soft)}
 .field input:placeholder-shown+.f-x{display:none}
 .field input:has(+.f-x){padding-right:44px}
+/* «Шлях призначення» — scheme (2/3) + reading (1/3) under the health map */
+.ppath{padding-block:64px 8px}
+.pp-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:22px;align-items:start}
+.pp-sch{padding:22px 22px 16px}
+.pp-svg{width:100%;height:auto;display:block;overflow:visible}
+.pp-lines line{stroke:var(--c);stroke-opacity:.5;stroke-width:1.6;stroke-dasharray:3 6;stroke-linecap:round}
+.pp-n{cursor:pointer;outline:none}
+.pp-c{fill:var(--surface-solid);stroke:var(--c);stroke-width:2;transition:fill .2s}
+.pp-halo{fill:var(--c);opacity:0;transition:opacity .2s}
+.pp-n:hover .pp-halo,.pp-n:focus-visible .pp-halo{opacity:.14}
+.pp-n.on .pp-halo{opacity:.24}
+.pp-n.on .pp-c{fill:var(--c)}
+.pp-v{text-anchor:middle;dominant-baseline:central;font-family:var(--font-display);font-weight:400;fill:var(--fg);pointer-events:none}
+.pp-n.on .pp-v{fill:#fff}
+.pp-l{text-anchor:middle;font-family:var(--font);font-size:13.5px;fill:var(--muted);pointer-events:none}
+.pp-n.on .pp-l,.pp-n:hover .pp-l{fill:var(--fg)}
+.pp-n.on .pp-l{font-weight:600}
+.pp-now{text-anchor:middle;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;fill:var(--c);pointer-events:none}
+.pp-grp path{fill:none;stroke:var(--c);stroke-opacity:.55}
+.pp-grp text,.pp-sg{text-anchor:middle;font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;fill:var(--c)}
+.pp-sg{font-size:10.5px;opacity:.9}
+.pp-nowg rect{fill:var(--c);opacity:.14}
+.pp-now{font-weight:500}
+.pp-leg{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;justify-content:center}
+.pp-lg{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:13px;cursor:pointer}
+.pp-lg i{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.pp-lg small{color:var(--muted);font-size:11.5px}
+.pp-lg:hover,.pp-lg.on{border-color:var(--c)}
+.pp-side{position:sticky;top:calc(env(safe-area-inset-top,0px) + 112px);padding:24px}
+.pp-side.flash .pp-i{animation:fade .3s ease both}
+.pp-stage{margin:0 0 12px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--c)}
+.pp-ih{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.pp-ih h3{margin:0;font-family:var(--font-display);font-weight:400;font-size:22px;letter-spacing:-.01em;line-height:1.15}
+.pp-big{flex:none;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:var(--c);color:#fff;font-family:var(--font-display);font-size:26px;box-shadow:0 10px 30px -10px var(--c)}
+.pp-arc{margin:2px 0 0;color:var(--muted);font-size:14px}
+.pp-calc{margin:0 0 14px;font-family:var(--font-mono);font-size:11.5px;color:var(--muted);letter-spacing:.02em}
+.pp-calc b{color:var(--fg);font-weight:500}
+.pp-role{margin:0 0 10px;line-height:1.6}
+.pp-pur{margin:0 0 14px;line-height:1.6}
+.pp-i .pm{margin-bottom:14px}
+.pp-i h4{margin:14px 0 6px}
+@media (max-width:980px){.pp-grid{grid-template-columns:1fr}.pp-side{position:static}}
+@media (max-width:640px){.ppath{padding-block:28px 8px}.pp-sch{padding:14px 4px 10px}.pp-l{font-size:19px}.pp-grp text{font-size:15px}.pp-sg{font-size:14px;letter-spacing:.04em}.pp-now{font-size:13px}.pp-leg{display:none}.pp-side{padding:20px 18px}}
 /* below the first screen: the browser skips layout/paint of these until they are near the viewport */
-.chak,.foot{content-visibility:auto;contain-intrinsic-size:auto 900px}
+.chak,.ppath,.foot{content-visibility:auto;contain-intrinsic-size:auto 900px}
 html.pre #home .fade{animation:none}
 html.booting #topForm>.bar{display:none}
 html.booting #topForm .modes{visibility:hidden}
