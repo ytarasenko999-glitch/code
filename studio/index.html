@@ -268,6 +268,8 @@ select.tb{max-width:240px}
 .seo-env{margin:14px 0 4px;padding:12px 14px;border-radius:14px;background:var(--surface-2);font-size:13.5px}
 .seo-env ul{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
 .seo-env li.ok{color:var(--ok)}.seo-env li.bad{color:var(--bad)}
+.cost-steps{margin:8px 0;padding-left:20px;display:flex;flex-direction:column;gap:6px}.cost-steps code,.bal-warn code{font-family:var(--font-mono);font-size:12px;background:var(--surface-2);padding:1px 6px;border-radius:6px}
+.bal-n.ok-n{color:var(--ok)}
 .seo-err{font-size:14px;line-height:1.6}.seo-err.bad{color:var(--bad)}
 .seo-fix{margin:10px 0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
 .seo-acc{font-family:var(--font-mono);font-size:12.5px;background:var(--surface-2);padding:2px 8px;border-radius:6px;word-break:break-all;user-select:all}
@@ -408,7 +410,7 @@ async function logA(action,target,details){ await SB.from('admin_log').insert({a
 /* ---------- views ---------- */
 function go(v){ VIEW=v; document.querySelectorAll('.navb').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); const m=$('#main');
   m.innerHTML=v==='users'?vUsers():v==='subs'?vSubs():v==='pays'?vPays():v==='ai'?vAI():v==='log'?vLog():v==='admins'?vAdmins():v==='bal'?vBal():v==='blog'?vBlog():v==='post'?vPost():v==='docs'?vDocs():v==='mail'?vMail():v==='an'?vAn():v==='partners'?vPartners():v==='set'?vSet():v==='seo'?vSeo():vOverview(); bindView(); }
-document.querySelectorAll('.navb').forEach(b=>b.onclick=async()=>{ if(b.dataset.v==='blog') EDIT=null; if(b.dataset.v==='mail'){ MAIL=null; await loadMail(); } if(b.dataset.v==='an') await loadAn(); if(b.dataset.v==='set') await loadSet(); if(b.dataset.v==='seo'&&!SEO.def) await loadSeo(); go(b.dataset.v); });
+document.querySelectorAll('.navb').forEach(b=>b.onclick=async()=>{ if(b.dataset.v==='blog') EDIT=null; if(b.dataset.v==='mail'){ MAIL=null; await loadMail(); } if(b.dataset.v==='an') await loadAn(); if(b.dataset.v==='set') await loadSet(); if(b.dataset.v==='bal'&&!COST) loadCost(); if(b.dataset.v==='seo'&&!SEO.def) await loadSeo(); go(b.dataset.v); });
 const head=(t,acts='')=>`<div class="top"><div><p class="pk">[ адмінпанель ]</p><h2>${t}</h2></div><div class="acts">${acts}<button class="btn ghost sm" data-act="reload">Оновити</button></div></div>`;
 
 const zapyt=n=>{ const a=n%10,b=n%100; return n+' '+(a===1&&b!==11?'запит':a>=2&&a<=4&&(b<12||b>14)?'запити':'запитів'); };
@@ -733,26 +735,40 @@ function bindMail(){
 
 const usd=n=>'$'+(Math.round((n||0)*100)/100).toFixed(2);
 const KIND={reading:'Трактування Таро',follow:'Уточнення до розкладу',chat:'«Запитай свою матрицю»',report:'Персональний розбір',year:'Прогноз на 12 місяців',photo:'Розпізнавання фото'};
+/* real spend per day from Anthropic's Cost API (api/ai-cost.js), when the Admin key is set in Vercel */
+let COST=null;
+const realOn=()=>!!(COST&&COST.days&&!COST.error);
+async function loadCost(){ try{ const from=D.topups.length?D.topups[0].d:isoDay(Date.now()-30*864e5); const r=await fetch('/api/ai-cost',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+await tok()},body:JSON.stringify({from:from<isoDay(Date.now()-30*864e5)?from:isoDay(Date.now()-30*864e5)})}); COST=await r.json(); }catch(e){ COST={configured:true,error:e.message}; } if(VIEW==='bal') go('bal'); }
+const realDay=d=>realOn()?(COST.days[d]||0):null;
 function balEst(){
-  const top=D.topups.reduce((a,t)=>a+(+t.usd||0),0), from=D.topups.length?D.topups[0].d:null;
-  const spent=from?D.spend.filter(x=>isoDay(x.created_at)>=from).reduce((a,x)=>a+(+x.cost||0),0):0;
-  const wk=D.spend.filter(x=>new Date(x.created_at)>=Date.now()-7*864e5).reduce((a,x)=>a+(+x.cost||0),0)/7;
+  const top=D.topups.reduce((a,t)=>a+(+t.usd||0),0), from=D.topups.length?D.topups[0].d:null, R=realOn();
+  const spent=from?(R?Object.entries(COST.days).filter(([d])=>d>=from).reduce((a,[,v])=>a+v,0):D.spend.filter(x=>isoDay(x.created_at)>=from).reduce((a,x)=>a+(+x.cost||0),0)):0;
+  const wk=R?Object.entries(COST.days).filter(([d])=>d>=isoDay(Date.now()-7*864e5)).reduce((a,[,v])=>a+v,0)/7:D.spend.filter(x=>new Date(x.created_at)>=Date.now()-7*864e5).reduce((a,x)=>a+(+x.cost||0),0)/7;
   const priced=D.spend.filter(x=>x.cost!=null), avgReq=priced.length?priced.reduce((a,x)=>a+(+x.cost||0),0)/priced.length:0;
-  const left=top-spent; return {has:D.topups.length>0,top,spent,left,perDay:wk,days:wk>0?Math.floor(left/wk):null,avgReq,reqLeft:avgReq>0?Math.floor(left/avgReq):null,from};
+  const left=top-spent; return {real:R,has:D.topups.length>0,top,spent,left,perDay:wk,days:wk>0?Math.floor(left/wk):null,avgReq,reqLeft:avgReq>0?Math.floor(left/avgReq):null,from};
+}
+function costNote(){
+  if(!COST) return '<p class="bal-n" style="margin:0 0 12px">Звіряю витрати з Claude Console…</p>';
+  if(realOn()) return `<p class="bal-n ok-n" style="margin:0 0 12px">✓ Витрати — точні, з Claude Console (оновлено ${fmtDT(COST.at)}). Залишок = ваші поповнення − реальні витрати. Сам баланс і поповнення Anthropic через API не віддає, тож поповнення вносьте нижче.</p>`;
+  if(COST.configured===false) return `<div class="panel bal-warn"><b>Автоматичний облік витрат.</b> Зараз витрати — наша оцінка за записаними запитами. Щоб бачити точні цифри з Claude Console:
+    <ol class="cost-steps"><li>Claude Console → <a href="https://platform.claude.com/settings/admin-keys" target="_blank" rel="noopener">Settings → Admin keys</a> → Create Admin Key (доступно для організації; якщо пропонує створити організацію — створіть).</li><li>Скопіюйте ключ (<code>sk-ant-admin…</code>) і додайте у <a href="https://vercel.com/jupiter-10/code/settings/environment-variables" target="_blank" rel="noopener">Vercel → Environment Variables</a> як <code>ANTHROPIC_ADMIN_KEY</code> (Production) → Redeploy.</li></ol>
+    ${COST.wrongKey?'<p class="bad">У ANTHROPIC_ADMIN_KEY зараз щось інше — потрібен саме Admin-ключ, що починається з sk-ant-admin.</p>':''}<p style="margin:6px 0 0">Ключ вставляйте тільки у Vercel — не в чат і не в документацію.</p></div>`;
+  return `<div class="panel bal-warn bad">Не вдалося отримати витрати з Claude Console: ${esc(COST.error||'')}. Показую оцінку за нашими записами.</div>`;
 }
 function vBal(){
   const b=balEst(), today=isoDay(Date.now());
-  const dayCost=d=>D.spend.filter(x=>isoDay(x.created_at)===d).reduce((a,x)=>a+(+x.cost||0),0);
+  const ourDay=d=>D.spend.filter(x=>isoDay(x.created_at)===d).reduce((a,x)=>a+(+x.cost||0),0), dayCost=d=>{ const r=realDay(d); return r!=null&&(r>0||d<today)?r:ourDay(d); };
   const days=[]; for(let i=29;i>=0;i--) days.push(isoDay(Date.now()-i*864e5)); const vals=days.map(dayCost), mx=Math.max(0.0001,...vals);
   const m30=D.spend.filter(x=>new Date(x.created_at)>=Date.now()-30*864e5), noCost=m30.filter(x=>x.cost==null).length;
   const by={}; m30.filter(x=>x.cost!=null).forEach(x=>{ const k=by[x.kind]=by[x.kind]||{n:0,c:0,i:0,o:0}; k.n++; k.c+=+x.cost; k.i+=x.tokens_in||0; k.o+=x.tokens_out||0; });
   const low=b.has&&(b.left<2||(b.days!=null&&b.days<7));
   const kpi=(t,v,s,cls='')=>`<div class="panel kpi ${cls}"><small>${t}</small><b>${v}</b><span>${s||''}</span></div>`;
   return head('Баланс ШІ',`<a class="btn sm" href="https://platform.claude.com/settings/billing" target="_blank" rel="noopener" title="Claude Console → Billing (акаунт code.matrix.support@gmail.com)">Поповнити баланс ↗</a>`)+`<div class="bal-v">
+  ${costNote()}
   ${b.has?'':'<div class="panel bal-warn">Додайте нижче суму поповнення в Claude Console (і поточний баланс, наприклад $5 на сьогодні) — тоді тут з’явиться орієнтовний залишок і на скільки його вистачить.</div>'}
   ${low?`<div class="panel bal-warn bad">Баланс закінчується: орієнтовно ${usd(b.left)}${b.days!=null?`, вистачить приблизно на ${b.days} дн.`:''} Поповніть у <a href="https://platform.claude.com/settings/billing" target="_blank" rel="noopener">Claude Console → Billing</a>.</div>`:''}
   <div class="kpis kpis5">
-    ${kpi('Орієнтовний залишок',b.has?usd(b.left):'—',b.has?`поповнено ${usd(b.top)} з ${fmtD(b.from)}`:'немає даних про поповнення',low?'bad':'')}
+    ${kpi(b.real?'Залишок':'Орієнтовний залишок',b.has?usd(b.left):'—',b.has?`поповнено ${usd(b.top)} з ${fmtD(b.from)}`:'немає даних про поповнення',low?'bad':'')}
     ${kpi('Витрачено',b.has?usd(b.spent):usd(m30.reduce((a,x)=>a+(+x.cost||0),0)),b.has?'з першого поповнення':'за 30 днів')}
     ${kpi('У середньому за день',usd(b.perDay),'за останні 7 днів')}
     ${kpi('Вистачить приблизно',b.days!=null?`${b.days} дн.`:'—',b.reqLeft!=null&&b.has?`≈ ${b.reqLeft} запитів за середньою ціною ${usd(b.avgReq)}`:'')}
@@ -1164,7 +1180,7 @@ function bindView(){
   document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{ SUBF=b.dataset.f; go('subs'); });
   document.querySelectorAll('#main [data-u]').forEach(r=>{ if(r.dataset.u) r.onclick=()=>openUser(r.dataset.u); });
   document.querySelectorAll('[data-act]').forEach(b=>b.onclick=async()=>{ const a=b.dataset.act;
-    if(a==='reload'){ b.disabled=true; await load(); go(VIEW); toast('Дані оновлено.'); }
+    if(a==='reload'){ b.disabled=true; await load(); if(VIEW==='bal'){ COST=null; loadCost(); } go(VIEW); toast('Дані оновлено.'); }
     if(a==='csvU') csv('code-users.csv',[['email','name','registered','plan','paid_until','auto_renew','packs','ai_30d','readings']].concat(D.users.map(u=>{const s=D.subs[u.id]||{};return [u.email,nameOf(u),fmtD(u.created_at),planOf(u.id),s.paid_until?fmtD(s.paid_until):'',s.auto_renew?'yes':'',s.packs||0,aiFor(u.id),u.readings];})));
     if(a==='csvP') csv('code-payments.csv',[['date','email','kind','plan','period','amount','provider','ref','note']].concat(D.pays.map(p=>[fmtDT(p.created_at),p.email,p.kind,p.plan||'',p.period||'',p.kind==='refund'?-p.amount:p.amount,p.provider||'',p.provider_ref||'',p.note||''])));
   });
