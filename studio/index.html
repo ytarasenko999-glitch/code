@@ -270,6 +270,18 @@ select.tb{max-width:240px}
 .seo-env li.ok{color:var(--ok)}.seo-env li.bad{color:var(--bad)}
 .cost-steps{margin:8px 0;padding-left:20px;display:flex;flex-direction:column;gap:6px}.cost-steps code,.bal-warn code{font-family:var(--font-mono);font-size:12px;background:var(--surface-2);padding:1px 6px;border-radius:6px}
 .bal-n.ok-n{color:var(--ok)}
+.ico-prev{display:flex;flex-wrap:wrap;align-items:flex-end;gap:18px;margin:4px 0 14px}
+.ico-tab{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:12px 12px 0 0;background:var(--surface-2);border:1px solid var(--hair);border-bottom:0;font-size:12.5px;max-width:240px}
+.ico-tab img{width:16px;height:16px}.ico-tab span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ico-ios,.ico-and{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.ico-ios img{width:60px;height:60px;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.ico-and img{width:56px;height:56px;border-radius:50%;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.clr{display:flex;align-items:center;gap:10px;height:42px;padding:0 10px;border-radius:14px;background:var(--surface-2)}
+.clr input{width:34px;height:28px;padding:0;border:0;background:none;cursor:pointer}
+.clr span{font-family:var(--font-mono);font-size:12.5px}
+.og-prev{display:block;width:100%;max-width:520px;aspect-ratio:1200/630;object-fit:cover;border-radius:14px;border:1px solid var(--hair)}
+.seo-site{margin-bottom:6px}
+label.btn{cursor:pointer}
 .seo-err{font-size:14px;line-height:1.6}.seo-err.bad{color:var(--bad)}
 .seo-fix{margin:10px 0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
 .seo-acc{font-family:var(--font-mono);font-size:12.5px;background:var(--surface-2);padding:2px 8px;border-radius:6px;word-break:break-all;user-select:all}
@@ -1074,6 +1086,57 @@ function seoSetupHTML(short){
     <p class="bal-n">Дані в Google з’являються з затримкою: перші покази — через кілька днів після підтвердження сайту, статистика відстає на ~2 дні.</p>
     <div class="acts"><button class="btn ghost sm" data-seo-gsc>Перевірити підключення</button></div></div>`;
 }
+/* site-wide: icon (favicon, iPhone home-screen icon, installable app icons → manifest), app name, colors, default share image */
+const SITE_DEF={name:'CODE — матриця долі',short:'CODE',theme:'#05050C',bg:'#05050C',ogImage:''};
+const siteIcons=()=>Object.assign({svg:'/favicon.svg',i32:'/favicon-32.png',i180:'/apple-touch-icon.png',i192:'/favicon-192.png',i512:'/favicon-512.png',mask:'/favicon-512-maskable.png'},SEO.site.icons||{});
+function seoSiteHTML(){
+  const S0=Object.assign({},SITE_DEF,SEO.site), I=siteIcons(), custom=!!(SEO.site.icons&&SEO.site.icons.v), og=S0.ogImage||'/og.png?v=2';
+  const f=(k,label,ph,type)=>`<div class="field"><label for="ss-${k}">${label}</label><input id="ss-${k}" data-site="${k}" ${type?`type="${type}"`:''} value="${esc(SEO.site[k]||'')}" placeholder="${esc(ph||'')}"></div>`;
+  return `<div class="grid2 seo-site">
+    <div class="panel card"><h3>Іконка сайту</h3>
+      <div class="ico-prev">
+        <div class="ico-tab"><img src="${esc(I.svg||I.i32)}" alt=""><span>${esc(S0.short)} — розрахуй свій код</span></div>
+        <div class="ico-ios"><img src="${esc(I.i180)}" alt=""><small>${esc(S0.short)}</small></div>
+        <div class="ico-and"><img src="${esc(I.mask||I.i512)}" alt=""><small>${esc(S0.short)}</small></div>
+      </div>
+      <p class="bal-n" style="margin:0 0 12px">Завантажте квадратне зображення — найкраще SVG або PNG від 512×512 px. З нього автоматично зробляться іконка вкладки, іконка для iPhone (apple-touch-icon), іконки застосунку для Android і manifest — щоб сайт можна було додати на головний екран телефона. Фон для iPhone і Android береться з кольору нижче.</p>
+      <div class="acts"><label class="btn sm" for="icoF">Завантажити іконку</label><input type="file" id="icoF" accept="image/png,image/svg+xml,image/jpeg,image/webp" hidden>${custom?'<button class="btn ghost sm" type="button" data-ico-reset>Повернути стандартну зірку</button>':''}</div>
+      <p class="bal-n" id="icoMsg">${custom?`Своя іконка · завантажено ${fmtDT(SEO.site.icons.v)}`:'Зараз стоїть стандартна фіолетова зірка CODE.'}</p>
+    </div>
+    <div class="panel card"><h3>Застосунок і поширення</h3>
+      <div class="seo-grid">${f('name','Назва застосунку',SITE_DEF.name)}${f('short','Коротка назва (під іконкою)',SITE_DEF.short)}
+        <div class="field"><label for="ss-theme">Колір панелі браузера</label><div class="clr"><input type="color" id="ss-theme" data-site="theme" value="${esc(S0.theme)}"><span>${esc(S0.theme)}</span></div></div>
+        <div class="field"><label for="ss-bg">Фон іконки й заставки</label><div class="clr"><input type="color" id="ss-bg" data-site="bg" value="${esc(S0.bg)}"><span>${esc(S0.bg)}</span></div></div></div>
+      <h4 style="margin:16px 0 8px">Картинка для соцмереж (за замовчуванням)</h4>
+      <img class="og-prev" src="${esc(og)}" alt="Картинка, яка показується при надсиланні посилання">
+      <div class="seo-grid" style="margin-top:10px">${f('ogImage','Своя картинка (посилання, 1200×630)','стандартна: /og.png')}</div>
+      <p class="bal-n">Стандартна картинка вже є українською й англійською. Сторінка може мати власну — у її налаштуваннях нижче. Перевірити, як посилання виглядає в Telegram/Facebook: <a href="https://developers.facebook.com/tools/debug/?q=${encodeURIComponent('https://code-matrix.space/')}" target="_blank" rel="noopener">Facebook Debugger ↗</a>.</p>
+    </div></div>`;
+}
+/* resize the uploaded image into every icon size and upload them to storage (bucket «blog», folder site/) */
+async function icoMake(file){
+  const msg=$('#icoMsg'); const say=t=>{ if(msg) msg.textContent=t; };
+  if(!/^image\//.test(file.type)) return toast('Потрібне зображення: SVG, PNG, JPG або WebP.');
+  say('Готую іконки…');
+  const url=URL.createObjectURL(file), img=new Image(); img.src=url; await img.decode().catch(()=>{});
+  const w=img.naturalWidth||512, h=img.naturalHeight||512;
+  if(file.type!=='image/svg+xml'&&Math.min(w,h)<180) toast('Зображення замале — краще від 512×512 px. Іконка може бути розмитою.');
+  const bg=(SEO.site.bg||SITE_DEF.bg);
+  const draw=(size,pad,fill)=>new Promise(res=>{ const c=document.createElement('canvas'); c.width=c.height=size; const x=c.getContext('2d');
+    if(fill){ x.fillStyle=fill; x.fillRect(0,0,size,size); }
+    const box=size*(1-pad*2), sc=Math.min(box/w,box/h), dw=w*sc, dh=h*sc; x.imageSmoothingQuality='high'; x.drawImage(img,(size-dw)/2,(size-dh)/2,dw,dh); c.toBlob(res,'image/png'); });
+  const v=new Date().toISOString(), tag=Date.now().toString(36), out={v};
+  const plan=[['i32',32,0,null],['i180',180,.12,bg],['i192',192,.04,null],['i512',512,.04,null],['mask',512,.2,bg]];
+  try{
+    for(const [k,size,pad,fill] of plan){ const blob=await draw(size,pad,fill); const path=`site/icon-${tag}-${k}.png`;
+      const {error}=await SB.storage.from('blog').upload(path,blob,{upsert:true,contentType:'image/png',cacheControl:'31536000'}); if(error) throw error;
+      out[k]=SB.storage.from('blog').getPublicUrl(path).data.publicUrl; }
+    if(file.type==='image/svg+xml'){ const path=`site/icon-${tag}.svg`; const {error}=await SB.storage.from('blog').upload(path,file,{upsert:true,contentType:'image/svg+xml',cacheControl:'31536000'}); if(error) throw error; out.svg=SB.storage.from('blog').getPublicUrl(path).data.publicUrl; }
+    else out.svg='';
+  }catch(e){ say('Не вдалося завантажити: '+(e.message||e)); return toast('Не вдалося завантажити іконку: '+(e.message||e)); }
+  finally{ URL.revokeObjectURL(url); }
+  SEO.site.icons=out; seoMark(); go('seo'); toast('Іконки готові — натисніть «Зберегти зміни», щоб вони з’явилися на сайті.');
+}
 function vSeo(){
   if(!SEO.def) return head('SEO')+'<p class="empty">Завантаження…</p>';
   const l=SEO.lang, home=SEO.list.find(p=>p.k==='home');
@@ -1089,6 +1152,8 @@ function vSeo(){
       <p class="bal-n" style="margin:0">Підпункти під головною (сайтлінки) Google будує сам — вибрати їх напряму не можна, але можна чітко підказати. Тепер кожен розділ має власну адресу, заголовок і опис, усі вони є в підвалі сайту, у sitemap і в структурованих даних головної саме в тому порядку, що нижче. Стрілками ↑↓ задай пріоритет: перші шість — ті, що ми пропонуємо показувати.</p>
       <p class="bal-n">Сайтлінки зазвичай з’являються, коли сайт уже набрав покази за назвою бренду (запити «code matrix», «код матриця»). Покроково: підключити Search Console → надіслати sitemap → чекати перших тижнів показів.</p></div>
   </div>
+  <h3 class="seo-sec">Загальні налаштування сайту</h3>
+  ${seoSiteHTML()}
   <h3 class="seo-sec">Сторінки</h3>
   <div class="seo-list">${SEO.list.map((p,i)=>seoPageHTML(p,i)).join('')}</div>
   <h3 class="seo-sec">Google Search Console</h3>
@@ -1161,6 +1226,9 @@ function bindSeo(){
   document.querySelectorAll('[data-seo-dn]').forEach(b=>b.onclick=e=>{ e.preventDefault(); e.stopPropagation(); mv(b.dataset.seoDn,1); });
   document.querySelectorAll('[data-seo-reset]').forEach(b=>b.onclick=()=>{ const p=SEO.list.find(x=>x.k===b.dataset.seoReset), l=SEO.lang;
     ['title','desc','name','ogTitle','ogDesc','ogImage'].forEach(f=>p[l][f]=p.def[l][f]||''); seoMark(); go('seo'); toast('Повернуто стандартні тексти — не забудь зберегти.'); });
+  { const fi=$('#icoF'); if(fi) fi.onchange=()=>{ const f=fi.files&&fi.files[0]; if(f) icoMake(f); }; }
+  { const rb=$('[data-ico-reset]'); if(rb) rb.onclick=()=>{ delete SEO.site.icons; seoMark(); go('seo'); toast('Повернуто стандартну іконку — збережіть зміни.'); }; }
+  document.querySelectorAll('[data-site]').forEach(inp=>inp.addEventListener('input',()=>{ const v=inp.value.trim(); if(v) SEO.site[inp.dataset.site]=v; else delete SEO.site[inp.dataset.site]; seoMark(); const sp=inp.parentElement.querySelector('.clr span'); if(sp) sp.textContent=inp.value; }));
   bindSeoGsc();
   if(!SEO.gsc&&!SEO.gscBusy) seoLoadGsc();
 }

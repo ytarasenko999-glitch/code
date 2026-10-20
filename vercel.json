@@ -22,6 +22,10 @@
   },
   "rewrites": [
     {
+      "source": "/manifest.webmanifest",
+      "destination": "/api/manifest"
+    },
+    {
       "source": "/blog",
       "destination": "/api/blog"
     },

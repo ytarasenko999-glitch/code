@@ -3,7 +3,7 @@
    Slugs are editable there; an old slug answers with a permanent redirect to the new one. */
 const fs = require('fs');
 const path = require('path');
-const { load, pathOf, ORIGIN } = require('./_seo.js');
+const { load, pathOf, ORIGIN, iconTags } = require('./_seo.js');
 
 let APP = null;
 async function appHtml(host) {
@@ -56,7 +56,7 @@ module.exports = async (req, res) => {
   try { html = await appHtml(req.headers.host); } catch (e) { res.statusCode = 500; return res.end('Temporarily unavailable'); }
 
   const L = page[lang], url = ORIGIN + pathOf(page, lang);
-  const ogImg = L.ogImage || S.site.ogImage || ORIGIN + (lang === 'en' ? '/og-en.png' : '/og.png');
+  const ogImg = L.ogImage || S.site.ogImage || ORIGIN + (lang === 'en' ? '/og-en.png?v=2' : '/og.png?v=2');
   const home = pages.find(p => p.k === 'home');
   const nav = pages.filter(p => p.k !== 'home' && !p.noindex);
   const ld = page.k === 'home'
@@ -83,8 +83,11 @@ module.exports = async (req, res) => {
     `<meta property="og:site_name" content="${esc(S.site.name || 'CODE')}">`,
     `<meta property="og:locale" content="${lang === 'en' ? 'en_GB' : 'uk_UA'}">`,
     `<meta property="og:image" content="${esc(ogImg)}">`,
+    '<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">',
+    `<meta property="og:image:alt" content="${esc(lang === 'en' ? 'CODE — Destiny Matrix, compatibility and AI Tarot' : 'CODE — матриця долі, сумісність і Таро з ШІ')}">`,
     '<meta name="twitter:card" content="summary_large_image">',
-    `<script type="application/ld+json">${json(ld)}</script>`
+    `<script type="application/ld+json">${json(ld)}</script>`,
+    iconTags(S.site)
   ].join('\n');
 
   /* home page: the start screen goes into the HTML itself, so it paints before app.js has loaded */
@@ -95,6 +98,7 @@ module.exports = async (req, res) => {
     .replace('<section class="hero home" id="home"></section>', () => pre ? `<section class="hero home is-start" id="home">${pre}</section>` : '<section class="hero home" id="home"></section>')
     .replace(/<body([^>]*)>/, (m, a) => pre ? (/class="/.test(a) ? m.replace('class="', 'class="on-start ') : `<body${a} class="on-start">`) : m)
     .replace(/<title>[\s\S]*?<\/title>/, () => `<title>${esc(L.title)}</title>`)
+    .replace(/<link rel="icon"[^>]*>/g, () => '').replace(/<meta name="theme-color"[^>]*>/, () => '')
     .replace(/<meta name="description" content="[^"]*">/, () => `<meta name="description" content="${esc(L.desc)}">`)
     .replace(/<meta property="og:title" content="[^"]*">/, () => `<meta property="og:title" content="${esc(L.ogTitle || L.title)}">`)
     .replace(/<meta property="og:description" content="[^"]*">/, () => `<meta property="og:description" content="${esc(L.ogDesc || L.desc)}">`)

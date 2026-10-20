@@ -74,7 +74,7 @@ function merge(raw) {
     return p;
   });
   list.sort((a, b) => (a.k === 'home' ? -1 : b.k === 'home' ? 1 : a.i - b.i));
-  return { pages: list, site: Object.assign({ name: 'CODE', ogImage: '' }, (raw && raw.site) || {}) };
+  return { pages: list, site: Object.assign({ ogImage: '' }, (raw && raw.site) || {}) };
 }
 async function load() { return merge(await loadRaw()); }
 const pathOf = (p, lang) => {
@@ -82,4 +82,37 @@ const pathOf = (p, lang) => {
   if (p.k === 'home') return lang === 'en' ? '/en' : '/';
   return (lang === 'en' ? '/en/' : '/') + s;
 };
-module.exports = { PAGES, LANGS, FIELDS, RESERVED, ORIGIN, load, merge, pathOf };
+/* site icons: uploaded in admin «SEO → Загальні налаштування» (stored in Supabase storage), else the built-in star */
+const DEF_ICONS = { svg: '/favicon.svg', i32: '/favicon-32.png', i180: '/apple-touch-icon.png', i192: '/favicon-192.png', i512: '/favicon-512.png', mask: '/favicon-512-maskable.png' };
+const icons = site => Object.assign({}, DEF_ICONS, (site && site.icons) || {});
+const escA = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+function iconTags(site) {
+  const I = icons(site), theme = (site && site.theme) || '#05050C';
+  return [
+    I.svg ? `<link rel="icon" href="${escA(I.svg)}" type="image/svg+xml">` : '',
+    `<link rel="icon" href="${escA(I.i32)}" sizes="32x32" type="image/png">`,
+    site && site.icons && site.icons.v ? '' : `<link rel="icon" href="/favicon.ico" sizes="any">`,
+    `<link rel="apple-touch-icon" href="${escA(I.i180)}" sizes="180x180">`,
+    `<link rel="manifest" href="/manifest.webmanifest">`,
+    `<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">`,
+    `<meta name="apple-mobile-web-app-title" content="${escA((site && site.short) || 'CODE')}">`,
+    `<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">`,
+    `<meta name="theme-color" content="${escA(theme)}">`
+  ].filter(Boolean).join('');
+}
+function manifest(site, lang) {
+  const I = icons(site), en = lang === 'en';
+  return {
+    name: (site && site.name) || (en ? 'CODE — Destiny Matrix' : 'CODE — матриця долі'),
+    short_name: (site && site.short) || 'CODE',
+    description: en ? 'Destiny Matrix, compatibility, forecast by year and an AI Tarot reader.' : 'Матриця долі, сумісність, прогноз по роках і Таро-трактувальник з ШІ.',
+    lang: en ? 'en' : 'uk', start_url: en ? '/en?source=pwa' : '/?source=pwa', scope: '/', display: 'standalone',
+    background_color: (site && site.bg) || '#05050C', theme_color: (site && site.theme) || '#05050C',
+    icons: [
+      { src: I.i192, sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: I.i512, sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: I.mask || I.i512, sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+    ]
+  };
+}
+module.exports = { PAGES, LANGS, FIELDS, RESERVED, ORIGIN, load, merge, pathOf, iconTags, manifest, icons };
