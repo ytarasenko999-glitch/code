@@ -2852,10 +2852,14 @@ const POSGRP={
 const POSG={pers:'pers',tal:'tal',money:'money',love:'love',karma:'karma',minus:'karma',task:'karma',rod:'rod',health:'health',pur:'pur'};
 /* a bullet in the current language; until a sphere text is translated, the arcana's general (already translated) list stands in */
 const trHas=s=>LANG==='uk'||!!(TR[LANG]&&TR[LANG][_H(s)]);
-function posBody(id,v,g){
-  const a=ARC[v], f=POS[id][1], H=POSGRP[f]||POSGRP.pers, X=(POSTX[POSG[f]||'pers']||{})[v];
+/* the sphere-specific plus / minus / to-do lists for an arcana in a position (also used by the PDF) */
+function posLists(id,v){
+  const a=ARC[v], f=POS[id][1], X=(POSTX[POSG[f]||'pers']||{})[v];
   const pick=(arr,fb)=>arr&&arr.every(trHas)?arr.map(x=>_t(x)):fb;
-  const P_=X?pick(X.p,LST(v,'p',4)):LST(v,'p',4), M_=X?pick(X.m,LST(v,'m',4)):LST(v,'m',4), D_=X?pick(X.d,a.how.slice(0,3)):a.how.slice(0,3);
+  return {H:POSGRP[f]||POSGRP.pers, P:X?pick(X.p,LST(v,'p',4)):LST(v,'p',4), M:X?pick(X.m,LST(v,'m',4)):LST(v,'m',4), D:X?pick(X.d,a.how.slice(0,3)):a.how.slice(0,3)};
+}
+function posBody(id,v,g){
+  const a=ARC[v], f=POS[id][1], L_=posLists(id,v), H=L_.H, P_=L_.P, M_=L_.M, D_=L_.D;
   /* only what the position text above doesn't already say */
   const ex=f==='karma'?`<h4>${_t("Завдання")}</h4><p>${cap(a.task)}.</p>`
     :f==='task'?`<h4>${_t("Досвід минулого")}</h4><p>${cap(a.karma)}.</p>`
@@ -3261,7 +3265,7 @@ function pdfBlocks(png){
   const tail=[P.D2,P.D1,P.D], tn=findNamed(tail,false);
   const LST0=pair?[['E',_t("Енергія союзу")],['A',_t("Як пару бачать інші")],['B',_t("Спільні таланти")],['C',_t("Матеріальна сфера пари")],['D',_t("Кармічне завдання пари")],['PERS',_t("Призначення пари")]]
                  :[['A',_t("Особистість · візитна картка")],['B',_t("Таланти · дар від Неба")],['C',_t("Матеріальне · ресурс")],['D',_t("Кармічне завдання")],['E',_t("Центр · зона комфорту")],['PERS',_t("Особисте призначення")]];
-  const TOC=[...(pair?[]:[{a:'chak',t:_t("Карта здоров’я"),k:"Карта здоров’я"}]),...LST0.map(([id,t])=>({a:'en-'+id,t:`${t.split(' · ')[0]} · ${A[P[id]].n}`})),{a:'progs',t:pair?_t("Програми пари"):_t("Програми")},...(pair?[]:[{a:'year',t:`${_f("Рік {0} · {1}",[curAge(),P.YEARS[curAge()].join('-')])}`}])];
+  const TOC=[...(pair?[]:[{a:'chak',t:_t("Карта здоров’я"),k:"Карта здоров’я"},{a:'path',t:_t("Шлях призначення")}]),...LST0.map(([id,t])=>({a:'en-'+id,t:`${t.split(' · ')[0]} · ${A[P[id]].n}`})),{a:'progs',t:pair?_t("Програми пари"):_t("Програми")},...(pair?[]:[{a:'year',t:`${_f("Рік {0} · {1}",[curAge(),P.YEARS[curAge()].join('-')])}`}])];
   pdfBlocks.toc=TOC;
   B.push(`<div class="pc"><div class="pk">[ ${pair?_t("матриця сумісності"):_t("матриця долі")} ]</div><h1>${pair?_t("Сумісність"):_t("Матриця")} <b>${who||_t("долі")}</b></h1><div class="pmeta">${meta}</div>
     <img class="pimg" src="${png}" alt="">
@@ -3275,6 +3279,18 @@ function pdfBlocks(png){
       ${rows.map((x,i)=>`<tr><td><i style="background:${pv(CHAK[i].c)}"></i><b>${CHAK[i].n}</b><small>${CHAK[i].t.split(LSPLIT).slice(0,2).join(', ')}</small></td><td>${x.ph}</td><td>${x.en}</td><td class="em">${x.em}</td></tr>`).join('')}
       <tr class="tot"><td>${_t("<b>Енергополе</b>")}<small>${_t("загальний підсумок")}</small></td><td>${total.ph}</td><td>${total.en}</td><td class="em">${total.em}</td></tr></tbody></table></div>`);
     rows.forEach((x,i)=>B.push(`<div class="pblk"><div class="phd">${pNum(x.em,CHAK[i].c)}<div><h3>${CHAK[i].n}</h3><div class="pmeta">${CHAK[i].z} · ${x.ph}/${x.en}/${x.em}</div></div></div><p>${_f("{0}. Фізика ({1}): {2}. Енергія ({3}): наповнюється через {4}. Емоції ({5}): у плюсі — {6}, у мінусі — {7}.",[cap(CHAK[i].t),A[x.ph].n,lc(A[x.ph].hp),A[x.en].n,A[x.en].kw.join(', '),A[x.em].n,items(A[x.em],'p',2),items(A[x.em],'m',2)])}</p><p class="pmuted">${_f("Що підтримує: {0}.",[CHAK[i].pr])}</p></div>`));
+  }
+  if(!pair){
+    const now=curAge()<40?'PERS':curAge()<60?'SOC':'SPIR';
+    B.push(`<div class="psec" data-anchor="path"><div class="pk">${_t("[ шлях призначення ]")}</div><h2>${_t("Шлях призначення")}</h2><p class="pmuted">${_t("Небо і Земля дають пошук себе, лінії батька й матері — соціалізацію, разом вони складаються в духовну грамотність.")}</p>
+      <table class="ptab"><thead><tr><th>${_t("Етап")}</th><th>${_t("Точка")}</th><th>${_t("Енергія")}</th></tr></thead><tbody>
+      ${PP_ORD.map(id=>{ const n=PP_N[id], st=PP_ST[n.st]; return `<tr><td><i style="background:${pv(st.c)}"></i><b>${_t(st.t)}</b><small>${_t(st.a)}${id===now?' · '+_t("ви зараз тут"):''}</small></td><td>${_t(n.t)}<small>${_t(n.f)}</small></td><td class="em">${P[id]} · ${A[P[id]].n}</td></tr>`; }).join('')}
+      </tbody></table></div>`);
+    ['PERS','MALE','FEM','SOC','SPIR'].forEach(id=>{ const n=PP_N[id], st=PP_ST[n.st], v=P[id], a=A[v];
+      B.push(`<div class="pblk"><div class="phd">${pNum(v,st.c)}<div><div class="pk">${_t(st.t)} · ${_t(st.a)}</div><h3>${_t(n.t)} · ${a.n}</h3></div></div>
+        <p class="plead">${_t(n.role)}</p><p><b>${_t("Суть:")}</b> ${cap(a.pur)}.</p>
+        <div class="two"><div><h4 class="ok">${_t("У плюсі")}</h4>${pUL(LST(v,'p',3))}</div><div><h4 class="no">${_t("У мінусі")}</h4>${pUL(LST(v,'m',3))}</div></div>
+        <h4>${_t("Як пропрацювати")}</h4>${pUL([...(a.how||[]).slice(0,2),cap(a.task)])}</div>`); });
   }
   B.push(`<div class="psec"><div class="pk">${_t("[ основні енергії ]")}</div><h2>${pair?_t("Енергії союзу"):_t("Ваші головні енергії")}</h2></div>`);
   const list=LST0;
@@ -3291,7 +3307,9 @@ function pdfBlocks(png){
     B.push(`<div class="pblk" data-anchor="en-${id}"><div class="phd">${pNum(v,chipCol(id))}<div><div class="pk">${String(n+1).padStart(2,'0')} · ${t}</div><h3>${a.n}</h3></div></div>
       <p class="plead">${posText(id,v,g)}</p><p>${a.d}</p></div>`);
     B.push(`<div class="pblk"><h4>${_t("Як проживається")}</h4><p>${a.live}</p><h4>${_t("Ви впізнаєте себе, якщо…")}</h4>${pUL(a.rec)}</div>`);
-    B.push(`<div class="pblk two"><div><h4 class="ok">${_t("Сильні сторони")}</h4>${pUL(a.p.replace(/\.$/,'').split(LSPLIT))}</div><div><h4 class="no">${_t("Слабкі сторони")}</h4>${pUL(a.m.replace(/\.$/,'').split(LSPLIT))}</div></div>`);
+    { const L_=pair?null:posLists(id,v);
+      B.push(L_?`<div class="pblk two"><div><h4 class="ok">${_t(L_.H[0])}</h4>${pUL(L_.P)}</div><div><h4 class="no">${_t(L_.H[1])}</h4>${pUL(L_.M)}</div></div><div class="pblk"><h4>${_t("Що робити саме тут")}</h4>${pUL(L_.D)}</div>`
+        :`<div class="pblk two"><div><h4 class="ok">${_t("Сильні сторони")}</h4>${pUL(a.p.replace(/\.$/,'').split(LSPLIT))}</div><div><h4 class="no">${_t("Слабкі сторони")}</h4>${pUL(a.m.replace(/\.$/,'').split(LSPLIT))}</div></div>`); }
     B.push(`<div class="pblk"><h4>${_t("Як покращити ситуацію")}</h4>${pFix(a)}</div>`);
   });
   B.push(`<div class="psec" data-anchor="progs"><div class="pk">${_t("[ програми ]")}</div><h2>${pair?_t("Програми пари"):_t("Ваші програми")}</h2></div>`);
@@ -3957,6 +3975,10 @@ Programs (lines of the matrix):
 ${pr}
 Health map (chakras):
 ${ch}
+Path of purpose (Sky + Earth → finding yourself, to 40; father’s line + mother’s line → socialization, 40–60; both → spiritual literacy, after 60; now in the «${a<40?'finding yourself':a<60?'socialization':'spiritual literacy'}» stage):
+- Sky (talents + karmic task): ${nmx(P.SKY)}; Earth (personality + material): ${nmx(P.EARTH)}; personal purpose: ${nmx(P.PERS)}
+- father’s line: ${nmx(P.MALE)}; mother’s line: ${nmx(P.FEM)}; social purpose: ${nmx(P.SOC)}
+- spiritual purpose: ${nmx(P.SPIR)}; planetary purpose: ${nmx(P.PLAN)}
 Year programs (age ring):
 ${yrs}
 Energies repeating most in this matrix: ${rep||'—'}${(()=>{ const seen=new Set(), kb=progs().filter(p=>p.named&&!seen.has(p.named.n)&&seen.add(p.named.n)).map(p=>`- ${p.t} ${p.vals.join('-')} «${PN(p.named)}»: plus — ${p.named.p} Minus — ${p.named.m} How it shows — ${p.named.h} Work — ${p.named.w}`); return kb.length?`\nCODE knowledge base on the named programs found in this matrix (use it as the factual basis, retell in your own words, never copy verbatim):\n${kb.join('\n')}`:''; })()}`;
@@ -5088,7 +5110,7 @@ function tpPrompt(r){
   const mxs=Array.isArray(r.mx)?r.mx:(r.mx?[r.mx]:[]);
   const mxOne=(M,many)=>{ const P=M.P, nmx=v=>`${v} ${MX_EN[v]}`; let age=new Date().getFullYear()-M.y; const t=new Date(); if(t.getMonth()+1<M.m||(t.getMonth()+1===M.m&&t.getDate()<M.d)) age--; age=Math.max(0,age)%80;
     const who=M.other?`${M.name?`“${M.name}”`:'another person'} (${M.g==='m'?'male':'female'}, born ${tpDot(M)}) — entered by the querent (who may be a tarot reader working for a client); NOT the querent’s own matrix, so refer to this person by name or as “this person”`:`the querent themself${M.name?` (“${M.name}”)`:''}, born ${tpDot(M)}`;
-    return `${many?'- ':''}${many?'':'DESTINY MATRIX OF '}${who}: centre / comfort zone ${nmx(P.E)}; personality ${nmx(P.A)}; talents ${nmx(P.B)}; money & material ${nmx(P.C)}; karmic task ${nmx(P.D)}; karmic tail ${P.D2}-${P.D1}-${P.D}; love channel ${nmx(P.LOV)}; personal purpose ${nmx(P.PERS)}; current year (age ${age}) ${P.YEARS[age].join('-')} (main energy ${MX_EN[P.YEARS[age][0]]})`; };
+    return `${many?'- ':''}${many?'':'DESTINY MATRIX OF '}${who}: centre / comfort zone ${nmx(P.E)}; personality ${nmx(P.A)}; talents ${nmx(P.B)}; money & material ${nmx(P.C)}; karmic task ${nmx(P.D)}; karmic tail ${P.D2}-${P.D1}-${P.D}; love channel ${nmx(P.LOV)}; personal purpose ${nmx(P.PERS)}; current year (age ${age}) ${P.YEARS[age].join('-')} (main energy ${MX_EN[P.YEARS[age][0]]}); money channel: entry ${nmx(P.C2)}, multiplier ${nmx(P.MON)}, love/money crossing ${nmx(P.X)}; family lines: father’s ${nmx(P.MALE)}, mother’s ${nmx(P.FEM)}; path of purpose: Sky ${nmx(P.SKY)} + Earth ${nmx(P.EARTH)} → finding yourself (to 40) ${nmx(P.PERS)}, socialization (40–60) ${nmx(P.SOC)}, spiritual literacy (after 60) ${nmx(P.SPIR)} — now in the «${age<40?'finding yourself':age<60?'socialization':'spiritual literacy'}» stage; health map (emotions column, crown→root): ${chakraRows(P).rows.map(x=>x.em).join(', ')}${(()=>{ const t=findNamed([P.D2,P.D1,P.D],false), y=findNamed(P.YEARS[age],true); return (t?`; named tail program «${PN(t)}»`:'')+(y?`; named year program «${PN(y)}»`:''); })()}. Pick the matrix points that fit the question: money → money channel; love → love channel and crossing; work/meaning → talents and the current purpose stage; family → family lines; energy/health → health map; timing → year program`; };
   if(mxs.length===1) mx=`\n${mxOne(mxs[0],false)} (Natalia Ladini’s method; arcana numbered 1–22, where 8 = Justice, 11 = Strength, 22 = The Fool). Where a drawn Major Arcana matches one of these energies by name, mention the resonance in one or two sentences inside the relevant card or in “How the cards connect”. Do not over-focus on the matrix: the cards and the question come first.`;
   else if(mxs.length>1) mx=`\nDESTINY MATRICES OF THE PEOPLE INVOLVED (Natalia Ladini’s method; arcana numbered 1–22, where 8 = Justice, 11 = Strength, 22 = The Fool):\n${mxs.map(M=>mxOne(M,true)).join('\n')}\nUse them to read the question in the light of these people and the dynamics between them: where a drawn Major Arcana matches one of their energies by name, say whose matrix it resonates with; note shared energies or clear tensions between them when they matter for the question. Do not over-focus on the matrices: the cards and the question come first.`;
   const kb=[...new Set(r.slots.map(c=>c.id))].map(id=>{ const [u,v,a]=TP_KB[id].split(' | '); return `- ${tpName(id,'en')}: upright — ${u}; reversed — ${v}; advice — ${a}`; }).join('\n');
