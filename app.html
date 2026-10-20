@@ -2205,6 +2205,29 @@ a.flink:hover{color:var(--accent)}
 .pos-role{margin:0 0 8px;color:var(--muted);font-size:.94em;line-height:1.55}
 button.arc-more{display:flex;align-items:center;gap:8px;width:100%;margin-top:18px;padding:12px 0 0;border:0;border-top:1px solid var(--hair);background:none;color:var(--muted);font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;text-align:left;cursor:pointer}
 button.arc-more:hover{color:var(--accent)}
+/* phones, start screen: an airy form under the headline — three rows (name · gender · date), no card, no coloured frames, thin underlines */
+@media (max-width:640px){
+  body.on-start .start-form{gap:18px}
+  body.on-start .start-form .modes{background:transparent;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;gap:22px}
+  body.on-start .start-form .modes button{padding:8px 2px;border-radius:0;background:none!important;box-shadow:none!important;color:var(--muted)}
+  body.on-start .start-form .modes [aria-selected="true"]{color:var(--fg);box-shadow:inset 0 -1.5px 0 var(--accent)!important}
+  body.on-start .start-form .bar{background:transparent!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;padding:0!important;border-radius:0!important}
+  body.on-start .start-form form.q:not([hidden]){display:grid!important;grid-template-columns:minmax(0,1fr);gap:16px}
+  body.on-start .start-form #q .f-name{order:1}
+  body.on-start .start-form #q .seg{order:2}
+  body.on-start .start-form #q .f-date{order:3}
+  body.on-start .start-form #q .btn.go{order:4;margin-top:8px}
+  body.on-start .start-form #q .err{order:5}
+  body.on-start .start-form .field input,body.on-start .start-form .field select,body.on-start .start-form .cs-btn{height:54px!important;background:transparent!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0!important;box-shadow:none!important;padding:22px 2px 6px!important;font-weight:400}
+  body.on-start .start-form .field input:focus{border-bottom-color:var(--accent)!important;background:transparent!important}
+  body.on-start .start-form .field label{left:2px;top:4px;opacity:.85}
+  body.on-start .start-form .field .f-x{right:0;background:none}
+  body.on-start .start-form .seg{display:grid!important;grid-template-columns:1fr 1fr;width:100%;height:46px!important;padding:0!important;border-radius:0!important;background:transparent!important;border:0!important;border-bottom:1px solid var(--line)!important}
+  body.on-start .start-form .seg label{justify-content:center;border-radius:0!important;background:transparent!important;box-shadow:none!important;font-weight:400;padding:0!important}
+  body.on-start .start-form .seg input:checked+label{color:var(--fg);box-shadow:inset 0 -1.5px 0 var(--accent)!important}
+  body.on-start .start-form .btn.go{height:52px}
+  body.on-start .start-form #qp .pgrp{background:transparent;border:0;padding:0}
+}
 /* below the first screen: the browser skips layout/paint of these until they are near the viewport */
 .chak,.ppath,.foot{content-visibility:auto;contain-intrinsic-size:auto 900px}
 html.pre #home .fade{animation:none}
