@@ -4748,12 +4748,14 @@ const tpDot=o=>`${String(o.d).padStart(2,'0')}.${String(o.m).padStart(2,'0')}.${
 function tpPeople(){ try{ return JSON.parse(localStorage.getItem('code-tarot-people')||'[]')||[]; }catch(_){ return []; } }
 function tpSavePeople(l){ try{ localStorage.setItem('code-tarot-people',JSON.stringify(l.slice(0,12))); }catch(_){} }
 function tpOtherModal(idx){
-  const o=(idx!=null&&TAR.mxs[idx]&&!TAR.mxs[idx].mine)?TAR.mxs[idx]:{name:'',g:'f',d:0,m:0,y:0}, ppl=tpPeople();
+  const o=(idx!=null&&TAR.mxs[idx]&&!TAR.mxs[idx].mine)?TAR.mxs[idx]:{name:'',g:'f',d:0,m:0,y:0};
+  /* recent people: tarot ones first, then everyone entered in the calculators (same consent rules as «Раніше вводили») */
+  const ppl=(()=>{ const out=[], seen=new Set(); [...tpPeople(),...(typeof recAll==='function'?recAll():[])].forEach(p=>{ if(!p||!p.y) return; const k=`${(p.name||'').toLowerCase()}|${p.d}.${p.m}.${p.y}`; if(seen.has(k)) return; seen.add(k); out.push({name:p.name||'',g:p.g||'f',d:+p.d,m:+p.m,y:+p.y}); }); return out.slice(0,30); })();
   const d=document.createElement('div'); d.className='tpk tpo'; d.setAttribute('role','dialog'); d.setAttribute('aria-modal','true'); d.setAttribute('aria-labelledby','tpoT');
   d.innerHTML=`<div class="tpk-bg"></div><div class="tpk-box"><div class="tpk-h"><div><small>${_t("Матриця для розкладу")}</small><h3 id="tpoT">${_t("Дані людини")}</h3></div><button class="x" type="button" data-tpo="x" aria-label="${_t("Закрити")}">${XICON}</button></div>
     <form class="tpo-f" novalidate>
       <p class="tpo-n">${_t("Сервіс розрахує матрицю долі цієї людини й урахує її в трактуванні. Саму матрицю на сторінці показано не буде.")}</p>
-      ${ppl.length?`<div class="tpo-pp"><span>${_t("Нещодавні")}</span>${ppl.map((p,i)=>`<button type="button" data-pp="${i}">${esc(p.name||'—')} · ${tpDot(p)}</button>`).join('')}</div>`:''}
+      ${ppl.length?`<div class="tpo-pp"><span>${_t("Нещодавні")}</span>${ppl.map((p,i)=>`<button type="button" data-pp="${i}" data-nm="${esc((p.name||'').toLowerCase())}">${esc(p.name||'—')} · ${tpDot(p)}</button>`).join('')}<em class="tpo-none" hidden>${_t("Нікого з таким ім’ям")}</em></div>`:''}
       <div class="pf-row1"><div class="field"><label for="tpoN">${T('name')}</label><input id="tpoN" class="nm" autocapitalize="words" maxlength="40" value="${esc(o.name||'')}" placeholder="${_t("Ім’я людини")}"></div>
         <div class="seg seg2" role="radiogroup" aria-label="${T('fem')} / ${T('male')}"><input type="radio" name="tpog" id="tpogf" value="f" ${o.g!=='m'?'checked':''}><label for="tpogf">${T('fem')}</label><input type="radio" name="tpog" id="tpogm" value="m" ${o.g==='m'?'checked':''}><label for="tpogm">${T('male')}</label></div></div>
       <div class="pf-date"><div class="field"><label for="tpoD">${T('day')}</label><select id="tpoD"></select></div><div class="field"><label for="tpoM">${T('month')}</label><select id="tpoM"></select></div><div class="field"><label for="tpoY">${T('year')}</label><select id="tpoY"></select></div></div>
@@ -4765,13 +4767,17 @@ function tpOtherModal(idx){
   const put=p=>{ $('#tpoN').value=p.name||''; d.querySelector(`#tpog${p.g==='m'?'m':'f'}`).checked=true; if(p.y){ $('#tpoY').value=p.y; $('#tpoM').value=p.m; $('#tpoM').dispatchEvent(new Event('change')); $('#tpoD').value=p.d; } window.csSync&&window.csSync(); };
   if(o.y) put(o);
   d.querySelectorAll('.field select').forEach(s=>window.csEnhance&&window.csEnhance(s)); window.csSync&&window.csSync();
-  const nm=$('#tpoN'); nm.addEventListener('input',()=>{ const p=nm.selectionStart,v=capName(nm.value); if(v!==nm.value){ nm.value=v; try{nm.setSelectionRange(p,p)}catch(_){} } });
+  /* typing a name narrows «Нещодавні» letter by letter: «Юр» keeps Юрій, drops Юлія */
+  const filt=()=>{ const q=nm.value.trim().toLowerCase(), bs=d.querySelectorAll('.tpo-pp [data-pp]'); let n=0;
+    bs.forEach(b=>{ const t=b.dataset.nm||'', on=!q||t.startsWith(q)||t.includes(' '+q); b.hidden=!on; if(on) n++; });
+    const no=d.querySelector('.tpo-none'); if(no) no.hidden=!(q&&n===0); };
+  const nm=$('#tpoN'); nm.addEventListener('input',()=>{ const p=nm.selectionStart,v=capName(nm.value); if(v!==nm.value){ nm.value=v; try{nm.setSelectionRange(p,p)}catch(_){} } filt(); });
   const prev=document.activeElement; if(innerWidth>820) setTimeout(()=>nm.focus({preventScroll:true}),60);
   const close=()=>{ d.classList.remove('in'); document.documentElement.classList.remove('mdl-on'); setTimeout(()=>d.remove(),240); document.removeEventListener('keydown',key,true); tpRefreshL(); if(prev&&prev.focus&&prev.isConnected) prev.focus({preventScroll:true}); };
   const key=e=>{ if(e.key==='Escape'&&!document.querySelector('.cs-pop.in')){ e.preventDefault(); e.stopImmediatePropagation(); close(); } };
   document.addEventListener('keydown',key,true);
   d.addEventListener('click',e=>{ if(e.target.closest('[data-tpo=x]')||e.target.classList.contains('tpk-bg')){ if(!TAR.mxs.length) TAR.mx=false; close(); return; }
-    const pp=e.target.closest('[data-pp]'); if(pp){ const p=tpPeople()[+pp.dataset.pp]; if(p) put(p); } });
+    const pp=e.target.closest('[data-pp]'); if(pp){ const p=ppl[+pp.dataset.pp]; if(p){ put(p); filt(); } } });
   d.querySelector('form').addEventListener('submit',e=>{ e.preventDefault();
     const v={name:$('#tpoN').value.trim(),g:d.querySelector('input[name=tpog]:checked').value,d:+$('#tpoD').value,m:+$('#tpoM').value,y:+$('#tpoY').value}, er=$('#tpoE');
     if(!v.d||!v.m||!v.y){ er.textContent=T('errDate'); er.hidden=false; return; }
