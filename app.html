@@ -13,7 +13,7 @@
 <meta property="og:type" content="website">
 <script>window.addEventListener('load',function(){setTimeout(function(){var h=document.getElementById('home'),r=document.getElementById('result');if(h&&(!h.innerHTML.trim()||h.querySelector('[inert]'))&&r&&r.hidden!==false&&!document.querySelector('.st-title:not([inert] .st-title)')){var d=document.createElement('div');d.setAttribute('style','position:fixed;inset:0;z-index:999;display:grid;place-items:center;padding:24px;background:#05050C;color:#EEF0FF;font:16px/1.6 -apple-system,Segoe UI,sans-serif;text-align:center');d.innerHTML='<div><p style="font:12px monospace;letter-spacing:.08em;opacity:.6">[ CODE ]</p><h1 style="font-weight:300;margin:0 0 10px">Щось пішло не так</h1><p style="opacity:.75;max-width:40ch;margin:0 auto 22px">Сторінка не завантажилась повністю. Перевірте інтернет і спробуйте ще раз.</p><button onclick="location.reload()" style="height:48px;padding:0 26px;border:0;border-radius:999px;background:linear-gradient(120deg,#8C7DFF,#B47CFF);color:#fff;font-weight:600;cursor:pointer">Оновити сторінку</button><p style="margin-top:22px;font-size:13px;opacity:.6">Не допомагає? code.matrix.support@gmail.com</p></div>';document.body.appendChild(d)}},2500)})</script>
 <script>/* until the app has placed the form (start screen vs header), keep the header form out of the layout so nothing jumps */document.documentElement.classList.add('booting');document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){document.documentElement.classList.remove('booting')},0);setTimeout(function(){document.documentElement.classList.remove('pre')},1500)});</script>
-<script>/* translations are separate files, fetched only when the page is not in Ukrainian */(function(){try{var V={"en": "3330174a", "de": "38c7697b", "fr": "b9979cc1", "es": "8060333d", "it": "9fd15f9b"},l=(window.__SEO&&__SEO.lang)||'';if(/^\/en(\/|$)/.test(location.pathname))l='en';if(!l){var q=new URLSearchParams(location.search).get('lang');l=q||JSON.parse(localStorage.getItem('code-lang')||'null')||'uk';}if(l!=='uk'&&V[l])document.write('<script defer src="/i18n/tr-'+l+'.js?v='+V[l]+'"><\/script>');}catch(e){}})();</script>
+<script>/* translations are separate files, fetched only when the page is not in Ukrainian */(function(){try{var V={"en": "3dffd333", "de": "38c7697b", "fr": "b9979cc1", "es": "8060333d", "it": "9fd15f9b"},l=(window.__SEO&&__SEO.lang)||'';if(/^\/en(\/|$)/.test(location.pathname))l='en';if(!l){var q=new URLSearchParams(location.search).get('lang');l=q||JSON.parse(localStorage.getItem('code-lang')||'null')||'uk';}if(l!=='uk'&&V[l])document.write('<script defer src="/i18n/tr-'+l+'.js?v='+V[l]+'"><\/script>');}catch(e){}})();</script>
 <title>Матриця долі</title>
 <script>try{var t=JSON.parse(localStorage.getItem("code-theme")||"null");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2199,6 +2199,14 @@ a.flink:hover{color:var(--accent)}
 .pp-i h4{margin:14px 0 6px}
 @media (max-width:980px){.pp-grid{grid-template-columns:1fr}.pp-side{position:static}}
 @media (max-width:640px){.ppath{padding-block:28px 8px}.pp-sch{padding:14px 4px 10px}.pp-l{font-size:19px}.pp-grp text{font-size:15px}.pp-sg{font-size:14px;letter-spacing:.04em}.pp-now{font-size:13px}.pp-leg{display:none}.pp-side{padding:20px 18px}}
+/* position reading: the role of this exact point, then the folded full arcana description */
+.pos-role{margin:0 0 8px;color:var(--muted);font-size:.94em;line-height:1.55}
+details.arc-more{margin-top:18px;border-top:1px solid var(--hair);padding-top:12px}
+details.arc-more>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+details.arc-more>summary::-webkit-details-marker{display:none}
+details.arc-more>summary::before{content:"+";display:grid;place-items:center;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);font-size:13px}
+details.arc-more[open]>summary::before{content:"−"}
+details.arc-more>summary:hover{color:var(--fg)}
 /* below the first screen: the browser skips layout/paint of these until they are near the viewport */
 .chak,.ppath,.foot{content-visibility:auto;contain-intrinsic-size:auto 900px}
 html.pre #home .fade{animation:none}
