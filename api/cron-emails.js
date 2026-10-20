@@ -2,7 +2,7 @@
    - 3 days before a paid plan ends → «закінчується» (two versions: auto-renew on / off)
    - the day after it ended without renewal → «підписка закінчилася»
    Each email goes once per subscription period (email_log). Needs SUPABASE_SERVICE_ROLE_KEY and RESEND_API_KEY. */
-const { render, merge } = require('./_emails.js');
+const { render, merge, unsubLink } = require('./_emails.js');
 const { sendMail } = require('./email.js');
 const SB_URL = process.env.SUPABASE_URL || 'https://blwyzqxhzvjzhqkabesi.supabase.co';
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -37,7 +37,7 @@ module.exports = async (req, res) => {
       if (ud.profile && ud.profile.consent && ud.profile.consent.service === false) { out.skipped.push(`${s.user_id}:${kind}:optout`); continue; }
       const vars = { name: (ud.profile && ud.profile.name) || 'друже', email: to, plan: s.plan === 'pro' ? 'Pro' : 'Plus', period: s.period === 'y' ? 'рік' : 'місяць', amount: String((PRICE[s.plan] || {})[s.period === 'y' ? 'y' : 'm'] || ''), paid_until: fmt(s.paid_until), days_left: String(Math.max(1, Math.ceil(left))), cabinet_url: SITE + '/?go=acct', plans_url: SITE + '/?go=acct', site_url: SITE };
       try {
-        await sendMail(to, render(tpl, vars));
+        await sendMail(to, render(tpl, { ...vars, unsub_url: unsubLink(s.user_id, 'service'), unsub_kind: 'service' }));
         await fetch(`${SB_URL}/rest/v1/email_log`, { method: 'POST', headers: { ...HS(), Prefer: 'return=minimal' }, body: JSON.stringify({ user_id: s.user_id, email: to, kind, ref }) });
         out.sent.push(`${to}:${kind}`);
       } catch (e) { out.errors.push(`${to}:${kind}:${String(e.message || e).slice(0, 120)}`); }

@@ -3,6 +3,11 @@
    these defaults are used for anything not customised yet. */
 const SITE = process.env.SITE_URL || 'https://code-matrix.space';
 const SUPPORT = 'code.matrix.support@gmail.com';
+const crypto = require('crypto');
+/* signed one-click unsubscribe link: k = 'service' (subscription reminders) or 'news' (CODE news) */
+const UNSUB_SECRET = () => process.env.UNSUB_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || 'code-unsub';
+const unsubSig = (uid, k) => crypto.createHmac('sha256', UNSUB_SECRET()).update(`${uid}|${k}`).digest('base64url').slice(0, 24);
+const unsubLink = (uid, k) => `${SITE}/api/unsubscribe?u=${encodeURIComponent(uid)}&k=${k}&t=${unsubSig(uid, k)}`;
 
 const VARS = {
   name: 'Ім’я людини (або «друже»)',
@@ -112,9 +117,10 @@ ${tpl.button ? `<table role="presentation" cellpadding="0" cellspacing="0" style
 <tr><td style="padding:20px 10px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#8A8FAD;text-align:center">
 Питання? Просто відповідайте на цей лист або пишіть на <a href="mailto:${SUPPORT}" style="color:#8A8FAD">${SUPPORT}</a><br>
 CODE · матриця долі за методом Наталії Ладіні · <a href="${esc(v.site_url || SITE)}" style="color:#8A8FAD">${esc(String(v.site_url || SITE).replace(/^https?:\/\//, ''))}</a><br>
-Ви отримали цей лист, бо маєте акаунт у CODE.
+Ви отримали цей лист, бо маєте акаунт у CODE.${v.unsub_url ? `<br><a href="${esc(v.unsub_url)}" style="color:#8A8FAD">${v.unsub_kind === 'service' ? 'Не надсилати нагадувань про підписку' : 'Відписатися від листів CODE'}</a> · налаштування листів — у кабінеті → «Особисті дані»` : ''}
 </td></tr></table></td></tr></table></body></html>`;
-  const text = [f(tpl.heading), '', f(tpl.body).replace(/\*\*/g, '').replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)'), '', tpl.button ? `${f(tpl.button)}: ${url}` : '', '', `CODE · ${SUPPORT}`].join('\n');
+  const text = [f(tpl.heading), '', f(tpl.body).replace(/\*\*/g, '').replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)'), '', tpl.button ? `${f(tpl.button)}: ${url}` : '', '', `CODE · ${SUPPORT}`, v.unsub_url ? `Відписатися: ${v.unsub_url}` : ''].join('\n');
+  if (v.unsub_url) return { subject, html, text, unsub: v.unsub_url };
   return { subject, html, text };
 }
 /* Supabase auth emails use Go-template variables instead of ours */
@@ -124,4 +130,4 @@ function forSupabase(tpl) {
   return { subject: r.subject, html: r.html.replace(/\{\{name\}\}/g, '') };
 }
 const merge = saved => DEFAULTS.map(d => ({ ...d, ...((saved || []).find(s => s.id === d.id) || {}) }));
-module.exports = { DEFAULTS, VARS, SAMPLE, render, forSupabase, merge, SITE, SUPPORT };
+module.exports = { DEFAULTS, VARS, SAMPLE, render, forSupabase, merge, SITE, SUPPORT, unsubLink, unsubSig };

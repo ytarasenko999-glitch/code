@@ -1,6 +1,6 @@
 /* CODE · emails: preview & test from the admin, welcome email after sign-up.
    Sending works once RESEND_API_KEY (and later EMAIL_FROM on your own domain) is set in Vercel. */
-const { DEFAULTS, VARS, SAMPLE, render, forSupabase, merge, SUPPORT } = require('./_emails.js');
+const { DEFAULTS, VARS, SAMPLE, render, forSupabase, merge, SUPPORT, unsubLink } = require('./_emails.js');
 const SB_URL = process.env.SUPABASE_URL || 'https://blwyzqxhzvjzhqkabesi.supabase.co';
 const SB_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_v2wRmfGkiVW7fF6wIkPZBg_fjeS3wBu';
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -20,7 +20,7 @@ async function templates(headers) {
 }
 async function sendMail(to, msg) {
   const KEY = process.env.RESEND_API_KEY; if (!KEY) { const e = new Error('not_configured'); e.code = 'not_configured'; throw e; }
-  const send = from => fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${KEY}`, 'content-type': 'application/json' }, body: JSON.stringify({ from, to: [to], subject: msg.subject, html: msg.html, text: msg.text, reply_to: SUPPORT }) });
+  const send = from => fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${KEY}`, 'content-type': 'application/json' }, body: JSON.stringify({ from, to: [to], subject: msg.subject, html: msg.html, text: msg.text, reply_to: SUPPORT , ...(msg.unsub ? { headers: { 'List-Unsubscribe': `<${msg.unsub}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } } : {}) }) });
   let r = await send(FROM), t = await r.text();
   if (!r.ok && FROM !== FALLBACK_FROM && /domain|verif/i.test(t)) { r = await send(FALLBACK_FROM); t = await r.text(); }
   if (!r.ok) { const e = new Error(t.slice(0, 300)); e.code = 'send_failed'; throw e; }
@@ -50,7 +50,7 @@ module.exports = async (req, res) => {
       const tpl = (await templates(HS())).find(t => t.id === 'welcome');
       if (!tpl || tpl.on === false) return json(res, 200, { skipped: 'off' });
       const name = (u.user_metadata && (u.user_metadata.given_name || u.user_metadata.name || u.user_metadata.full_name)) || 'друже';
-      await sendMail(u.email, render(tpl, { name: String(name).split(' ')[0], email: u.email }));
+      await sendMail(u.email, render(tpl, { name: String(name).split(' ')[0], email: u.email, unsub_url: unsubLink(u.id, 'news'), unsub_kind: 'news' }));
       await logSent({ user_id: u.id, email: u.email, kind: 'welcome', ref: 'once' });
       return json(res, 200, { sent: true });
     }
