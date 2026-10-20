@@ -1745,8 +1745,21 @@ function combos(list){
   return out;
 }
 
+/* list splitter for the comma-separated trait texts: splits only between whole points — not inside (…) or «…», and keeps
+   «…, що…», «…, коли…», participle tails and «X: a, b, c» enumerations attached to their point (used as str.split(LSPLIT)) */
+const LSPLIT={[Symbol.split](s){
+  const out=[]; let depth=0, cur='';
+  for(let i=0;i<s.length;i++){ const c=s[i];
+    if(c==='('||c==='«'||c==='“') depth++; else if((c===')'||c==='»'||c==='”')&&depth>0) depth--;
+    if((c===','||c===';')&&s[i+1]===' '&&depth===0){ out.push(cur); cur=''; i++; continue; }
+    cur+=c; }
+  out.push(cur);
+  const JOIN=/^(що|щоб|який|яка|яке|які|якого|якої|яким|якими|коли|де|куди|звідки|бо|ніби|наче|немов|ніж|як|але|а|і|й|та|проте|зокрема|особливо|навіть|тобто|that|which|who|whom|whose|when|where|because|as if|than|but|especially|even|so that)(?=[\s,]|$)/i;
+  const PART=/^[\p{L}’']{3,}(ований|ована|аний|ана|яний|яна|ений|ена|єний|єна)\s/iu;
+  const res=[]; for(const p of out){ if(res.length&&(JOIN.test(p)||PART.test(p)||(/: /.test(res[res.length-1])&&p.trim().split(/\s+/).length<=2))) res[res.length-1]+=', '+p; else res.push(p); }
+  return res; }};
 const UL=arr=>{ const seen=new Set(); return `<ul class="bl">${arr.filter(Boolean).map(x=>cap(String(x).trim().replace(/\.$/,''))).filter(x=>{ const k=x.toLowerCase(); if(seen.has(k)) return false; seen.add(k); return true; }).map(x=>`<li>${x}</li>`).join('')}</ul>`; };
-const LST=(v,f,n)=>ARC[v][f].replace(/\.$/,'').split(', ').slice(0,n);
+const LST=(v,f,n)=>ARC[v][f].replace(/\.$/,'').split(LSPLIT).slice(0,n);
 const uniq=a=>[...new Set(a)];
 /* ---------- no copy-paste: when one arcana stands in several positions, each place gets its own part of the text ---------- */
 const share=(arr,k,n)=>{ if(!Array.isArray(arr)||n<2) return arr; const per=Math.max(1,Math.ceil(arr.length/n)), part=arr.slice(k*per,k*per+per); return part.length?part:[arr[k%arr.length]]; };
@@ -1788,7 +1801,7 @@ function spheres(P, g, name){
     [_t("Головний талант"),`${nm(P.B)}: ${A[P.B].tal}.`],
     [_t("Як розвивається"),`${_f("Дар розкривається через {0} — {1}. {2}.",[nm(P.B1),A[P.B1].kw.join(", "),cap(A[P.B1].tal)])}`],
     [_t("Глибинний талант"),`${_f("{0}: {1}. Він проявляється, коли ви вже впевнено користуєтеся верхнім талантом.",[nm(P.B2),A[P.B2].tal])}`],
-    [_t("Сфери реалізації"),UL(uniq([P.B,P.B1,P.B2].flatMap(v=>A[v].prof.split(', ').slice(0,3))))],
+    [_t("Сфери реалізації"),UL(uniq([P.B,P.B1,P.B2].flatMap(v=>A[v].prof.split(LSPLIT).slice(0,3))))],
     [_t("Що заважає таланту"),UL([...LST(P.B,'m',3),...LST(P.B1,'m',1)])],
     [_t("Як покращити ситуацію"),fixList(A[P.B])],
     [_t("Як розкрити"),UL([A[P.B].how[0],A[P.B].how[1],A[P.B1].how[0]])]
@@ -1812,7 +1825,7 @@ function spheres(P, g, name){
     [_t("Точка входу"),`${_f("{0} — у чому шукати справу: {1}.",[nm(P.C2),A[P.C2].money])}`],
     [_t("Що примножує"),`${_f("{0}: {1}. Ця якість робить дохід стабільним.",[nm(P.MON),A[P.MON].tal])}`],
     [_t("Баланс"),`${_f("Точка перетину {0} пов’язує гроші й стосунки: коли гармонійні почуття, легше й з грошима. Ключ — {1}.",[nm(P.X),A[P.X].kw.slice(0,2).join(_t(" і "))])}`],
-    [_t("Сфери заробітку"),UL(uniq([P.C2,P.MON,P.C].flatMap(v=>A[v].prof.split(', ').slice(0,3))))],
+    [_t("Сфери заробітку"),UL(uniq([P.C2,P.MON,P.C].flatMap(v=>A[v].prof.split(LSPLIT).slice(0,3))))],
     [_t("Причинно-наслідкові зв’язки"),causeList(A[P.C2])],
     [_t("Що блокує гроші"),UL([...LST(P.C,'m',2),...LST(P.C2,'m',2)])],
     [_t("Як покращити ситуацію"),fixList(A[P.C2])],
@@ -1936,7 +1949,7 @@ function progs(){ const P=STATE.P; return LINES.map(L=>{const vals=L.ids.map(i=>
 function yearProg(a){ const vals=STATE.P.YEARS[a]; return {k:'Y'+a,t:`${_f("Програма року · вік {0}",[a])}`,ids:null,vals,named:findNamed(vals,true),ctx:_t("Програма звучить протягом цього року"),year:a} }
 function getProg(k){ return k[0]==='Y'?yearProg(+k.slice(1)):progs().find(p=>p.k===k) }
 const lc=s=>s.charAt(0).toLowerCase()+s.slice(1);
-const items=(a,f,n)=>a[f].replace(/\.$/,'').split(', ').slice(0,n).join(', ').toLowerCase();
+const items=(a,f,n)=>a[f].replace(/\.$/,'').split(LSPLIT).slice(0,n).join(', ').toLowerCase();
 function progText(pr){
   const As=pr.vals.map(v=>ARC[v]);
   /* fallback for combinations without a known name: no repeated keywords, a doubled energy is called out explicitly */
@@ -2002,7 +2015,7 @@ function chakraSection(){
     <div class="sec-h"><h2 id="chh">${_t("Карта здоров’я")}</h2><p class="meta">${_t("Енергії семи чакр: фізика — лінія Землі, енергія — лінія Неба, емоції — їхня сума. Оберіть рядок, щоб прочитати трактування.")}</p></div>
     <div class="grid2">
       <div class="panel ctw"><table class="ctab"><thead><tr><th scope="col">${_t("Чакра")}</th><th scope="col">${_t("Фізика")}</th><th scope="col">${_t("Енергія")}</th><th scope="col">${_t("Емоції")}</th></tr></thead><tbody>
-        ${rows.map((x,i)=>`<tr class="crow${ci===i?' on':''}" data-ci="${i}" tabindex="0" style="--c:${CHAK[i].c}"><th scope="row" data-tip-h="${_f("{0} · {1}-а чакра",[CHAK[i].n,7-i])}" data-tip="${_f("{0}. Зона тіла: {1}.",[cap(CHAK[i].t),CHAK[i].z])}"><span class="cdot" style="--c:${CHAK[i].c}"></span><span class="cname"><strong>${CHAK[i].n}</strong><small>${CHAK[i].t.split(', ').slice(0,2).join(', ')}</small></span></th>${cell(x.ph)}${cell(x.en)}${cell(x.em,1)}</tr>`).join('')}
+        ${rows.map((x,i)=>`<tr class="crow${ci===i?' on':''}" data-ci="${i}" tabindex="0" style="--c:${CHAK[i].c}"><th scope="row" data-tip-h="${_f("{0} · {1}-а чакра",[CHAK[i].n,7-i])}" data-tip="${_f("{0}. Зона тіла: {1}.",[cap(CHAK[i].t),CHAK[i].z])}"><span class="cdot" style="--c:${CHAK[i].c}"></span><span class="cname"><strong>${CHAK[i].n}</strong><small>${CHAK[i].t.split(LSPLIT).slice(0,2).join(', ')}</small></span></th>${cell(x.ph)}${cell(x.en)}${cell(x.em,1)}</tr>`).join('')}
         <tr class="crow total${ci===7?' on':''}" data-ci="7" tabindex="0"><th scope="row" data-tip-h="${_t("Енергополе")}" data-tip="${_t("Загальний підсумок усіх семи чакр: фізичний, енергетичний та емоційний стан організму в цілому.")}"><span class="cdot tot"></span><span class="cname">${_t("<strong>Енергополе</strong>")}<small>${_t("загальний підсумок")}</small></span></th>${cell(total.ph)}${cell(total.en)}${cell(total.em,1)}</tr>
       </tbody></table></div>
       <aside class="panel chside" id="chside">${chakraDetail(ci)}</aside>
@@ -2048,7 +2061,7 @@ function render(){
     const {g,name,d,m,y}=STATE, tn=findNamed([P.D2,P.D1,P.D],false);
     head=`<div class="res-head fade">
       <div><div class="title-row"><h2>${name?`${T('rMatrix')} <b>${esc(name)}</b>`:`${T('rYour')} <b>${T('rDestiny')}</b>`}</h2><div class="tr-acts">${bmBtn()}<button class="btn ghost dl" id="dlBtn" type="button"><span aria-hidden="true">↓</span> ${T('rDl')}</button></div></div><div class="meta">${d} ${mName(m)} ${y} · ${g==='f'?T('rF'):T('rM')} · ${curAge()} ${T('rAge')}</div></div>
-      <div class="head-r"><div class="codes"><button class="code" data-go="arc:E">${T('rCenter')}<b>${P.E}</b></button><button class="code" data-go="prog:tail">${T('rTail')}<b>${P.D2}-${P.D1}-${P.D}</b>${tn?` · ${tn.n}`:''}</button><button class="code" data-go="year:${curAge()}">${T('rYear')}<b>${P.YEARS[curAge()].join('-')}</b></button></div></div>
+      <div class="head-r"><div class="codes"><button class="code" data-go="arc:E">${T('rCenter')}<b>${P.E}</b></button><button class="code" data-go="prog:tail">${T('rTail')}<b>${P.D2}-${P.D1}-${P.D}</b>${tn?` · ${tn.n}`:''}</button><button class="code" data-go="year:${curAge()}">${T('rYear')}<b>${P.YEARS[curAge()].join('-')}</b>${(yn=>yn?` · ${yn.n}`:'')(findNamed(P.YEARS[curAge()],true))}</button></div></div>
     </div>
     <div class="tabs" role="tablist">${[['matrix',T('tMatrix')],['today',T('tToday')],['years',T('tYears')],['arcana',T('tArc')]].map(([v,t])=>`<button role="tab" aria-selected="${STATE.view===v}" data-view="${v}">${t}</button>`).join('')}</div>`;
   }
@@ -2209,8 +2222,8 @@ function dayDetail(key){
       <h4>${_t("Як проживається енергія сьогодні")}</h4><p>${a.live}</p>
       <h4>${_t("Причинно-наслідкові зв’язки")}</h4>${causeList(a)}
       <h4>${_t("Питання дня")}</h4>${qListT(a,a.n)}
-      <div class="pm"><div class="pp"><h4>${_t("Що вдасться")}</h4>${UL(a.p.replace(/\.$/,'').split(', ').slice(0,4))}</div><div class="pp minus"><h4>${_t("На що зважати")}</h4>${UL(a.m.replace(/\.$/,'').split(', ').slice(0,4))}</div></div>
-      <div class="blk2"><div><h4>${_t("Зробіть сьогодні")}</h4>${UL([a.how[0],a.how[1],A[I.sph[0]].how[0]])}</div><div><h4>${_t("Краще уникати")}</h4>${UL([a.m.split(', ')[0],A[I.sph[5]].m.split(', ')[0],A[I.sph[3]].m.split(', ')[0]])}</div></div>
+      <div class="pm"><div class="pp"><h4>${_t("Що вдасться")}</h4>${UL(a.p.replace(/\.$/,'').split(LSPLIT).slice(0,4))}</div><div class="pp minus"><h4>${_t("На що зважати")}</h4>${UL(a.m.replace(/\.$/,'').split(LSPLIT).slice(0,4))}</div></div>
+      <div class="blk2"><div><h4>${_t("Зробіть сьогодні")}</h4>${UL([a.how[0],a.how[1],A[I.sph[0]].how[0]])}</div><div><h4>${_t("Краще уникати")}</h4>${UL([a.m.split(LSPLIT)[0],A[I.sph[5]].m.split(LSPLIT)[0],A[I.sph[3]].m.split(LSPLIT)[0]])}</div></div>
       <h4>${_t("Фон року")}</h4><p>${_f("День проходить на тлі року {0} (вік {1}): {2}. {3}",[yr.join('-'),age,YR[yr[0]],LEVEL[v]>=4?_t("Енергія дня підсилює рух у темі року."):LEVEL[v]<=2?_t("День просить пригальмувати й не форсувати тему року."):_t("День рівний — гарно працювати в ритмі року без різких кроків.")])}</p>
       <h4>${_t("Сфери дня")}</h4><div class="mini">${DSPH.map((s,i)=>`<button class="srow sm" data-go="day:s${i}"><span class="acc-t"><strong>${s.t}</strong><small>${I.sph[i]} · ${A[I.sph[i]].n}</small></span><span class="lv lv${LEVEL[I.sph[i]]}">${LVLW[LEVEL[I.sph[i]]]}</span></button>`).join('')}</div>${moreBtn('day:me')}</div>`;
   }
@@ -2228,7 +2241,7 @@ function dayDetail(key){
   return `<div class="det fade">${top(v,'var(--accent)',`${s.t} · ${a.n}`,`${fmtD(dt)} · ${s.src}`)}
     <div class="pos-box"><h4>${_f("Рівень дня: {0}",[LVLW[LEVEL[v]]])}</h4><p>${cap(DAY[v])}.</p></div>
     <h4>${_t("Як це відчувається в сфері")}</h4><p>${fieldTxt}</p>
-    <div class="pm"><div class="pp"><h4>${_t("Сприятливо")}</h4>${UL(a.p.replace(/\.$/,'').split(', ').slice(0,3))}</div><div class="pp minus"><h4>${_t("Обережно")}</h4>${UL(a.m.replace(/\.$/,'').split(', ').slice(0,3))}</div></div>
+    <div class="pm"><div class="pp"><h4>${_t("Сприятливо")}</h4>${UL(a.p.replace(/\.$/,'').split(LSPLIT).slice(0,3))}</div><div class="pp minus"><h4>${_t("Обережно")}</h4>${UL(a.m.replace(/\.$/,'').split(LSPLIT).slice(0,3))}</div></div>
     <div class="pos-box"><h4>${_t("Порада на день")}</h4>${UL(a.how.slice(0,2))}</div>${moreBtn('day:'+key)}</div>`;
 }
 
@@ -2280,7 +2293,7 @@ function pairSpheres(){
     [_t("Як реалізувати"),UL(A[P.PERS].how.slice(0,3))]]},
   {t:_t("Спільні таланти"),k:"Спільні таланти",s:`${P.B} · ${A[P.B].n}`,ids:['B','B1','B2'],html:[
     [_t("Що вдається разом"),`${nm(P.B)}: ${A[P.B].tal}.`],
-    [_t("Спільні справи"),UL(uniq([P.B,P.B1].flatMap(v=>A[v].prof.split(', ').slice(0,3))))],
+    [_t("Спільні справи"),UL(uniq([P.B,P.B1].flatMap(v=>A[v].prof.split(LSPLIT).slice(0,3))))],
     [_t("Як розкрити"),UL(A[P.B].how.slice(0,2))]]},
   {t:_t("Кохання й близькість"),k:"Кохання й близькість",s:`${_f("Канал {0}-{1}-{2}",[P.D2,P.LOV,P.X])}`,ids:['D2','LOV','X'],prog:'love',html:[
     [_t("Як ви кохаєте"),`${nm(P.D2)}: ${A[P.D2].love}.`],
@@ -2302,7 +2315,7 @@ function pairSpheres(){
     [_t("Спільна задача"),`${cap(A[P.D2].task)}.`],
     [_t("Як пропрацювати"),tn?`<p>${tn.w}</p>`:UL([A[P.D2].how[0],A[P.D1].how[0],A[P.D].how[0]])]]},
   {t:_t("Ризики й ключ до гармонії"),k:"Ризики й ключ до гармонії",s:_t("Де союз вразливий"),ids:['E','X','D'],html:[
-    [_t("Зони ризику"),UL([A[P.E].m.split(', ')[0],A[P.X].m.split(', ')[0],A[P.D].m.split(', ')[0],A[P.D1].m.split(', ')[0]])],
+    [_t("Зони ризику"),UL([A[P.E].m.split(LSPLIT)[0],A[P.X].m.split(LSPLIT)[0],A[P.D].m.split(LSPLIT)[0],A[P.D1].m.split(LSPLIT)[0]])],
     [_t("Ключ до гармонії"),UL([A[P.X].how[0],A[P.E].how[1],A[P.D2].how[1]])]]}
   ];
 }
@@ -2433,14 +2446,14 @@ function yearChips(v){
   if(!ages.length) return `<p class="muted">${_t("Ця енергія не стає головною енергією жодного року.")}</p>`;
   return `<div class="chips">${ages.map(a=>`<button class="chip agechip" data-go="year:${a}">${_f("{0} р.",[a])}<small>${P.YEARS[a].join('-')}</small></button>`).join('')}</div>`;
 }
-const two=(a)=>`<div class="pm"><div class="pp"><h4>${_t("Сильні сторони · у плюсі")}</h4>${UL(a.p.replace(/\.$/,'').split(', '))}</div><div class="pp minus"><h4>${_t("Слабкі сторони · у мінусі")}</h4>${UL(a.m.replace(/\.$/,'').split(', '))}</div></div>`;
+const two=(a)=>`<div class="pm"><div class="pp"><h4>${_t("Сильні сторони · у плюсі")}</h4>${UL(a.p.replace(/\.$/,'').split(LSPLIT))}</div><div class="pp minus"><h4>${_t("Слабкі сторони · у мінусі")}</h4>${UL(a.m.replace(/\.$/,'').split(LSPLIT))}</div></div>`;
 function arcBody(a,g){
   return `<h4>${_t("Суть енергії")}</h4><p>${a.d}</p>
     <div class="pos-box soft"><h4>${_t("Ви впізнаєте себе, якщо…")}</h4>${UL(a.rec)}</div>
     <h4>${_t("Як проживається енергія")}</h4><p>${a.live}</p>${two(a)}
     <h4>${_t("Причинно-наслідкові зв’язки")}</h4>${causeList(a)}
     <h4>${_t("Як покращити ситуацію")}</h4>${fixList(a)}
-    <h4>${_t("Сфери реалізації")}</h4><div class="tags">${a.prof.split(', ').map(x=>`<span>${x}</span>`).join('')}</div>
+    <h4>${_t("Сфери реалізації")}</h4><div class="tags">${a.prof.split(LSPLIT).map(x=>`<span>${x}</span>`).join('')}</div>
     <div class="blk2"><div><h4>${_t("Стосунки")}</h4><p>${cap(a.love)}.</p></div><div><h4>${_t("Гроші")}</h4><p>${cap(a.money)}.</p></div></div>
     <h4>${_t("Ресурс і самопочуття")}</h4><p>${a.hp}. ${a.hm}.</p>
     <div class="pos-box"><h4>${_t("Як вивести в плюс")}</h4>${UL(a.how)}</div>
@@ -2492,10 +2505,10 @@ function progDetail(k){
   return `<div class="det fade">${topBlock(code,pr.named?'var(--accent)':pr.karmic?'var(--p-red)':'var(--p-blue)',pr.named?`«${pr.named.n}»`:`${_f("Програма {0}",[code])}`,`${pr.t}${pr.karmic?_t(" · кармічна програма"):''}${pr.named?_t(" · іменна програма"):''}`,true)}
     <div class="pm"><div class="pp"><h4>${_t("У плюсі")}</h4><p>${tx.p}</p></div><div class="pp minus"><h4>${_t("У мінусі")}</h4><p>${tx.m}</p></div></div>
     <h4>${_t("Як проявляється")}</h4><p>${tx.h}</p>
-    <h4>${_t("Причинно-наслідковий ланцюг")}</h4><div class="chain"><div>${_t("<em>У мінусі</em>")}<p>${As.map(a=>a.m.split(', ')[0].replace(/\.$/,'').toLowerCase()).join(' <i>→</i> ')}</p></div><div>${_t("<em>У плюсі</em>")}<p>${As.map(a=>a.p.split(', ')[0].replace(/\.$/,'').toLowerCase()).join(' <i>→</i> ')}</p></div></div>
-    <h4>${_t("Ознаки, що програма активна")}</h4>${UL(As.flatMap(a=>a.m.replace(/\.$/,'').split(', ').slice(0,2)))}
+    <h4>${_t("Причинно-наслідковий ланцюг")}</h4><div class="chain"><div>${_t("<em>У мінусі</em>")}<p>${As.map(a=>a.m.split(LSPLIT)[0].replace(/\.$/,'').toLowerCase()).join(' <i>→</i> ')}</p></div><div>${_t("<em>У плюсі</em>")}<p>${As.map(a=>a.p.split(LSPLIT)[0].replace(/\.$/,'').toLowerCase()).join(' <i>→</i> ')}</p></div></div>
+    <h4>${_t("Ознаки, що програма активна")}</h4>${UL(As.flatMap(a=>a.m.replace(/\.$/,'').split(LSPLIT).slice(0,2)))}
     <div class="pos-box"><h4>${_t("Як пропрацювати")}</h4><p>${tx.w}</p>${UL(As.map(a=>a.how[0]))}</div>
-    <h4>${_t("Ресурс після опрацювання")}</h4>${UL(As.flatMap(a=>a.p.replace(/\.$/,'').split(', ').slice(0,2)))}
+    <h4>${_t("Ресурс після опрацювання")}</h4>${UL(As.flatMap(a=>a.p.replace(/\.$/,'').split(LSPLIT).slice(0,2)))}
     ${pr.named?`<h4>${_t("Склад програми по енергіях")}</h4><p>${tx.gen.h}</p>`:''}
     <h4>${_t("Енергії програми")}</h4>${roles}
     ${moreBtn('prog:'+k)}
@@ -2517,7 +2530,7 @@ function yearDetail(a){
     <h4>${_t("Причинно-наслідкові зв’язки року")}</h4><ul class="cz">${uniq(t.map((v,i)=>ARC[v].cause[O[i][0]%ARC[v].cause.length]).concat([As[0].cause[1]])).map(c=>{const p=c.split(' — ');return `<li><span>${p[0]}</span><i aria-hidden="true">→</i><span>${p.slice(1).join(' — ')}</span></li>`}).join('')}</ul>
     <div class="pm"><div class="pp"><h4>${_t("У плюсі")}</h4><p>${tx.p}</p></div><div class="pp minus"><h4>${_t("У мінусі")}</h4><p>${tx.m}</p></div></div>
     <h4>${_t("Як проявляється")}</h4><p>${tx.h}</p>
-    <div class="blk2"><div><h4>${_t("Що робити")}</h4>${UL(uniq(t.map((v,i)=>ARC[v].how[O[i][0]%ARC[v].how.length])))}</div><div><h4>${_t("Чого уникати")}</h4>${UL(uniq(t.map((v,i)=>{const mm=ARC[v].m.split(', ');return mm[O[i][0]%mm.length];})))}</div></div>
+    <div class="blk2"><div><h4>${_t("Що робити")}</h4>${UL(uniq(t.map((v,i)=>ARC[v].how[O[i][0]%ARC[v].how.length])))}</div><div><h4>${_t("Чого уникати")}</h4>${UL(uniq(t.map((v,i)=>{const mm=ARC[v].m.split(LSPLIT);return mm[O[i][0]%mm.length];})))}</div></div>
     <h4>${_t("Як покращити ситуацію")}</h4>${fixList(ARC[t[0]])}
     <div class="pos-box"><h4>${_t("Як прожити рік")}</h4><p>${tx.w}</p></div>
     <h4>${_t("Питання на рік")}</h4>${qListT(ARC[t[0]],ARC[t[0]].n)}
@@ -2681,8 +2694,9 @@ const formHasData=()=>{ const has=!!($('#name').value.trim()||daySel.value||monS
   let pop=null, cur=null, idx=-1;
   const close=()=>{ if(pop){ pop.remove(); pop=null; } cur=null; idx=-1; };
   const dot=o=>`${String(o.d).padStart(2,'0')}.${String(o.m).padStart(2,'0')}.${o.y}`;
-  function open(t){
-    const q=t.inp.value.trim().toLowerCase();
+  /* focus → the whole history; typing → narrowed to matching names */
+  function open(t,all){
+    const q=all?'':t.inp.value.trim().toLowerCase();
     const L=recAll().filter(o=>!q||(o.name||'').toLowerCase().startsWith(q)||(o.name||'').toLowerCase().includes(' '+q));
     if(!L.length){ close(); return; }
     if(!pop){ pop=document.createElement('div'); pop.className='rec-pop'; pop.setAttribute('role','listbox'); document.body.appendChild(pop); }
@@ -2695,7 +2709,12 @@ const formHasData=()=>{ const has=!!($('#name').value.trim()||daySel.value||monS
   const pick=i=>{ const o=pop&&pop._list[i]; if(!o||!cur) return; const t=cur; close(); t.set(o); t.inp.blur(); };
   targets.forEach(t=>{
     t.inp.setAttribute('autocomplete','off');
-    t.inp.addEventListener('focus',()=>open(t));
+    t.inp.addEventListener('focus',()=>open(t,true));
+    /* × inside the field: clears the name in one tap and shows the full list again */
+    const fx=document.createElement('button'); fx.type='button'; fx.className='f-x'; fx.tabIndex=-1; fx.setAttribute('aria-label',_t("Очистити ім’я")); fx.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    t.inp.insertAdjacentElement('afterend',fx);
+    fx.addEventListener('pointerdown',e=>e.preventDefault());
+    fx.addEventListener('click',()=>{ t.inp.value=''; t.inp.dispatchEvent(new Event('input',{bubbles:true})); t.inp.focus(); open(t,true); });
     t.inp.addEventListener('input',()=>open(t));
     t.inp.addEventListener('blur',()=>setTimeout(()=>{ if(cur===t&&document.activeElement!==t.inp) close(); },180));
     t.inp.addEventListener('keydown',e=>{ if(!pop||cur!==t) return; const n=pop._list.length;
@@ -2856,7 +2875,7 @@ function pdfBlocks(png){
     const {rows,total}=chakraRows(P);
     B.push(`<div class="psec" data-anchor="chak"><div class="pk">${_t("[ карта здоров’я ]")}</div><h2>${_t("Енергії чакр")}</h2><p class="pmuted">${_t("Фізика — лінія Землі, енергія — лінія Неба, емоції — їхня сума.")}</p>
       <table class="ptab"><thead><tr><th>${_t("Чакра")}</th><th>${_t("Фізика")}</th><th>${_t("Енергія")}</th><th>${_t("Емоції")}</th></tr></thead><tbody>
-      ${rows.map((x,i)=>`<tr><td><i style="background:${pv(CHAK[i].c)}"></i><b>${CHAK[i].n}</b><small>${CHAK[i].t.split(', ').slice(0,2).join(', ')}</small></td><td>${x.ph}</td><td>${x.en}</td><td class="em">${x.em}</td></tr>`).join('')}
+      ${rows.map((x,i)=>`<tr><td><i style="background:${pv(CHAK[i].c)}"></i><b>${CHAK[i].n}</b><small>${CHAK[i].t.split(LSPLIT).slice(0,2).join(', ')}</small></td><td>${x.ph}</td><td>${x.en}</td><td class="em">${x.em}</td></tr>`).join('')}
       <tr class="tot"><td>${_t("<b>Енергополе</b>")}<small>${_t("загальний підсумок")}</small></td><td>${total.ph}</td><td>${total.en}</td><td class="em">${total.em}</td></tr></tbody></table></div>`);
     rows.forEach((x,i)=>B.push(`<div class="pblk"><div class="phd">${pNum(x.em,CHAK[i].c)}<div><h3>${CHAK[i].n}</h3><div class="pmeta">${CHAK[i].z} · ${x.ph}/${x.en}/${x.em}</div></div></div><p>${_f("{0}. Фізика ({1}): {2}. Енергія ({3}): наповнюється через {4}. Емоції ({5}): у плюсі — {6}, у мінусі — {7}.",[cap(CHAK[i].t),A[x.ph].n,lc(A[x.ph].hp),A[x.en].n,A[x.en].kw.join(', '),A[x.em].n,items(A[x.em],'p',2),items(A[x.em],'m',2)])}</p><p class="pmuted">${_f("Що підтримує: {0}.",[CHAK[i].pr])}</p></div>`));
   }
@@ -2875,7 +2894,7 @@ function pdfBlocks(png){
     B.push(`<div class="pblk" data-anchor="en-${id}"><div class="phd">${pNum(v,chipCol(id))}<div><div class="pk">${String(n+1).padStart(2,'0')} · ${t}</div><h3>${a.n}</h3></div></div>
       <p class="plead">${posText(id,v,g)}</p><p>${a.d}</p></div>`);
     B.push(`<div class="pblk"><h4>${_t("Як проживається")}</h4><p>${a.live}</p><h4>${_t("Ви впізнаєте себе, якщо…")}</h4>${pUL(a.rec)}</div>`);
-    B.push(`<div class="pblk two"><div><h4 class="ok">${_t("Сильні сторони")}</h4>${pUL(a.p.replace(/\.$/,'').split(', '))}</div><div><h4 class="no">${_t("Слабкі сторони")}</h4>${pUL(a.m.replace(/\.$/,'').split(', '))}</div></div>`);
+    B.push(`<div class="pblk two"><div><h4 class="ok">${_t("Сильні сторони")}</h4>${pUL(a.p.replace(/\.$/,'').split(LSPLIT))}</div><div><h4 class="no">${_t("Слабкі сторони")}</h4>${pUL(a.m.replace(/\.$/,'').split(LSPLIT))}</div></div>`);
     B.push(`<div class="pblk"><h4>${_t("Як покращити ситуацію")}</h4>${pFix(a)}</div>`);
   });
   B.push(`<div class="psec" data-anchor="progs"><div class="pk">${_t("[ програми ]")}</div><h2>${pair?_t("Програми пари"):_t("Ваші програми")}</h2></div>`);
@@ -3663,7 +3682,7 @@ function aimCtx(spec){
   return null;
 }
 const aiYearBtn=()=>isPair()?'':`<div class="aim aim-y"><div class="aim-i"><button class="btn ghost aim-b" type="button" data-aim="year">${AI_IC}<span>${_t("Прогноз на 12 місяців")}</span><em class="aim-tag">Plus</em></button><p class="aim-h">${_t("Персональний прогноз по місяцях: загальна лінія року, найкращі періоди й періоди уваги, тема, фокус і одна дія на кожен місяць.")}</p></div></div>`;
-function aimOpen(kind,spec){
+function aimOpen(kind,spec,opt){
   if(!STATE||!STATE.P) return;
   const key=AIM_KEY(), st=aiStore(), rec=st[key]||{}, ctlBox={c:null}, cx=kind==='chat'?aimCtx(spec):null;
   const title={chat:_t("Запитай свою матрицю"),report:_t("Персональний розбір матриці"),year:_t("Прогноз на 12 місяців")}[kind];
@@ -3681,7 +3700,8 @@ function aimOpen(kind,spec){
   const errBox=m=>`<div class="aim-err">${m}</div>`;
   const gate=()=>{ body.innerHTML=`<div class="aim-gate"><p>${kind==='report'?_t("Персональний розбір — це глибокий аналіз усієї вашої матриці, написаний саме про вас: зв’язки між енергіями, сценарії, гроші, стосунки, рід, призначення і план на 90 днів."):_t("Прогноз на 12 місяців — персональна розкладка наступного року по місяцях з урахуванням вашої матриці та програм років.")}</p><p class="muted">${kind=='report'?_t("Доступно в тарифах Plus і Pro або разово — у Пакеті."):_t("Доступно в тарифах Plus і Pro.")}</p><button class="btn go aura" type="button" data-plans>${_t("Обрати тариф")}</button></div>`; };
   if(kind==='chat'){
-    const hist=(rec.chat||[]).slice(-20); let turns=[]; hist.forEach(m=>{ turns.push({role:'user',content:m.q}); turns.push({role:'assistant',content:m.a}); });
+    /* every opening starts a fresh conversation (earlier ones live in the cabinet → «Питання до матриці»); «Продовжити» there resumes the last one */
+    const hist=opt&&opt.resume?(rec.chat||[]).slice(-20):[]; let turns=[]; hist.forEach(m=>{ turns.push({role:'user',content:m.q}); turns.push({role:'assistant',content:m.a}); });
     const SUG=[_t("Яка професія мені найбільше підходить?"),_t("Що заважає мені заробляти більше?"),_t("Чому в стосунках у мене повторюється один сценарій?"),_t("На що звернути увагу цього року?")];
     let sug=cx&&cx.sug.length?cx.sug:SUG;
     const draw=()=>{ body.innerHTML=`${cx?`<p class="aim-meta aim-cx">${_t("Розділ")}: ${esc(cx.label)}</p>`:''}<div class="aim-chat">${hist.length?hist.map(m=>`<div class="aim-q">${esc(m.q)}</div><div class="aim-a tp-ans" data-raw="${esc(m.a||'')}">${m.a?tpMd(m.a)+aiCopyBtn():aiThinking()}</div>`).join(''):`<p class="aim-intro">${_t("Питайте про що завгодно: роботу, гроші, стосунки, рішення, які зараз перед вами. Відповідь спиратиметься на позиції саме вашої матриці.")}</p>`}</div>
@@ -3696,7 +3716,7 @@ function aimOpen(kind,spec){
       hist.forEach((x,i)=>{ const cn=x.cx?`CONTEXT: the person asked this while reading the section «${x.cx}» of their matrix — answer in that context, using the energies of this section first, then the rest of the matrix.\n`:''; all.push({role:'user',content:i?cn+x.q:aimChatPrompt()+`\n\n${cn}QUESTION: ${x.q}`}); if(i<hist.length-1) all.push({role:'assistant',content:x.a||'—'}); });
       const ctl=new AbortController(); ctlBox.c=ctl;
       try{ const res=await aimRun('chat',all,t=>{ m.a=t; const a=last(); if(a) a.innerHTML=tpMd(t); },ctl.signal);
-        m.a=res.text; sug=(tpFuParse(res.text)||SUG).slice(0,3); const s2=aiStore(); s2[key]=s2[key]||{}; s2[key].chat=hist.map(x=>({q:x.q,a:x.a,cx:x.cx||'',ts:x.ts||0})); aiSave(s2); draw(); }
+        m.a=res.text; sug=(tpFuParse(res.text)||SUG).slice(0,3); const s2=aiStore(); s2[key]=s2[key]||{}; const mine=hist.map(x=>({q:x.q,a:x.a,cx:x.cx||'',ts:x.ts||0})); s2[key].chat=(s2[key].chat||[]).filter(x=>!mine.some(y=>y.ts===x.ts&&y.q===x.q)).concat(mine).slice(-200); aiSave(s2); draw(); }
       catch(e){ hist.pop(); draw(); body.querySelector('#aimE').innerHTML=errBox(tpErr(e&&e.code)); }
       finally{ ctlBox.c=null; } };
     body.addEventListener('click',e=>{ const b=e.target.closest('[data-q]'); if(b) ask(b.dataset.q); });
@@ -3781,7 +3801,7 @@ function repsPane(only){
 function aimOpenFor(k,kind){
   const o=aimKeyInfo(k); if(!o.d) return;
   openFav({type:'solo',name:o.name,d:o.d,m:o.m,y:o.y,g:o.g});
-  let n=0; const t=setInterval(()=>{ n++; if(STATE&&STATE.P&&AIM_KEY()===k){ clearInterval(t); aimOpen(kind); } else if(n>40) clearInterval(t); },100);
+  let n=0; const t=setInterval(()=>{ n++; if(STATE&&STATE.P&&AIM_KEY()===k){ clearInterval(t); aimOpen(kind,null,{resume:true}); } else if(n>40) clearInterval(t); },100);
 }
 /* read a stored reading without leaving the cabinet */
 function aiReader(r){
@@ -5009,6 +5029,7 @@ renderHome();
   const B=document.body, top=document.getElementById('topForm'), home=document.getElementById('home'), btn=document.getElementById('miniCalc');
   if(!top||!home||!btn) return;
   const mob=()=>innerWidth<=820, has=c=>B.classList.contains(c), set=(c,v)=>{ if(has(c)!==v) B.classList.toggle(c,v); };
+  const isCab=()=>typeof HOME_MODE!=='undefined'&&HOME_MODE==='cab';
   function mode(){ if(!mob()||has('on-start')||has('auth-on')||has('on-tarot')) return null; if(!home.hidden) return 'hm'; if(has('fc')) return 'rm'; return null; }
   function measure(){
     let h=null;
@@ -5022,7 +5043,8 @@ renderHome();
   function sync(){
     const m=mode(), was=has('hm')?'hm':has('rm')?'rm':null;
     set('hm',m==='hm'); set('rm',m==='rm'); set('tfx',!!m);
-    if(m!==was){ if(m==='rm') setMC(true); else if(m==='hm') setMC(false); else set('mc',false); }
+    /* cabinet on a phone: the form starts folded into the «Розрахувати код» pill — the cabinet itself comes first */
+    if(m!==was){ if(m==='rm') setMC(true); else if(m==='hm') setMC(isCab()); else set('mc',false); }
     measure();
   }
   new MutationObserver(sync).observe(home,{attributes:true,attributeFilter:['hidden']});
@@ -5045,9 +5067,9 @@ renderHome();
   },{passive:true});
   let ty=null;
   addEventListener('touchstart',e=>{ ty=e.touches[0].clientY; },{passive:true});
-  addEventListener('touchmove',e=>{ if(ty==null||!has('hm')||!has('mc')) return; if(scrollY<=0&&e.touches[0].clientY-ty>36){ setMC(false); ty=null; } },{passive:true});
+  addEventListener('touchmove',e=>{ if(ty==null||!has('hm')||!has('mc')||isCab()) return; if(scrollY<=0&&e.touches[0].clientY-ty>36){ setMC(false); ty=null; } },{passive:true});
   addEventListener('touchend',()=>{ ty=null; },{passive:true});
-  addEventListener('wheel',e=>{ if(has('hm')&&has('mc')&&scrollY<=0&&e.deltaY<0) setMC(false); },{passive:true});
+  addEventListener('wheel',e=>{ if(has('hm')&&has('mc')&&!isCab()&&scrollY<=0&&e.deltaY<0) setMC(false); },{passive:true});
   btn.addEventListener('click',()=>setMC(false));
   /* results: tap outside the open form folds it back */
   document.addEventListener('pointerdown',e=>{ if(has('rm')&&!has('mc')&&!top.contains(e.target)&&!e.target.closest('.cs-pop')&&!e.target.closest('#drawer')) setMC(true); },true);
@@ -5408,7 +5430,7 @@ function moreArc(id){
     ${inP.length?`<h5>${_t("Програми з цією позицією")}</h5>${inP.map(p=>{const tx=progText(p);return `<div class="mini-prog"><b>${p.vals.join('-')}</b> <span>${p.named?`«${p.named.n}» · `:''}${p.t}</span><p>${tx.h}</p></div>`}).join('')}`:''}`));
   S.push(sec(_t("Сфери життя"),`<div class="two-col"><div><h5>${_t("Робота · у плюсі")}</h5><p>${a.work.p}</p></div><div><h5>${_t("Робота · у мінусі")}</h5><p>${a.work.m}</p></div></div>
     <h5>${_t("Гроші")}</h5><p>${cap(a.money)}.</p><h5>${_t("Стосунки")}</h5><p>${cap(a.love)}.</p><h5>${_t("Тіло й ресурс")}</h5><p>${a.hp}. ${a.hm}. ${a.body}</p>
-    <h5>${_t("Де реалізується")}</h5><div class="tags">${a.prof.split(', ').map(x=>`<span>${x}</span>`).join('')}</div>`));
+    <h5>${_t("Де реалізується")}</h5><div class="tags">${a.prof.split(LSPLIT).map(x=>`<span>${x}</span>`).join('')}</div>`));
   S.push(sec(_t("Енергії-союзники й напруга"),relBlock(v)));
   S.push(sec(_t("Як пропрацювати"),`${fixList(a)}<h5>${_t("Щоденні кроки")}</h5>${UL(a.how)}<h5>${_t("План на 21 день")}</h5>${planList(a)}`));
   S.push(sec(pair?_t("Ви впізнаєте свій союз, якщо…"):_t("Ви впізнаєте себе, якщо…"),`${UL(a.rec)}<h5>${_f("Питання для {0}",[pair?_t("розмови вдвох"):_t("себе")])}</h5>${qList(a)}`));
@@ -5442,14 +5464,14 @@ function moreProg(k){
   S.push(sec(_t("Кожна енергія програми"),Ui.map(i=>{ const a=As[i], n=twice(pr.vals[i]); return `<div class="mini-prog"><b>${pr.vals[i]} · ${a.n}</b> <span>${n>1?(n===3?_t("стоїть у всіх трьох позиціях"):_t("стоїть двічі — тема подвоєна")):(pr.ids?roles:yrRoles)[i]}</span><p>${a.live}</p><h5>${_t("Приховані сценарії")}</h5>${UL(a.deep.slice(0,2))}</div>`; }).join('')));
   const pairs=[[0,1],[1,2],[0,2]].map(([x,y])=>({x,y,r:relTo(pr.vals[x],pr.vals[y])}));
   const tension=pairs.filter(p=>p.r==='t'), support=pairs.filter(p=>p.r==='h');
-  S.push(sec(_t("Динаміка всередині програми"),`<div class="chain"><div>${_t("<em>У мінусі</em>")}<p>${As.map(a=>a.m.split(', ')[0].replace(/\.$/,'').toLowerCase()).join(' <i>→</i> ')}</p></div><div>${_t("<em>У плюсі</em>")}<p>${As.map(a=>a.p.split(', ')[0].replace(/\.$/,'').toLowerCase()).join(' <i>→</i> ')}</p></div></div>
+  S.push(sec(_t("Динаміка всередині програми"),`<div class="chain"><div>${_t("<em>У мінусі</em>")}<p>${As.map(a=>a.m.split(LSPLIT)[0].replace(/\.$/,'').toLowerCase()).join(' <i>→</i> ')}</p></div><div>${_t("<em>У плюсі</em>")}<p>${As.map(a=>a.p.split(LSPLIT)[0].replace(/\.$/,'').toLowerCase()).join(' <i>→</i> ')}</p></div></div>
     ${tension.length?`<p>${_f("Внутрішня напруга: {0}. Тут програма «смикає» в різні боки — саме ця суперечність найчастіше запускає мінус.",[tension.map(p=>`${_f("{0} і {1}",[As[p.x].n,As[p.y].n])}`).join('; ')])}</p>`:''}
     ${support.length?`<p>${_f("Внутрішня опора: {0}. Через цю зв’язку програму найлегше вивести в плюс.",[support.map(p=>`${_f("{0} і {1}",[As[p.x].n,As[p.y].n])}`).join('; ')])}</p>`:''}`));
   if(pair) S.push(sec(_t("Як програма звучить у парі"),_f("{0}<h5>Що робити разом</h5>{1}",[As.map((a,i)=>`<div class="mini-prog"><b>${a.n}</b><p>${a.pr.p}</p><p class="small">${_f("<b>Ризик:</b> {0}",[lc(a.pr.m)])}</p></div>`).join(''),UL(As.map(a=>a.pr.t[0]))])));
   else S.push(sec(_t("Звідки береться програма"),`<p>${As[0].origin}</p><p class="small muted">${_t("Програма вмикається, коли повторюються обставини, схожі на ті, у яких вона сформувалася.")}</p>`));
-  S.push(sec(_t("Ознаки, що програма активна"),UL((pr.named?pr.named.m.replace(/\.$/,'').split(', '):[]).concat(Au.flatMap(a=>a.m.replace(/\.$/,'').split(', ').slice(0,Au.length===1?4:2))).concat(Au.map(a=>a.deep[2]||'')).slice(0,9))));
+  S.push(sec(_t("Ознаки, що програма активна"),UL((pr.named?pr.named.m.replace(/\.$/,'').split(LSPLIT):[]).concat(Au.flatMap(a=>a.m.replace(/\.$/,'').split(LSPLIT).slice(0,Au.length===1?4:2))).concat(Au.map(a=>a.deep[2]||'')).slice(0,9))));
   S.push(sec(_t("Як пропрацювати"),`<p>${tx.w}</p>${fixList(As[0])}<h5>${_t("План на 21 день")}</h5><ol class="plan">${PLAN_DAYS.map((d,i)=>`<li><em>${d}</em><span>${As[i%3].plan[i]}</span></li>`).join('')}</ol>`));
-  S.push(sec(_t("Ресурс після опрацювання"),UL((pr.named?pr.named.p.replace(/\.$/,'').split(', '):[]).concat(Au.flatMap(a=>a.p.replace(/\.$/,'').split(', ').slice(0,Au.length===1?4:2))).slice(0,9))));
+  S.push(sec(_t("Ресурс після опрацювання"),UL((pr.named?pr.named.p.replace(/\.$/,'').split(LSPLIT):[]).concat(Au.flatMap(a=>a.p.replace(/\.$/,'').split(LSPLIT).slice(0,Au.length===1?4:2))).slice(0,9))));
   S.push(sec(_t("Питання й опора"),`${qList({q:Au.flatMap(a=>a.q.slice(0,Au.length===1?3:Au.length===2?2:1))})}${affBox(As[2])}`));
   return {num:pr.vals.join('-'),col:pr.named?'var(--accent)':pr.karmic?'var(--p-red)':'var(--p-blue)',title:pr.named?`«${pr.named.n}»`:`${_f("Програма {0}",[pr.vals.join('-')])}`,sub:`${pr.t}${pair?_t(" · сумісність"):''}${pr.named&&pr.named.alt?` · «${pr.named.alt}»`:''}`,S,code:true};
 }
@@ -5547,7 +5569,7 @@ function moreSph(i){
     S.push(sec(`${x.lab} · ${x.v} ${a.n}`,`<p class="lead-m">${txt}</p>${gd?`<p class="small muted">${gd.role}</p>`:''}
       <h5>${F[0]}</h5><p>${F[1](a)}</p>${pairBit}
       <h5>${_t("Як проживається в цій позиції")}</h5><p>${a.live}</p>
-      <div class="pm"><div class="pp"><h4>${_t("У плюсі")}</h4>${UL(a.p.replace(/\.$/,'').split(', ').slice(0,4))}</div><div class="pp minus"><h4>${_t("У мінусі")}</h4>${UL(a.m.replace(/\.$/,'').split(', ').slice(0,4))}</div></div>
+      <div class="pm"><div class="pp"><h4>${_t("У плюсі")}</h4>${UL(a.p.replace(/\.$/,'').split(LSPLIT).slice(0,4))}</div><div class="pp minus"><h4>${_t("У мінусі")}</h4>${UL(a.m.replace(/\.$/,'').split(LSPLIT).slice(0,4))}</div></div>
       <h5>${_t("Прихований сценарій")}</h5>${UL(a.deep.slice(0,2))}
       <h5>${_t("Як вивести в плюс")}</h5>${UL([a.how[0],a.how[1]])}
       ${x.id?moreBtn('arc:'+x.id):moreBtn('cat:'+x.v)}`));
@@ -5558,7 +5580,7 @@ function moreSph(i){
     ${new Set(vs).size<vs.length?`<p>${_t("Деякі енергії повторюються — їхні уроки в цій сфері звучать гучніше.")}</p>`:''}`));
   const ks=SPH_PROGS[s.k||s.t]||(s.prog?[s.prog]:[]), prs=ks.map(getProg).filter(Boolean);
   if(prs.length) S.push(sec(_t("Програми сфери"),prs.map(p=>{const tx=progText(p);return `<div class="mini-prog"><b>${p.vals.join('-')}</b> <span>${p.named?`«${p.named.n}» · `:''}${p.t}</span><p>${tx.h}</p><div class="pm"><div class="pp"><h4>${_t("У плюсі")}</h4><p>${tx.p}</p></div><div class="pp minus"><h4>${_t("У мінусі")}</h4><p>${tx.m}</p></div></div>${moreBtn('prog:'+p.k)}</div>`;}).join('')));
-  S.push(sec(pair?_t("Чи впізнаєте ви свій союз"):_t("Чи впізнаєте себе"),`<p>${pair?_t("Відмітьте, що з цього відбувається між вами:"):_t("Відмітьте, що з цього про вас:")}</p>${UL(uniq(As.flatMap(a=>a.rec.slice(0,2))).slice(0,8))}<h5>${_t("Приховані сценарії сфери")}</h5>${UL(uniq(As.map(a=>a.deep[0])))}<h5>${_t("Ознаки, що сфера в мінусі")}</h5>${UL(uniq(As.flatMap(a=>a.m.replace(/\.$/,'').split(', ').slice(0,1))))}`));
+  S.push(sec(pair?_t("Чи впізнаєте ви свій союз"):_t("Чи впізнаєте себе"),`<p>${pair?_t("Відмітьте, що з цього відбувається між вами:"):_t("Відмітьте, що з цього про вас:")}</p>${UL(uniq(As.flatMap(a=>a.rec.slice(0,2))).slice(0,8))}<h5>${_t("Приховані сценарії сфери")}</h5>${UL(uniq(As.map(a=>a.deep[0])))}<h5>${_t("Ознаки, що сфера в мінусі")}</h5>${UL(uniq(As.flatMap(a=>a.m.replace(/\.$/,'').split(LSPLIT).slice(0,1))))}`));
   S.push(sec(pair?_t("Як покращити життя пари"):_t("Як покращити життя в цій сфері"),`<h5>${_t("Що змінити в першу чергу")}</h5>${fixList({fix:uniq(As.flatMap(a=>a.fix.slice(0,2))).slice(0,6)})}
     <h5>${_t("Щоденні кроки")}</h5>${UL(uniq(As.flatMap(a=>a.how.slice(0,2))).slice(0,6))}
     ${pair?`<h5>${_t("Що робити разом")}</h5>${UL(uniq(As.map(a=>a.pr.t[0])))}`:''}
