@@ -268,6 +268,10 @@ select.tb{max-width:240px}
 .seo-env{margin:14px 0 4px;padding:12px 14px;border-radius:14px;background:var(--surface-2);font-size:13.5px}
 .seo-env ul{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
 .seo-env li.ok{color:var(--ok)}.seo-env li.bad{color:var(--bad)}
+.seo-err{font-size:14px;line-height:1.6}.seo-err.bad{color:var(--bad)}
+.seo-fix{margin:10px 0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+.seo-acc{font-family:var(--font-mono);font-size:12.5px;background:var(--surface-2);padding:2px 8px;border-radius:6px;word-break:break-all;user-select:all}
+.seo-err small{color:var(--muted)}
 .seo-setup ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:10px;line-height:1.55;font-size:14px}
 .seo-setup code{font-family:var(--font-mono);font-size:12px;background:var(--surface-2);padding:1px 6px;border-radius:6px}
 @media (max-width:820px){.seo-grid,.serp-sl{grid-template-columns:1fr}.serp-sl{margin-left:0}.seo-p>summary{flex-wrap:wrap}.seo-b{justify-content:flex-start;width:100%;order:3}}
@@ -1001,9 +1005,13 @@ function seoGscHTML(){
   if(!G) return `<p class="empty"><button class="btn sm" data-seo-gsc>Завантажити дані Google</button></p>`;
   if(G.configured===false) return seoSetupHTML();
   if(G.error){ const why=G.code==='google_auth'?'Google не прийняв ключ сервісного акаунта. Перевір, що в Vercel вставлено саме client_email і повний private_key з JSON-файлу, і зроби Redeploy.'
-      :G.code==='no_property'?`Сервісний акаунт працює, але не має доступу до ресурсу code-matrix.space у Search Console. Додай його email у Search Console → Налаштування → Користувачі й дозволи.${G.sites&&G.sites.length?' Зараз він бачить: '+G.sites.map(esc).join(', '):''}`
+      :G.code==='no_property'?`<b>Ключ працює ✓ — лишився один крок.</b> Сервісний акаунт поки не має доступу до code-matrix.space у Search Console.
+        <ol class="seo-fix"><li>Відкрий <a href="https://search.google.com/search-console/users?resource_id=sc-domain%3Acode-matrix.space" target="_blank" rel="noopener">Search Console → Налаштування → Користувачі й дозволи</a> (вгорі зліва має бути вибраний ресурс <b>code-matrix.space</b>).</li>
+        <li>«Додати користувача» → встав email:${G.account?` <code class="seo-acc">${esc(G.account)}</code> <button type="button" class="btn ghost sm" data-seo-copy="${esc(G.account)}">Копіювати</button>`:' email сервісного акаунта (client_email з JSON-файлу)'}</li>
+        <li>Дозвіл — <b>«Повний»</b> → Додати. Потім натисни «Перевірити ще раз» нижче (іноді Google підхоплює доступ за кілька хвилин).</li></ol>
+        ${G.sites&&G.sites.length?`<small>Зараз акаунт бачить: ${G.sites.map(esc).join(', ')}</small>`:'<small>Зараз акаунт не бачить жодного ресурсу. Якщо ресурс code-matrix.space у Search Console ще не підтверджено (TXT-запис у DNS) — спершу підтверди його.</small>'}`
       :G.code==='forbidden'?'Google відмовив у доступі. Найчастіше — не ввімкнено Search Console API у Google Cloud або в акаунта немає дозволу на ресурс.':'Не вдалося отримати дані.';
-    return `<div class="bal-warn bad">${why}<br><small>${esc(G.error)}</small></div>${G.code==='google_auth'||G.code==='forbidden'?seoSetupHTML(true):''}`; }
+    return `<div class="panel card seo-err${G.code==='no_property'?'':' bad'}">${why}${G.code==='no_property'?'':`<br><small>${esc(G.error)}</small>`}<div class="acts" style="margin-top:12px"><button class="btn sm" data-seo-gsc>Перевірити ще раз</button></div></div>${G.code==='google_auth'||G.code==='forbidden'?seoSetupHTML(true):''}`; }
   const t=G.total||{}, pv=G.prev||{};
   const days=[7,28,90].map(d=>`<button class="chip${SEO.gscDays===d?' on':''}" data-seo-days="${d}">${d} дн.</button>`).join('');
   const qRows=(G.byQuery||[]).slice(0,25), pRows=(G.byPage||[]).slice(0,30);
@@ -1103,6 +1111,7 @@ async function seoSave(){
   toast('SEO збережено. На сайті — протягом 5 хвилин.');
 }
 function bindSeoGsc(){
+  document.querySelectorAll('[data-seo-copy]').forEach(b=>b.onclick=async()=>{ try{ await navigator.clipboard.writeText(b.dataset.seoCopy); toast('Email скопійовано.'); }catch(_){ toast('Не вдалося скопіювати — виділи email вручну.'); } });
   document.querySelectorAll('[data-seo-gsc]').forEach(b=>b.onclick=()=>{ b.disabled=true; b.textContent='Перевіряю…'; SEO.gscClick=true; seoLoadGsc(); });
   document.querySelectorAll('[data-seo-days]').forEach(b=>b.onclick=()=>{ SEO.gscDays=+b.dataset.seoDays; seoLoadGsc(); });
   const ib=$('[data-seo-insp]'); if(ib) ib.onclick=async()=>{ SEO.inspBusy=true; seoPaintGsc();

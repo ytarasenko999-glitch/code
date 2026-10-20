@@ -54,7 +54,7 @@ async function site(t) {
   const j = await g(t, WM + '/sites');
   const list = (j.siteEntry || []).filter(s => /code-matrix\.space/.test(s.siteUrl) && s.permissionLevel !== 'siteUnverifiedUser');
   const pick = list.find(s => s.siteUrl.startsWith('sc-domain:')) || list[0];
-  if (!pick) { const e = new Error('no_property'); e.code = 'no_property'; e.sites = (j.siteEntry || []).map(s => s.siteUrl); throw e; }
+  if (!pick) { const e = new Error('no_property'); e.code = 'no_property'; e.sites = (j.siteEntry || []).map(s => s.siteUrl + (s.permissionLevel === 'siteUnverifiedUser' ? ' (сайт не підтверджено)' : '')); throw e; }
   SITE = pick.siteUrl;
   return SITE;
 }
@@ -113,6 +113,6 @@ module.exports = async (req, res) => {
       byDate: byDate.map(pack), byPage: byPage.map(pack), byQuery: byQuery.map(pack), byCountry: byCountry.map(pack), byDevice: byDevice.map(pack),
       pageQuery: pageQuery.map(r => ({ page: r.keys[0], query: r.keys[1], clicks: r.clicks, impr: r.impressions, pos: r.position })) });
   } catch (e) {
-    return done(200, { configured: true, error: e.message, code: e.code || (e.status === 403 ? 'forbidden' : 'error'), sites: e.sites });
+    const r = readEnv(); return done(200, { configured: true, error: e.message, code: e.code || (e.status === 403 ? 'forbidden' : 'error'), sites: e.sites, account: r.emailOk ? r.email : '' });
   }
 };
