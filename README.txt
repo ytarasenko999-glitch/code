@@ -12,3 +12,8 @@ favicon.svg — іконка вкладки
 справжні акаунти, оплати.
 
 Оновлено: 2026-10-15T23:10Z
+
+База знань ШІ (сервер, у браузер не потрапляє):
+tools/kb/*.md        — тексти бази: 22 аркани × 10 сфер (pers, centre, tal, money, love, karma, rod, health, pur, year), method.md (методика), tarot_*.md (78 карт). Редагувати тут.
+tools/kb-build.js    — після змін: node tools/kb-build.js → api/_kb_data.js
+api/_kb.js           — збирає потрібні записи під конкретну матрицю/розклад; api/tarot.js додає їх у system prompt з кешуванням

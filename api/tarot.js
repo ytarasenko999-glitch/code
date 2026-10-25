@@ -16,6 +16,7 @@ const PHOTO_DAY = parseInt(process.env.AI_PHOTO_DAY || '20', 10); // photo recog
 const FREE_START = parseInt(process.env.AI_FREE_START || '3', 10), FREE_WEEK = parseInt(process.env.AI_FREE_WEEK || '1', 10);
 const ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://code-matrix.space,https://www.code-matrix.space,https://code-matrix-test.vercel.app').split(',').map(s => s.trim());
 
+const KB = require('./_kb.js');
 const fail = (res, status, code, extra) => { res.statusCode = status; res.setHeader('content-type', 'application/json'); res.end(JSON.stringify({ code, ...(extra || {}) })); };
 
 async function sbUser(token) {
@@ -212,10 +213,14 @@ ${text}` }];
     if (!messages) return fail(res, 400, 'bad_request');
   }
 
+  /* the knowledge base entries this request needs (chosen by the client, written by the server); cached between turns */
+  let sys = '';
+  if (!json && task !== 'tr') { try { sys = KB.build(body.kb); } catch (_) { sys = ''; } }
+
   const upstream = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: MODEL, max_tokens: json ? 1200 : (task === 'report' || task === 'year' || task === 'cont') ? 12000 : task === 'tr' ? 8000 : task === 'chat' ? 2000 : 2400, messages, stream: !json })
+    body: JSON.stringify(Object.assign({ model: MODEL, max_tokens: json ? 1200 : (task === 'report' || task === 'year' || task === 'cont') ? 16000 : task === 'tr' ? 8000 : task === 'chat' ? 5000 : 6000, messages, stream: !json }, sys ? { system: [{ type: 'text', text: sys, cache_control: { type: 'ephemeral' } }] } : {}))
   }).catch(() => null);
   if (!upstream) return fail(res, 502, 'network');
   if (!upstream.ok) {
@@ -235,7 +240,8 @@ ${text}` }];
 
   if (json) {
     const data = await upstream.json();
-    await logUse(token, user.id, kindLog, al.source, data.usage && data.usage.input_tokens, data.usage && data.usage.output_tokens).catch(() => {});
+    const u = data.usage || {};
+    await logUse(token, user.id, kindLog, al.source, (u.input_tokens || 0) + Math.round((u.cache_creation_input_tokens || 0) * 1.25 + (u.cache_read_input_tokens || 0) * 0.1), u.output_tokens).catch(() => {});
     const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
     res.setHeader('content-type', 'application/json');
     return res.end(JSON.stringify({ text, stop: data.stop_reason }));
@@ -245,7 +251,7 @@ ${text}` }];
   res.setHeader('content-type', 'text/event-stream; charset=utf-8');
   res.setHeader('cache-control', 'no-cache, no-transform');
   const reader = upstream.body.getReader(), dec = new TextDecoder();
-  let tin = 0, tout = 0, tail = '';
+  let tin = 0, tout = 0, tcw = 0, tcr = 0, tail = '';
   try {
     for (;;) {
       const { done, value } = await reader.read();
@@ -253,10 +259,13 @@ ${text}` }];
       const chunk = tail + dec.decode(value, { stream: true });
       for (const m of chunk.matchAll(/"input_tokens":(\d+)/g)) tin = Math.max(tin, +m[1]);
       for (const m of chunk.matchAll(/"output_tokens":(\d+)/g)) tout = Math.max(tout, +m[1]);
-      tail = chunk.slice(-40);
+      for (const m of chunk.matchAll(/"cache_creation_input_tokens":(\d+)/g)) tcw = Math.max(tcw, +m[1]);
+      for (const m of chunk.matchAll(/"cache_read_input_tokens":(\d+)/g)) tcr = Math.max(tcr, +m[1]);
+      tail = chunk.slice(-60);
       try { res.write(Buffer.from(value)); } catch (_) {}
     }
   } catch (_) { /* client went away */ }
-  await logUse(token, user.id, kindLog, al.source, tin, tout).catch(() => {});
+  /* cached knowledge base: writing costs 1.25×, reading 0.1× of normal input */
+  await logUse(token, user.id, kindLog, al.source, tin + Math.round(tcw * 1.25 + tcr * 0.1), tout).catch(() => {});
   res.end();
 };

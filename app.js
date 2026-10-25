@@ -3983,7 +3983,24 @@ Year programs (age ring):
 ${yrs}
 Energies repeating most in this matrix: ${rep||'—'}${(()=>{ const seen=new Set(), kb=progs().filter(p=>p.named&&!seen.has(p.named.n)&&seen.add(p.named.n)).map(p=>`- ${p.t} ${p.vals.join('-')} «${PN(p.named)}»: plus — ${p.named.p} Minus — ${p.named.m} How it shows — ${p.named.h} Work — ${p.named.w}`); return kb.length?`\nCODE knowledge base on the named programs found in this matrix (use it as the factual basis, retell in your own words, never copy verbatim):\n${kb.join('\n')}`:''; })()}`;
 }
-const AIM_RULES=L=>`Write in ${L.name}, addressing the person ${L.reg}; use grammatical forms matching their gender. Refer to positions by their human names (e.g. “personality”, “money channel”, “male line of the family”); the letter codes A, B, C, D, E with digits may be added in brackets, but NEVER write internal codes such as PERS, SOC, SPIR, MALE, FEM, MON, LOVE, X, F, G, H, I, H1. Be specific to THIS matrix: name the positions and numbers you rely on and explain how the energies interact (e.g. how the centre shapes the way talents are used, how the karmic tail colours money or love). Never paste generic dictionary definitions of an arcana. When the same arcana appears in several positions, explain what it does differently in EACH place — never repeat the same sentence twice. Concrete life situations, behaviours and steps, not vague esotericism. No fatalism, no medical, legal or financial diagnoses or guarantees; the matrix is a tool for self-reflection. Use Markdown headings (##) and short paragraphs, bullet lists where they help. Always finish the whole structure and end with a complete closing section — never stop mid-sentence.`;
+/* which knowledge-base entries (server side, api/_kb.js) a reading of this matrix needs: [sphere, arcana, where it stands] */
+function kbMx(P,o){
+  o=o||{}; const out=[], add=(s,v,l)=>{ if(v>=1&&v<=22) out.push([s,v,l]); };
+  const only=o.only?new Set(o.only):null;
+  Object.keys(POS).forEach(id=>{ if(P[id]==null||(only&&!only.has(id))) return; const f=POS[id][1], l=POS[id][0], v=P[id];
+    if(id==='E'||id==='E3') add('centre',v,l); else if(id==='E2') add('rod',v,l);
+    else if(f==='pers') add('pers',v,l); else if(f==='karma'||f==='minus'||f==='task') add('karma',v,l);
+    else if(f==='love'){ add('love',v,l); if(id==='X') add('money',v,l); }
+    else if(f==='pur'){ add('pur',v,l); if(id==='SKY') add('tal',v,l); if(id==='MALE'||id==='FEM') add('rod',v,l); }
+    else if(['tal','money','rod','health'].includes(f)) add(f,v,l); });
+  if(o.health!==false&&!only) chakraRows(P).rows.forEach((x,i)=>add('health',x.em,`${CHAK[i].n} · емоції`));
+  const a=o.age!=null?o.age:null;
+  if(a!=null) [a,(a+1)%80,(a+2)%80].forEach((k,i)=>add('year',P.YEARS[k][0],`програма року, вік ${k}${i?'':' (зараз)'}`));
+  (o.months||[]).forEach(m=>{ add('year',m.pers,`особистий місяць · ${m.label}`); });
+  return out;
+}
+const kbFull=extra=>Object.assign({method:true,mx:kbMx(STATE.P,{age:curAge()})},extra||{});
+const AIM_RULES=L=>`Write in ${L.name}, addressing the person ${L.reg}; use grammatical forms matching their gender. Refer to positions by their human names (e.g. “personality”, “money channel”, “male line of the family”); the letter codes A, B, C, D, E with digits may be added in brackets, but NEVER write internal codes such as PERS, SOC, SPIR, MALE, FEM, MON, LOVE, X, F, G, H, I, H1. Be specific to THIS matrix: name the positions and numbers you rely on and explain how the energies interact (e.g. how the centre shapes the way talents are used, how the karmic tail colours money or love). Never paste generic dictionary definitions of an arcana. When the same arcana appears in several positions, explain what it does differently in EACH place — never repeat the same sentence twice. Concrete life situations, behaviours and steps, not vague esotericism. Ground every interpretation in the CODE knowledge base given to you (the system prompt): use its meanings, scenarios, professions, partner images, triggers and practices for the exact arcana × sphere in this matrix, combine several entries to show how the positions interact, and add your own depth on top; retell, never copy. Depth over breadth: no section may be a short generic summary — every claim gets a «because» (the position and number) and a «what it looks like in life» (a concrete example). No fatalism, no medical, legal or financial diagnoses or guarantees; the matrix is a tool for self-reflection. Use Markdown headings (##) and short paragraphs, bullet lists where they help. Always finish the whole structure and end with a complete closing section — never stop mid-sentence.`;
 function aimReportPrompt(){
   const L=TP_LANG[LANG]||TP_LANG.en;
   return `You are CODE’s senior Destiny Matrix analyst (Natalia Ladini method) — deep, warm, practical, psychologically literate.
@@ -4003,14 +4020,14 @@ Structure (use these ## headings, translated into ${L.name}; every section must 
 10. Цей рік і два наступні — what the year programs ask for, how they link to the rest of the matrix.
 11. Ваш план на 90 днів — 7–10 concrete, doable steps, each tied to a position, with how to check progress.
 12. Питання для себе — 5–7 deep questions for reflection.
-Length: about 3500–4500 words. ${AIM_RULES(L)}`;
+Length: about 5000–6500 words — this is a premium reading, so be generous with detail, examples and steps. ${AIM_RULES(L)}`;
 }
 function aimChatPrompt(){
   const L=TP_LANG[LANG]||TP_LANG.en;
   return `You are CODE’s Destiny Matrix consultant (Natalia Ladini method). The person asks questions about their life; answer them THROUGH their matrix below.
 ${mxContext()}
 
-How to answer: start with a direct answer to the question in 2–3 sentences; then explain which positions/programs of the matrix show this and why; then give practical steps. 250–500 words unless the question needs more. If the question is outside what a matrix can say, still help with what the matrix shows (tendencies, resources, risks) without refusing. ${AIM_RULES(L)}
+How to answer (Markdown, with short ## headings): start with a direct answer to the question in 2–4 sentences; then a detailed explanation of which positions, programs, channels and year energies of the matrix show this and why (name each position and number, describe how it looks in this person's real life — work, money, couple, parents, stress — and how the energies interact); then what helps and what hinders (plus and minus of the energies involved); then 4–7 concrete practical steps, each tied to a position, plus one reflection question. About 600–1000 words; up to 1400 for broad life questions; shorter (300–500) only for a quick clarifying follow-up. If the question is outside what a matrix can say, still help with what the matrix shows (tendencies, resources, risks) without refusing. ${AIM_RULES(L)}
 ${TP_FU_RULE(L)}`;
 }
 function aimMonths(){
@@ -4041,19 +4058,19 @@ Structure (headings translated into ${L.name}; every section substantial):
 Then one ## heading per month (“Січень 2027” etc.) with these bold labels, each 1–3 sentences: **Тема місяця**; **Що вдасться легше**; **Де бути уважнішою/уважнішим**; **Робота й гроші**; **Стосунки**; **Тіло й ресурс**; **Практика місяця** (one concrete exercise or action). Months with the same energies must still read differently: build on what came before, show progression through the year.
 ## Ваш план на рік — 5–7 goals that fit this year’s energies, each with the best months for it.
 ## Підсумок — what the person will have by the end of these 12 months if they live them consciously.
-Describe tendencies and probabilities, never certain events; the future is many-sided and depends on choices. Length: about 3500–4500 words. ${AIM_RULES(L)}`;
+Describe tendencies and probabilities, never certain events; the future is many-sided and depends on choices. Each monthly bold label gets 2–4 full sentences specific to that month. Length: about 5000–6500 words. ${AIM_RULES(L)}`;
 }
-async function aimRun(task,turns,onText,signal){
+async function aimRun(task,turns,onText,signal,kb){
   const s=await tpGetSample(); if(!s) throw Object.assign(new Error('nosample'),{code:'not_configured'});
-  if(task!=='report'&&task!=='year') return s(turns,{cache:false,signal,task,onText:({text})=>onText(text)});
+  if(task!=='report'&&task!=='year') return s(turns,{cache:false,signal,task,kb,onText:({text})=>onText(text)});
   /* long paid readings: if the text stops early (length limit or a dropped connection), continue it seamlessly — continuations are free */
   let full='', res=null, err=null;
-  try{ res=await s(turns,{cache:false,signal,task,onText:({text})=>onText(text)}); full=res.text; }
+  try{ res=await s(turns,{cache:false,signal,task,kb,onText:({text})=>onText(text)}); full=res.text; }
   catch(e){ if(!(e&&e.code==='network'&&e.text&&e.text.length>400)) throw e; full=e.text; err=e; }
   for(let n=0;n<3&&(err||(res&&res.complete===false));n++){
     if(signal&&signal.aborted) break;
     const base=full.replace(/\s+$/,''); err=null;
-    try{ res=await s([...turns,{role:'assistant',content:base}],{cache:false,signal,task:'cont',onText:({text})=>onText(base+text)}); full=base+res.text; }
+    try{ res=await s([...turns,{role:'assistant',content:base}],{cache:false,signal,task:'cont',kb,onText:({text})=>onText(base+text)}); full=base+res.text; }
     catch(e){ if(e&&e.code==='network'&&e.text){ full=base+e.text; err=e; continue; } if(e&&(e.code==='need_plan'||e.code==='cancelled')) break; throw e; }
   }
   return {text:full};
@@ -4134,7 +4151,7 @@ function aimOpen(kind,spec,opt){
       const all=[];
       hist.forEach((x,i)=>{ const cn=x.cx?`CONTEXT: the person asked this while reading the section «${x.cx}» of their matrix — answer in that context, using the energies of this section first, then the rest of the matrix.\n`:''; all.push({role:'user',content:i?cn+x.q:aimChatPrompt()+`\n\n${cn}QUESTION: ${x.q}`}); if(i<hist.length-1) all.push({role:'assistant',content:x.a||'—'}); });
       const ctl=new AbortController(); ctlBox.c=ctl;
-      try{ const res=await aimRun('chat',all,t=>{ m.a=t; const a=last(); if(a) a.innerHTML=tpMd(t); },ctl.signal);
+      try{ const res=await aimRun('chat',all,t=>{ m.a=t; const a=last(); if(a) a.innerHTML=tpMd(t); },ctl.signal,kbFull());
         m.a=res.text; sug=(tpFuParse(res.text)||SUG).slice(0,3); const s2=aiStore(); s2[key]=s2[key]||{}; const mine=hist.map(x=>({q:x.q,a:x.a,cx:x.cx||'',ts:x.ts||0})); s2[key].chat=(s2[key].chat||[]).filter(x=>!mine.some(y=>y.ts===x.ts&&y.q===x.q)).concat(mine).slice(-200); aiSave(s2); draw(); }
       catch(e){ hist.pop(); draw(); body.querySelector('#aimE').innerHTML=errBox(tpErr(e&&e.code)); }
       finally{ ctlBox.c=null; } };
@@ -4151,7 +4168,7 @@ function aimOpen(kind,spec,opt){
   const run=async()=>{
     if(!aimPaid(kind)){ gate(); return; }
     show('',0,true); const ctl=new AbortController(); ctlBox.c=ctl;
-    try{ const res=await aimRun(kind,[{role:'user',content:kind==='report'?aimReportPrompt():aimYearPrompt()}],t=>{ const el=body.querySelector('.aim-doc'); if(el) el.innerHTML=tpMd(t); },ctl.signal);
+    try{ const res=await aimRun(kind,[{role:'user',content:kind==='report'?aimReportPrompt():aimYearPrompt()}],t=>{ const el=body.querySelector('.aim-doc'); if(el) el.innerHTML=tpMd(t); },ctl.signal,kind==='year'?{method:true,mx:kbMx(STATE.P,{age:curAge(),months:aimMonths()})}:kbFull());
       const s2=aiStore(); s2[key]=s2[key]||{}; const now=Date.now();
       if(kind==='report') s2[key].report={text:res.text,ts:now,lang:LANG}; else { if(s2[key].year&&s2[key].year.text) s2[key].yearsOld=[s2[key].year,...(s2[key].yearsOld||[])].slice(0,12); s2[key].year={text:res.text,ts:now,lang:LANG,from:`${new Date().getFullYear()}-${new Date().getMonth()}`}; }
       aiSave(s2); showRec({text:res.text,ts:now,lang:LANG}); }
@@ -5099,6 +5116,15 @@ function tpMd(s){
   }
   close(); return out;
 }
+/* knowledge-base entries for a spread: every card + the key points of each matrix involved */
+function tpKb(r,mx){
+  const out={cards:[...new Set((r.slots||[]).map(c=>c.id))]}, list=[];
+  (mx||[]).forEach(M=>{ if(!M||!M.P) return; const who=M.name?` (${M.name})`:''; let age=new Date().getFullYear()-M.y; const t=new Date(); if(t.getMonth()+1<M.m||(t.getMonth()+1===M.m&&t.getDate()<M.d)) age--; age=Math.max(0,age)%80;
+    kbMx(M.P,{only:['A','E','B','C','C2','MON','LOV','X','D','PERS','SOC','MALE','FEM']}).forEach(e=>list.push([e[0],e[1],e[2]+who]));
+    list.push(['year',M.P.YEARS[age][0],`програма року зараз${who}`]); });
+  if(list.length) out.mx=list.slice(0,60);
+  return out;
+}
 function tpPrompt(r){
   const L=TP_LANG[LANG]||TP_LANG.en, en=SPREAD_EN[r.sp]||SPREAD_EN.free, sp=SPREADS.find(s=>s.id===r.sp);
   const cards=r.slots.map((c,i)=>{ const pe=en[1]?en[1][i]:`Card ${i+1}`, pl=sp&&sp.pos?sp.pos[i]:''; return `${i+1}. Position “${pe}”${pl&&pl!==pe?` (shown to the person as “${pl}”)`:''} — ${tpName(c.id,'en')}, ${c.r?'REVERSED':'upright'} [the person sees the name as: ${tpName(c.id)}]`; }).join('\n');
@@ -5124,7 +5150,7 @@ CARDS IN POSITIONS:
 ${cards}
 PATTERNS: Major Arcana ${maj} of ${r.slots.length}; suits — ${suits}; reversed ${rev}; court cards ${court}${rep?`; repeated numbers ${rep}`:''}.${mx}
 
-REFERENCE MEANINGS (ground the reading in these, then go deeper with your own knowledge of the cards):
+REFERENCE MEANINGS (short; the deep CODE tarot reference for these cards — love, work and money, another person's feelings, advice, yes/no, reversed — is in the system prompt; ground the reading in both, then go deeper with your own knowledge of the cards):
 ${kb}
 
 HOW TO READ:
@@ -5139,15 +5165,15 @@ HOW TO READ:
 - The same applies to any question that may look “unknowable” (hidden motives, whether someone is honest, the outcome of an exam or interview): read what the cards say about it and answer directly in terms of tendencies and energies.
 - Be honest and supportive. Never predict death, serious illness, pregnancy outcomes or disasters; for health, legal or financial matters add one short line recommending a qualified specialist. If the question is harmful or manipulative (e.g. controlling or harming someone), gently redirect to what the person can do themselves.
 
-FORMAT (Markdown, about 350–600 words; for the Celtic Cross up to about 900):
+FORMAT (Markdown, about 700–1100 words; for the Celtic Cross and spreads of 7+ cards about 1200–1600):
 ## (heading meaning “Short answer”, in ${L.name})
 Two or three sentences answering the question directly.
 ## (heading meaning “The cards in their positions”, in ${L.name})
-One short paragraph per card that starts with **N. Position — Card name** (add the word for “reversed” in ${L.name} if it is reversed), 2–4 sentences tied to the question.
+One paragraph per card that starts with **N. Position — Card name** (add the word for “reversed” in ${L.name} if it is reversed), 4–6 sentences tied to the question: what the card means in this position, what it says about this situation, the feelings or events behind it, and how it links to the neighbouring cards.
 ## (heading meaning “How the cards connect”, in ${L.name})
-One paragraph: the overall story of the spread.
+Two or three paragraphs: the overall story of the spread, the dominant suit and numbers, the most likely course of events and the key variables.
 ## (heading meaning “Advice”, in ${L.name})
-3–5 concrete bullet points the person can act on.
+4–6 concrete bullet points the person can act on, each tied to a card.
 End with one line in italics: a question for reflection.
 No preamble, no closing pleasantries.
 ${TP_FU_RULE(L)}`;
@@ -5160,7 +5186,7 @@ const tpFuParse=t=>{ const m=String(t||'').match(/\[\[FU\]\]\s*([\s\S]+)$/); if(
 function tpFollow(text){
   const L=TP_LANG[LANG]||TP_LANG.en;
   return `Follow-up question from the same person about this spread: """${text}"""
-Answer in ${L.name}, addressing the person ${L.reg}. Be concise (80–220 words), grounded in the cards already drawn and the reading above. Markdown is allowed; use headings only if really needed. If they ask about a card that is not in the spread, say so and suggest drawing one clarifying card.
+Answer in ${L.name}, addressing the person ${L.reg}. Answer substantively (about 250–500 words; up to 700 if the question opens a new topic), grounded in the cards already drawn, the reading above and the deep tarot reference: name the cards and positions you rely on, explain why, describe what it looks like in practice and finish with 2–3 concrete steps. Markdown is allowed; use headings only if really needed. If they ask about a card that is not in the spread, say so and suggest drawing one clarifying card.
 Keep the same principles as before: answer exactly what is asked, never say the cards cannot know; for another person’s thoughts describe their tone and energy; for the future describe the most likely course plus the variables that could change it.
 ${TP_FU_RULE(L)}`;
 }
@@ -5336,14 +5362,14 @@ async function tpAsk(){
   if(!s){ show("ШІ-трактувальник ще не підключено в тестовій версії сайту — це наступний крок налаштування."); return; }
   const mx=TAR.mx?tpMxUse():[];
   const r={id:Date.now(),ts:Date.now(),q:TAR.q,sp:TAR.sp,slots:slots.map(c=>({id:c.id,r:!!c.r})),ans:'',chat:[],turns:[]};
-  r.turns=[{role:'user',content:tpPrompt({...r,mx})}];
+  r.turns=[{role:'user',content:tpPrompt({...r,mx})}]; r.kb=tpKb(r,mx);
   TAR.read=r; TAR.busy=true; tpRefreshL(); tpRefreshR();
   if(innerWidth<=980) $('#tpR').scrollIntoView({behavior:'smooth',block:'start'});
   const ctl=new AbortController(); TAR.ctl=ctl;
   try{
-    const res=await s(r.turns,{cache:false,signal:ctl.signal,onText:({text})=>{ r.ans=text; const a=$('#tpAns'); if(a&&TAR.read===r) a.innerHTML=tpMd(text); }});
+    const res=await s(r.turns,{cache:false,signal:ctl.signal,kb:r.kb,onText:({text})=>{ r.ans=text; const a=$('#tpAns'); if(a&&TAR.read===r) a.innerHTML=tpMd(text); }});
     r.ans=res.text; r.fu=tpFuParse(res.text); r.turns.push({role:'assistant',content:res.text});
-    const h=tpHist().filter(x=>x.id!==r.id); h.unshift({id:r.id,ts:r.ts,q:r.q,sp:r.sp,slots:r.slots,ans:r.ans,fu:r.fu,chat:[],turns:r.turns}); tpSaveHist(h);
+    const h=tpHist().filter(x=>x.id!==r.id); h.unshift({id:r.id,ts:r.ts,q:r.q,sp:r.sp,slots:r.slots,ans:r.ans,fu:r.fu,chat:[],turns:r.turns,kb:r.kb}); tpSaveHist(h);
   }catch(e){
     r.ans=e&&e.text?e.text:'';
     if(!(e&&e.code==='cancelled')){ TAR.busy=false; tpRefreshR(); const e2=$('#tpErr2'); if(e2){ e2.textContent=tpErr(e&&e.code); e2.hidden=false; } TAR.ctl=null; tpRefreshL(); return; }
@@ -5360,7 +5386,7 @@ async function tpFollowUp(text){
   const lb=last(); if(lb&&box) box.scrollTop=lb.offsetTop-80; if(innerWidth<=980&&lb) lb.scrollIntoView({behavior:'smooth',block:'center'});
   const ctl=new AbortController(); TAR.ctl=ctl;
   try{
-    const res=await s(turns,{cache:false,signal:ctl.signal,onText:({text})=>{ m.a=text; const a=last(); if(a) a.innerHTML=tpMd(text); }});
+    const res=await s(turns,{cache:false,signal:ctl.signal,kb:r.kb||tpKb(r,[]),onText:({text})=>{ m.a=text; const a=last(); if(a) a.innerHTML=tpMd(text); }});
     m.a=res.text; r.fu=tpFuParse(res.text)||r.fu; r.turns=[...turns,{role:'assistant',content:res.text}];
     const h=tpHist(), k=h.findIndex(x=>x.id===r.id); if(k>=0){ h[k].chat=r.chat.map(x=>({q:x.q,a:x.a})); h[k].turns=r.turns; h[k].fu=r.fu; tpSaveHist(h); }
   }catch(e){
@@ -6390,7 +6416,7 @@ async function aiCall(payload,signal){
   return r;
 }
 const aiSample=async(turns,opts={})=>{
-  const r=await aiCall({turns,task:opts.task||'tarot',...(opts.lang?{lang:opts.lang}:{})},opts.signal);
+  const r=await aiCall({turns,task:opts.task||'tarot',...(opts.lang?{lang:opts.lang}:{}),...(opts.kb?{kb:opts.kb}:{})},opts.signal);
   const rd=r.body.getReader(), dec=new TextDecoder(); let buf='', text='', stop='', fin=false;
   try{
     for(;;){ const {done,value}=await rd.read(); if(done) break; buf+=dec.decode(value,{stream:true});
